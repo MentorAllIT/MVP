@@ -58,7 +58,7 @@ describe('Booking API Server Integration Tests', () => {
         }
     });
 
-    it.only('should create a booking via API endpoint', async () => {
+    it('should create a booking via API endpoint', async () => {
         if (!serverRunning) {
             console.warn('⚠️  Skipping test: Server not running');
             return;
