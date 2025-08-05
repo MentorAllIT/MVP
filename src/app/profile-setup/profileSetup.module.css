@@ -1,0 +1,50 @@
+@import "../[role]/signup/signup.module.css";
+
+/* shared layout */
+.wrapper  { composes: wrapper  from "../[role]/signup/signup.module.css"; }
+.card     { composes: card     from "../[role]/signup/signup.module.css"; }
+.title    { composes: title    from "../[role]/signup/signup.module.css"; }
+.subtitle { composes: subtitle from "../[role]/signup/signup.module.css"; }
+
+.form   { composes: form   from "../[role]/signup/signup.module.css"; }
+.label  { composes: label  from "../[role]/signup/signup.module.css"; }
+.input  { composes: input  from "../[role]/signup/signup.module.css"; }
+.button { composes: button from "../[role]/signup/signup.module.css"; }
+
+.button:hover { background: #6d28d9; }
+
+.textarea {
+  composes: input from "../[role]/signup/signup.module.css";
+  min-height: 10rem;
+  resize: vertical;
+}
+
+.fieldError {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: #ef4444;
+}
+.inputError {
+  border-color: #ef4444 !important;
+}
+.inputError:focus,
+.textarea.inputError:focus {
+  border-color: #dc2626 !important;
+}
+
+.error {
+  margin-top: 1rem;
+  color: #ef4444;
+  font-weight: 500;
+}
+
+/* progress bar */
+.progressWrap { width: 100%; margin-top: 2rem; }
+.progressTrack { background:#e9e7f5; border-radius:9999px; height:8px; overflow:hidden; }
+.progressFill  { background:linear-gradient(90deg,#a78bfa,#7c3aed); height:100%; width:0; border-radius:9999px; transition:width .6s ease; }
+.progressText  { display:block; text-align:right; font-size:.75rem; color:#6b7280; margin-top:.25rem; }
+
+/* bio helper */
+.helpToggle { margin-top:.45rem; background:none; border:none; color:#7c3aed; font-size:.875rem; cursor:pointer; }
+.helpToggle:hover { text-decoration:underline; }
+.helpList { margin:.5rem 0 0; padding-left:1rem; color:#4b5563; font-size:.875rem; list-style:disc; }

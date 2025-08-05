@@ -1,0 +1,31 @@
+/* ────────────────────────────────────────────────────────────────
+   Re-use all hashed class names from signup.module.css so the
+   visual style stays identical.
+   ───────────────────────────────────────────────────────────── */
+@import "../[role]/signup/signup.module.css";
+
+/* shared card layout */
+.wrapper  { composes: wrapper  from "../[role]/signup/signup.module.css"; }
+.card     { composes: card     from "../[role]/signup/signup.module.css"; }
+.title    { composes: title    from "../[role]/signup/signup.module.css"; }
+.subtitle { composes: subtitle from "../[role]/signup/signup.module.css"; }
+
+/* form elements  */
+.form   { composes: form   from "../[role]/signup/signup.module.css"; }
+.label  { composes: label  from "../[role]/signup/signup.module.css"; }
+.input  { composes: input  from "../[role]/signup/signup.module.css"; }
+.button { composes: button from "../[role]/signup/signup.module.css"; }
+
+.button:hover { background: #6d28d9; }
+
+.textarea {
+  composes: input from "../[role]/signup/signup.module.css";
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.error {
+  margin-top: 1rem;
+  color: #ef4444;
+  font-weight: 500;
+}
