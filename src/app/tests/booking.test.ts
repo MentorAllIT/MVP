@@ -3,7 +3,7 @@
 
 // Test data - these should be actual UserIDs that exist in your Airtable
 const testUser = { UserID: 'lqweeee' }; // Make sure this user exists in your Users table
-const testInvitee = { UserID: 'OTE0t0r4Qb' }; // Make sure this user exists in your Users table
+const testInvitee = { UserID: 'trying' }; // Make sure this user exists in your Users table
 
 // Test configuration
 const API_BASE_URL = process.env.TEST_API_URL || 'http://localhost:3000';
