@@ -116,14 +116,17 @@ export default function ProfileSetup() {
   }
 
   return (
-    <div className={styles.wrapper}>
-      <div className={styles.card}>
-        <h1 className={styles.title}>Tell us about you</h1>
-        <p className={styles.subtitle}>
-          {subtitle}
-        </p>
-
-        <form className={styles.form} onSubmit={handleSubmit} noValidate>
+    <div className={styles.page}>
+      <div className={styles.wrapper}>
+        <div className={styles.header}>
+          <h1 className={styles.title}>Tell us about you</h1>
+          <p className={styles.subtitle}>
+            {subtitle}
+          </p>
+        </div>
+        
+        <div className={styles.card}>
+          <form className={styles.form} onSubmit={handleSubmit} noValidate>
           <label className={styles.label}>
             <span className={styles.labelText}>Short Bio</span>
             <textarea
@@ -181,6 +184,7 @@ export default function ProfileSetup() {
 
           {formErr && <p className={styles.error}>{formErr}</p>}
         </form>
+        </div>
 
         <div className={styles.progressWrap}>
           <div className={styles.progressTrack}>
