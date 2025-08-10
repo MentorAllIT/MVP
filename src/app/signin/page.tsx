@@ -49,7 +49,7 @@ export default function SignInPage() {
       <header className={styles.header}>
         <div className={styles.headerContent}>
           <Link href="/" className={styles.logo}>
-            Mentor<span className={styles.aiHighlight}>AI</span>l
+            Home<span className={styles.aiHighlight}>AI</span>
           </Link>
           <nav className={styles.nav}>
             <Link href="/" className={styles.navLink}>Home</Link>
