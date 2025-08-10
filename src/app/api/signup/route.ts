@@ -5,13 +5,16 @@ import { nanoid } from "nanoid";
 
 // env guard
 const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID, AIRTABLE_USERS_TABLE } = process.env;
-if (!AIRTABLE_API_KEY || !AIRTABLE_BASE_ID || !AIRTABLE_USERS_TABLE) {
-  throw new Error("Missing Airtable env vars");
-}
+const hasAirtableConfig = AIRTABLE_API_KEY && AIRTABLE_BASE_ID && AIRTABLE_USERS_TABLE;
 
-const base   = new Airtable({ apiKey: AIRTABLE_API_KEY }).base(AIRTABLE_BASE_ID);
-const TABLE  = AIRTABLE_USERS_TABLE;
-const SALT   = 12;
+let base: any = null;
+let TABLE: string = '';
+const SALT = 12;
+
+if (hasAirtableConfig) {
+  base = new Airtable({ apiKey: AIRTABLE_API_KEY }).base(AIRTABLE_BASE_ID);
+  TABLE = AIRTABLE_USERS_TABLE;
+}
 
 // route handler
 export async function POST(req: NextRequest) {
@@ -22,6 +25,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
+      );
+    }
+
+    // Check if Airtable is configured
+    if (!hasAirtableConfig) {
+      return NextResponse.json(
+        { 
+          error: "Backend not configured. This is a demo version. Please contact the administrator to set up the database.",
+          demo: true 
+        },
+        { status: 503 }
       );
     }
 

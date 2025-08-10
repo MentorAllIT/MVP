@@ -21,14 +21,15 @@ type FieldErrors = Partial<Record<keyof z.infer<typeof formSchema>, string>>;
 export default function SignUpPage() {
   const { role } = useParams<{ role: string }>() ?? {};
   const router = useRouter();
-  const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [formErr, setFormErr] = useState<string | null>(null);
-  const [fieldErrs, setFieldErrs] = useState<FieldErrors>({});
 
   if (role !== "mentor" && role !== "mentee") {
     return <p className={styles.error}>Unknown signup role.</p>;
   }
+
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [formErr, setFormErr] = useState<string | null>(null);
+  const [fieldErrs, setFieldErrs] = useState<FieldErrors>({});
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

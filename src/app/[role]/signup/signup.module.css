@@ -293,14 +293,17 @@
   border-radius: 12px;
   font-size: 1rem;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
+  background: white !important;
+  color: #2d1b69 !important;
+  -webkit-text-fill-color: #2d1b69 !important;
 }
 
 .input:focus {
   outline: none;
   border-color: #664da2;
-  background: white;
+  background: white !important;
+  color: #2d1b69 !important;
+  -webkit-text-fill-color: #2d1b69 !important;
   box-shadow: 0 0 0 4px rgba(102, 77, 162, 0.1);
   transform: translateY(-1px);
 }
