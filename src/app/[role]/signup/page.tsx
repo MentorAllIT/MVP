@@ -21,15 +21,14 @@ type FieldErrors = Partial<Record<keyof z.infer<typeof formSchema>, string>>;
 export default function SignUpPage() {
   const { role } = useParams<{ role: string }>() ?? {};
   const router = useRouter();
-
-  if (role !== "mentor" && role !== "mentee") {
-    return <p className={styles.error}>Unknown signup role.</p>;
-  }
-
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [formErr, setFormErr] = useState<string | null>(null);
   const [fieldErrs, setFieldErrs] = useState<FieldErrors>({});
+
+  if (role !== "mentor" && role !== "mentee") {
+    return <p className={styles.error}>Unknown signup role.</p>;
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -99,9 +98,9 @@ export default function SignUpPage() {
     }
   }
 
-  const roleTitle = role === "mentor" ? "Become a Mentor" : "Find a Mentor";
+  const roleTitle = role === "mentor" ? "Mentor" : "Mentee";
   const roleSubtitle = role === "mentor" 
-    ? "Share your expertise and guide others on their journey" 
+    ? "Share your expertise and guide mentees on their journey" 
     : "Connect with mentors who can help you grow";
 
   return (
@@ -112,7 +111,7 @@ export default function SignUpPage() {
             Mentor<span className={styles.aiHighlight}>AI</span>l
           </Link>
           <nav className={styles.nav}>
-            <Link href="/" className={styles.navLink}>Back to Home</Link>
+            <Link href="/" className={styles.navLink}>Home</Link>
           </nav>
         </div>
       </header>
@@ -143,7 +142,7 @@ export default function SignUpPage() {
                   </div>
                   <span>
                     {role === "mentor" 
-                      ? "Make a meaningful impact on someone's life" 
+                      ? "Make a meaningful impact on mentee's professional journey" 
                       : "Learn from industry experts and professionals"
                     }
                   </span>
@@ -156,7 +155,7 @@ export default function SignUpPage() {
                   <span>
                     {role === "mentor" 
                       ? "Build your mentoring skills and network" 
-                      : "Achieve your goals faster with expert help"
+                      : "Achieve your goals faster with MentorAll"
                     }
                   </span>
                 </div>

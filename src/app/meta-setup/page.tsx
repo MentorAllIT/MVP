@@ -7,6 +7,8 @@ import styles from "./metaSetup.module.css";
 export default function MetaSetup() {
   const params = useSearchParams();
   const router = useRouter();
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError]           = useState("");
 
   const uid  = params.get("uid");
   const role = params.get("role");
@@ -14,9 +16,6 @@ export default function MetaSetup() {
   if (!uid || !role) {
     return <p style={{ padding: "2rem" }}>Missing information. Please sign in again.</p>;
   }
-
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError]           = useState("");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

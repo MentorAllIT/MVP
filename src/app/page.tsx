@@ -47,31 +47,21 @@ export default function Home() {
           <h2 className={styles.sectionTitle}>How It Works</h2>
           <div className={styles.featureGrid}>
             <div className={styles.feature}>
-              <h3>For Mentees</h3>
-              <p>Find the perfect mentor to guide you in your stage</p>
-            </div>
-            
-            <div className={styles.feature}>
-              <h3>For Mentors</h3>
-              <p>Share your expertise and make a meaningful impact on mentee's professional journey</p>
-            </div>
-            
-            <div className={styles.feature}>
               <h3>Smart Matching</h3>
-              <p>Our intelligent algorithm connects you with the right people based on your priorities</p>
+              <p>Our intelligent algorithm connects you with the right people based on your priorities.</p>
             </div>
-          </div>
-        </section>
 
-        <section className={styles.cta}>
-          <div className={styles.ctaContent}>
-            <h2>Ready to Get Started?</h2>
-            <p>Join thousands of mentors and mentees building meaningful connections</p>
-            <div className={styles.ctaButtons}>
-              <button className={styles.primary}>
-                Get Started
-              </button>
+            <div className={styles.feature}>
+              <h3>Pre-session Services</h3>
+              <p>We provide you with a tailored preparation package, including research on the mentor’s profile, suggested questions to ask, and other resources to ensure a productive session.</p>
             </div>
+            
+            <div className={styles.feature}>
+              <h3>Post-session Reflection</h3>
+              <p>We guide you through a structured reflection process to capture key insights and plan your next steps.</p>
+            </div>
+            
+            
           </div>
         </section>
       </main>

@@ -309,7 +309,7 @@
 .roleSelectionTitle {
   font-size: 1.5rem;
   font-weight: 700;
-  margin: 0 0 2rem 0;
+  margin: 0 0 3rem 0;
   color: #2d1b69;
   text-align: center;
   text-shadow: 0 2px 15px rgba(255, 255, 255, 0.8);
@@ -317,7 +317,7 @@
 
 .roleLinks {
   display: flex;
-  gap: 2rem;
+  gap: 3rem;
   justify-content: center;
   flex-wrap: nowrap;
 }
@@ -358,6 +358,7 @@
   color: white;
   font-weight: bold;
   box-shadow: 0 4px 15px rgba(102, 77, 162, 0.3);
+  flex-shrink: 0;
 }
 
 .roleLinkText {
@@ -560,12 +561,12 @@
   
   .roleSelectionTitle {
     font-size: 1.25rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
   }
   
   .roleLinks {
     flex-direction: row;
-    gap: 1rem;
+    gap: 1.5rem;
   }
   
   .roleLink {
@@ -577,6 +578,7 @@
     width: 40px;
     height: 40px;
     font-size: 1.5rem;
+    flex-shrink: 0;
   }
   
   .roleLinkText {
