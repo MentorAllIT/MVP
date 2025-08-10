@@ -154,28 +154,37 @@
 }
 
 .hero {
-  text-align: center;
   padding: 6rem 0;
-  margin-bottom: 4rem;
+  text-align: center;
   position: relative;
+  overflow: hidden;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-.hero::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 300px;
-  height: 300px;
-  background: radial-gradient(circle, rgba(102, 77, 162, 0.05) 0%, transparent 70%);
-  border-radius: 50%;
-  z-index: -1;
-}
+/* Removed the background block behind the title */
 
 .heroContent {
   max-width: 800px;
   margin: 0 auto;
+  text-align: center;
+}
+
+.heroVisual {
+  display: none; /* Hide the old visual */
+}
+
+.heroOrb {
+  display: none; /* Hide the old orb */
+}
+
+@keyframes float {
+  0%, 100% { 
+    transform: translateY(0px) rotate(0deg); 
+  }
+  50% { 
+    transform: translateY(-20px) rotate(1deg); 
+  }
 }
 
 .title {
@@ -217,6 +226,7 @@
   gap: 1.5rem;
   justify-content: center;
   flex-wrap: wrap;
+  margin-bottom: 3rem; /* Added margin to separate from circle */
 }
 
 .primary, .secondary {
@@ -240,6 +250,8 @@
   box-shadow: 
     0 8px 25px rgba(102, 77, 162, 0.3),
     0 0 0 1px rgba(102, 77, 162, 0.1);
+  border: none;
+  cursor: pointer;
 }
 
 .primary::before {
@@ -280,6 +292,79 @@
   box-shadow: 
     0 15px 35px rgba(102, 77, 162, 0.3),
     0 0 0 1px rgba(102, 77, 162, 0.2);
+}
+
+/* Role Selection Links Styles */
+.roleSelectionLinks {
+  margin-top: 3rem;
+  text-align: center;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(15px);
+  box-shadow: 0 10px 30px rgba(102, 77, 162, 0.2);
+}
+
+.roleSelectionTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 2rem 0;
+  color: #2d1b69;
+  text-align: center;
+  text-shadow: 0 2px 15px rgba(255, 255, 255, 0.8);
+}
+
+.roleLinks {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  flex-wrap: nowrap;
+}
+
+.roleLink {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 2rem;
+  text-decoration: none;
+  color: #664da2;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 25px rgba(102, 77, 162, 0.2);
+  min-width: 200px;
+  justify-content: center;
+}
+
+.roleLink:hover {
+  background: rgba(255, 255, 255, 1);
+  border-color: rgba(102, 77, 162, 0.5);
+  transform: translateY(-4px);
+  box-shadow: 0 15px 35px rgba(102, 77, 162, 0.3);
+}
+
+.roleLinkIcon {
+  font-size: 2rem;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #664da2, #8b6bb1);
+  border-radius: 50%;
+  color: white;
+  font-weight: bold;
+  box-shadow: 0 4px 15px rgba(102, 77, 162, 0.3);
+}
+
+.roleLinkText {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #664da2;
+  white-space: nowrap;
 }
 
 .features {
@@ -436,33 +521,23 @@
   text-align: center;
 }
 
-.footerLinks {
-  display: flex;
-  gap: 1rem;
+.footerContent p {
+  margin: 0;
+  color: #5a4a7a;
 }
 
-.footerLink {
-  color: #664da2;
-  text-decoration: none;
-  opacity: 0.8;
-  transition: all 0.3s ease;
-  font-weight: 500;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-}
-
-.footerLink:hover {
-  opacity: 1;
-  background: rgba(102, 77, 162, 0.08);
-}
-
+/* Responsive styles for role selection circle */
 @media (max-width: 768px) {
   .headerContent {
     padding: 0 1rem;
   }
-  
+
   .main {
     padding: 0 1rem;
+  }
+  
+  .hero {
+    padding: 4rem 0;
   }
   
   .title {
@@ -473,17 +548,50 @@
     flex-direction: column;
     align-items: center;
   }
-  
+
   .primary, .secondary {
     min-width: 200px;
+  }
+  
+  .roleSelectionLinks {
+    margin-top: 2rem;
+    padding: 1.5rem;
+  }
+  
+  .roleSelectionTitle {
+    font-size: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .roleLinks {
+    flex-direction: row;
+    gap: 1rem;
+  }
+  
+  .roleLink {
+    padding: 1rem 1.5rem;
+    min-width: 160px;
+  }
+  
+  .roleLinkIcon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.5rem;
+  }
+  
+  .roleLinkText {
+    font-size: 1rem;
   }
   
   .featureGrid {
     grid-template-columns: 1fr;
   }
   
-  .footerContent {
-    flex-direction: column;
-    text-align: center;
+  .sectionTitle {
+    font-size: 2rem;
+  }
+  
+  .ctaContent h2 {
+    font-size: 2rem;
   }
 }
