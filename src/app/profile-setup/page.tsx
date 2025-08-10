@@ -125,7 +125,7 @@ export default function ProfileSetup() {
 
         <form className={styles.form} onSubmit={handleSubmit} noValidate>
           <label className={styles.label}>
-            Short Bio
+            <span className={styles.labelText}>Short Bio</span>
             <textarea
               name="bio"
               value={bio}
@@ -155,7 +155,7 @@ export default function ProfileSetup() {
           </label>
 
           <label className={styles.label}>
-            LinkedIn URL
+            <span className={styles.labelText}>LinkedIn URL</span>
             <input
               name="linkedin"
               type="url"

@@ -23,8 +23,8 @@ export default function MetaSetup() {
     setError("");
 
     const fd = new FormData(e.currentTarget);
-    fd.append("uid", uid);
-    fd.append("role", role);
+    fd.append("uid", uid!);
+    fd.append("role", role!);
 
     const res = await fetch("/api/meta", { method: "POST", body: fd });
 
@@ -41,17 +41,17 @@ export default function MetaSetup() {
   const menteeFields = (
     <>
       <label className={styles.label}>
-        Your main goal
+        <span className={styles.labelText}>Your main goal</span>
         <textarea name="goal" required className={styles.textarea} />
       </label>
 
       <label className={styles.label}>
-        Current challenges
+        <span className={styles.labelText}>Current challenges</span>
         <textarea name="challenges" required className={styles.textarea} />
       </label>
 
       <label className={styles.label}>
-        Help you’re looking for
+        <span className={styles.labelText}>Help you're looking for</span>
         <textarea name="help" required className={styles.textarea} />
       </label>
     </>
@@ -60,17 +60,17 @@ export default function MetaSetup() {
   const mentorFields = (
     <>
       <label className={styles.label}>
-        Industry
+        <span className={styles.labelText}>Industry</span>
         <input name="industry" required className={styles.input} />
       </label>
 
       <label className={styles.label}>
-        Years of experience
+        <span className={styles.labelText}>Years of experience</span>
         <input name="years" type="number" min={0} required className={styles.input} />
       </label>
 
       <label className={styles.label}>
-        Calendly URL
+        <span className={styles.labelText}>Calendly URL</span>
         <input name="calendly" type="url" required className={styles.input} />
       </label>
     </>

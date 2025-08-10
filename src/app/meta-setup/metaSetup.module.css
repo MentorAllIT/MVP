@@ -1,31 +1,239 @@
-/* ────────────────────────────────────────────────────────────────
-   Re-use all hashed class names from signup.module.css so the
-   visual style stays identical.
-   ───────────────────────────────────────────────────────────── */
-@import "../[role]/signup/signup.module.css";
+/* Meta Setup Page Styles */
+.page {
+  min-height: 100vh;
+  font-family: var(--font-geist-sans);
+  background: 
+    linear-gradient(135deg, #f8f7fc 0%, #f0edf8 100%),
+    radial-gradient(circle at 20% 80%, rgba(102, 77, 162, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(139, 107, 177, 0.03) 0%, transparent 50%);
+  color: #2d1b69;
+  position: relative;
+  overflow-x: hidden;
+}
 
-/* shared card layout */
-.wrapper  { composes: wrapper  from "../[role]/signup/signup.module.css"; }
-.card     { composes: card     from "../[role]/signup/signup.module.css"; }
-.title    { composes: title    from "../[role]/signup/signup.module.css"; }
-.subtitle { composes: subtitle from "../[role]/signup/signup.module.css"; }
+.page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    linear-gradient(45deg, transparent 48%, rgba(102, 77, 162, 0.02) 50%, transparent 52%),
+    linear-gradient(-45deg, transparent 48%, rgba(139, 107, 177, 0.02) 50%, transparent 52%);
+  background-size: 60px 60px;
+  pointer-events: none;
+  z-index: 1;
+}
 
-/* form elements  */
-.form   { composes: form   from "../[role]/signup/signup.module.css"; }
-.label  { composes: label  from "../[role]/signup/signup.module.css"; }
-.input  { composes: input  from "../[role]/signup/signup.module.css"; }
-.button { composes: button from "../[role]/signup/signup.module.css"; }
+.wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  position: relative;
+  z-index: 2;
+}
 
-.button:hover { background: #6d28d9; }
+.card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(102, 77, 162, 0.1);
+  border-radius: 24px;
+  padding: 3rem;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 
+    0 20px 40px rgba(102, 77, 162, 0.1),
+    0 0 0 1px rgba(102, 77, 162, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #664da2, #8b6bb1, #a67fd4);
+}
+
+.title {
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  color: #664da2;
+  text-align: center;
+  background: linear-gradient(135deg, #664da2, #8b6bb1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.3;
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  color: #6b7280;
+  margin: 0 0 2.5rem 0;
+  text-align: center;
+  line-height: 1.6;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.labelText {
+  font-weight: 600;
+  color: #374151;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.input {
+  padding: 1rem 1.25rem;
+  border: 2px solid rgba(102, 77, 162, 0.1);
+  border-radius: 12px;
+  font-size: 1rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: white !important;
+  color: #2d1b69 !important;
+  -webkit-text-fill-color: #2d1b69 !important;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #664da2;
+  background: white !important;
+  color: #2d1b69 !important;
+  -webkit-text-fill-color: #2d1b69 !important;
+  box-shadow: 0 0 0 4px rgba(102, 77, 162, 0.1);
+  transform: translateY(-1px);
+}
+
+.input::placeholder {
+  color: #9ca3af;
+}
 
 .textarea {
-  composes: input from "../[role]/signup/signup.module.css";
+  padding: 1rem 1.25rem;
+  border: 2px solid rgba(102, 77, 162, 0.1);
+  border-radius: 12px;
+  font-size: 1rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: white !important;
+  color: #2d1b69 !important;
+  -webkit-text-fill-color: #2d1b69 !important;
   min-height: 6rem;
   resize: vertical;
+  font-family: inherit;
+  line-height: 1.6;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: #664da2;
+  background: white !important;
+  color: #2d1b69 !important;
+  -webkit-text-fill-color: #2d1b69 !important;
+  box-shadow: 0 0 0 4px rgba(102, 77, 162, 0.1);
+  transform: translateY(-1px);
+}
+
+.textarea::placeholder {
+  color: #9ca3af;
+}
+
+.button {
+  background: linear-gradient(135deg, #664da2, #8b6bb1);
+  color: white;
+  padding: 1rem 1.5rem;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  min-height: 56px;
+  margin-top: 1rem;
+}
+
+.button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.button:hover::before {
+  left: 100%;
+}
+
+.button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 35px rgba(102, 77, 162, 0.3);
+}
+
+.button:disabled {
+  background: #a78bfa;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .error {
   margin-top: 1rem;
-  color: #ef4444;
+  padding: 1rem 1.25rem;
+  border-left: 4px solid #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
   font-weight: 500;
+  border-radius: 8px;
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .wrapper {
+    padding: 1rem;
+  }
+  
+  .card {
+    padding: 2rem;
+    margin: 0 0.5rem;
+  }
+  
+  .title {
+    font-size: 2rem;
+  }
+  
+  .subtitle {
+    font-size: 1rem;
+  }
+  
+  .form {
+    gap: 1.5rem;
+  }
+  
+  .textarea {
+    min-height: 5rem;
+  }
 }
