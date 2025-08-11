@@ -98,6 +98,11 @@ export default function ProfileSetup() {
       return;
     }
 
+    if (!uid) {
+      setFormErr("Missing user id. Please sign in again.");
+      return;
+    }
+
     setSubmitting(true);
     const fd = new FormData();
     fd.append("uid", uid);
