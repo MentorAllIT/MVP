@@ -7,7 +7,7 @@ if (!AIRTABLE_API_KEY || !AIRTABLE_BASE_ID) {
 }
 
 const APPROVED_TABLE =
-  process.env.AIRTABLE_APPROVED_USERS_TABLE;
+  process.env.AIRTABLE_APPROVED_USERS_TABLE as string;
 
 const base = new Airtable({ apiKey: AIRTABLE_API_KEY }).base(AIRTABLE_BASE_ID);
 
