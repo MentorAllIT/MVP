@@ -25,7 +25,7 @@ export async function PATCH(
 ) {
   try {
     const { bookingId } = params;
-    const { status } = await req.json();
+    const { status, newMeetingTime } = await req.json();
 
     // Validate required fields
     if (!bookingId || status === undefined) {
@@ -35,16 +35,42 @@ export async function PATCH(
       );
     }
 
-    // Validate status parameter (1 for confirmed, 0 for rejected)
-    if (status !== 0 && status !== 1) {
+    // Validate status parameter (1 for confirmed, 2 for rescheduled)
+    if (status !== 1 && status !== 2) {
       return NextResponse.json(
-        { error: "Invalid status parameter. Use 1 for confirmed, 0 for rejected" },
+        { error: "Invalid status parameter. Use 1 for confirmed, 2 for rescheduled" },
         { status: 400 }
       );
     }
 
+    // If rescheduling, validate new meeting time
+    if (status === 2) {
+      if (!newMeetingTime) {
+        return NextResponse.json(
+          { error: "newMeetingTime is required when rescheduling" },
+          { status: 400 }
+        );
+      }
+
+      // Validate new meeting time format and ensure it's in the future
+      const newMeetingDate = new Date(newMeetingTime);
+      if (isNaN(newMeetingDate.getTime())) {
+        return NextResponse.json(
+          { error: "Invalid newMeetingTime format" },
+          { status: 400 }
+        );
+      }
+
+      if (newMeetingDate <= new Date()) {
+        return NextResponse.json(
+          { error: "New meeting time must be in the future" },
+          { status: 400 }
+        );
+      }
+    }
+
     // Convert status to booking status string
-    const bookingStatus = status === 1 ? "Confirmed" : "Rejected";
+    const bookingStatus = status === 1 ? "Confirmed" : "Rescheduled";
     const currentTime = new Date().toISOString();
 
     // Find the booking record by BookingID
@@ -64,34 +90,45 @@ export async function PATCH(
 
     const bookingRecord = existingBookings[0];
 
-    // Check if booking is already confirmed or rejected
+    // Check if booking is already confirmed or rescheduled
     const currentStatus = bookingRecord.fields.BookingStatus as string;
-    if (currentStatus === "Confirmed" || currentStatus === "Rejected") {
+    if (currentStatus === "Confirmed" || currentStatus === "Rescheduled") {
       return NextResponse.json(
         { error: `Booking is already ${currentStatus.toLowerCase()}` },
         { status: 400 }
       );
     }
 
+    // Prepare update fields
+    const updateFields: { [key: string]: string | number } = {
+      BookingStatus: bookingStatus,
+      ConfirmationTime: currentTime,
+    };
+
+    // If rescheduling, update the meeting time
+    if (status === 2) {
+      updateFields.MeetingTime = newMeetingTime;
+    }
+
     // Update the booking status and confirmation time
     const updatedRecord = await base(BOOKINGS_TABLE).update([
       {
         id: bookingRecord.id,
-        fields: {
-          BookingStatus: bookingStatus,
-          ConfirmationTime: currentTime,
-        },
+        fields: updateFields,
       },
     ]);
 
     return NextResponse.json({
       success: true,
-      message: `Booking ${bookingStatus.toLowerCase()} successfully`,
+      message: status === 1 
+        ? `Booking confirmed successfully` 
+        : `Booking rescheduled successfully to ${new Date(newMeetingTime || bookingRecord.fields.MeetingTime).toLocaleString()}`,
       booking: {
         bookingId: bookingId,
         status: bookingStatus,
         confirmationTime: currentTime,
-        recordId: updatedRecord[0].id,
+        meetingTime: status === 2 ? newMeetingTime : bookingRecord.fields.MeetingTime,
+        recordId: updatedRecord[0]?.id,
       }
     });
 

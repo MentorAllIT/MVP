@@ -15,45 +15,22 @@ if (!AIRTABLE_API_KEY || !AIRTABLE_BASE_ID || !AIRTABLE_USERS_TABLE || !AIRTABLE
 }
 
 const base = new Airtable({ apiKey: AIRTABLE_API_KEY }).base(AIRTABLE_BASE_ID);
-const USERS_TABLE = AIRTABLE_USERS_TABLE;
-const BOOKINGS_TABLE = AIRTABLE_BOOKINGS_TABLE;
 
-// Helper function to escape strings for Airtable formulas
-const esc = (s: string) => s.replace(/'/g, "\\'");
-
-// Helper function to get user details by UserID
-async function getUserById(userId: string) {
+export async function POST(request: Request) {
   try {
-    const records = await base(USERS_TABLE)
-      .select({ 
-        filterByFormula: `{UserID} = '${esc(userId)}'`, 
-        maxRecords: 1 
-      })
-      .firstPage();
+    const body = await request.json();
     
-    if (records.length === 0) {
-      return null;
-    }
-    
-    const user = records[0].fields;
-    return {
-      name: user.Name as string,
-      email: user.Email as string,
-    };
-  } catch (error) {
-    console.error("Error fetching user:", error);
-    return null;
-  }
-}
-
-export async function POST(req: NextRequest) {
-  try {
-    const { bookerId, inviteeId, meetingTime } = await req.json();
+    // Support both old and new parameter names for backward compatibility
+    const bookerId = body.bookerId || body.currentUserId;
+    const inviteeId = body.inviteeId || body.invitedUserId;
+    const inviteeUsername = body.inviteeUsername || body.invitedUsername;
+    const meetingTime = body.meetingTime;
+    const notes = body.notes || "";
 
     // Validate required fields
-    if (!bookerId || !inviteeId || !meetingTime) {
+    if (!bookerId || (!inviteeId && !inviteeUsername) || !meetingTime) {
       return NextResponse.json(
-        { error: "Missing required fields: bookerId, inviteeId, and meetingTime are required" },
+        { error: "Missing required fields: bookerId (or currentUserId), inviteeId (or invitedUserId/inviteeUsername), meetingTime" },
         { status: 400 }
       );
     }
@@ -62,138 +39,173 @@ export async function POST(req: NextRequest) {
     const meetingDate = new Date(meetingTime);
     if (isNaN(meetingDate.getTime())) {
       return NextResponse.json(
-        { error: "Invalid meetingTime format. Please provide a valid ISO date string" },
+        { error: "Invalid meeting time format" },
         { status: 400 }
       );
     }
 
-    // Check if meetingTime is in the future
-    if (meetingDate <= new Date()) {
-      return NextResponse.json(
-        { error: "Meeting time must be in the future" },
-        { status: 400 }
-      );
-    }
+    // If we have username but no ID, look up the user
+    let finalInviteeId = inviteeId;
+    if (!finalInviteeId && inviteeUsername) {
+      try {
+        const userRecords = await base(AIRTABLE_USERS_TABLE!)
+          .select({
+            filterByFormula: `{Username} = '${inviteeUsername}'`,
+            maxRecords: 1
+          })
+          .firstPage();
 
-    // Get booker details
-    const booker = await getUserById(bookerId);
-    if (!booker) {
-      return NextResponse.json(
-        { error: "Booker not found" },
-        { status: 404 }
-      );
-    }
+        if (userRecords.length === 0) {
+          return NextResponse.json(
+            { error: "Invitee user not found" },
+            { status: 404 }
+          );
+        }
 
-    // Get invitee details
-    const invitee = await getUserById(inviteeId);
-    if (!invitee) {
-      return NextResponse.json(
-        { error: "Invitee not found" },
-        { status: 404 }
-      );
-    }
-
-    // Check if the booker and invitee are the same person
-    if (bookerId === inviteeId) {
-      return NextResponse.json(
-        { error: "Cannot book a meeting with yourself" },
-        { status: 400 }
-      );
+        finalInviteeId = userRecords[0].fields.UserID as string;
+      } catch (error) {
+        console.error("Error looking up user by username:", error);
+        return NextResponse.json(
+          { error: "Error looking up user" },
+          { status: 500 }
+        );
+      }
     }
 
     // Generate unique booking ID
-    const bookingId = nanoid(12);
+    const bookingId = nanoid();
 
-    // Create booking record in Airtable
-    const bookingRecord = await base(BOOKINGS_TABLE).create([
-      {
-        fields: {
-          BookingID: bookingId,
-          BookedByUserID: bookerId,
-          InvitedUserID: inviteeId,
-          MeetingTime: meetingDate.toISOString(),
-          BookingStatus: "Pending",
-          // ConfirmationTime: Will be set when booking is confirmed
-          Notes: "", // Empty for now
-          BookerUsername: booker.name,
-          InvitedUsername: invitee.name,
-          Email: booker.email,
-          InvitedEmail: invitee.email,
-        },
-      },
-    ]);
+    // Fetch user details for both booker and invitee
+    let bookerDetails = null;
+    let inviteeDetails = null;
 
-    return NextResponse.json(
-      { 
-        success: true,
-        bookingId: bookingId,
-        message: "Booking created successfully",
-        booking: {
-          bookingId,
-          bookerId,
-          inviteeId,
-          meetingTime: meetingDate.toISOString(),
-          status: "Pending",
-          bookerName: booker.name,
-          inviteeName: invitee.name,
-        }
-      },
-      { status: 201 }
-    );
+    try {
+      // Get booker details
+      const bookerRecords = await base(AIRTABLE_USERS_TABLE!)
+        .select({
+          filterByFormula: `{UserID} = '${bookerId}'`,
+          maxRecords: 1
+        })
+        .firstPage();
 
-  } catch (err: any) {
-    console.error("Booking creation error:", err);
-    
-    // Handle specific Airtable errors
-    if (err.statusCode === 422) {
-      return NextResponse.json(
-        { error: "Invalid data format for Airtable" },
-        { status: 422 }
-      );
+      if (bookerRecords.length > 0) {
+        const bookerFields = bookerRecords[0].fields;
+        bookerDetails = {
+          username: bookerFields.Username || "",
+          email: bookerFields.Email || "",
+          name: bookerFields.Name || "",
+          tags: bookerFields.Tags || ""
+        };
+      }
+
+      // Get invitee details
+      const inviteeRecords = await base(AIRTABLE_USERS_TABLE!)
+        .select({
+          filterByFormula: `{UserID} = '${finalInviteeId}'`,
+          maxRecords: 1
+        })
+        .firstPage();
+
+      if (inviteeRecords.length > 0) {
+        const inviteeFields = inviteeRecords[0].fields;
+        inviteeDetails = {
+          username: inviteeFields.Username || "",
+          email: inviteeFields.Email || "",
+          name: inviteeFields.Name || ""
+        };
+      }
+    } catch (error) {
+      console.error("Error fetching user details:", error);
+      // Continue with booking creation even if user details fetch fails
     }
-    
+
+    // Create booking record
+    const bookingRecord = {
+      BookingID: bookingId,
+      BookedByUserID: bookerId,
+      BookerUsername: bookerDetails?.username || "",
+      Email: bookerDetails?.email || "",
+      InviteeID: finalInviteeId,
+      InvitedUsername: inviteeDetails?.username || inviteeUsername || "",
+      InvitedEmail: inviteeDetails?.email || "",
+      MeetingTime: meetingTime,
+      BookingStatus: "Pending", // Default status
+      Notes: notes,
+      Tags: bookerDetails?.tags || [],
+      // ICS file URL for calendar download
+      ICSFileUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/booking/${bookingId}/ics`
+    };
+
+    // Save to Airtable
+    const createdRecord = await base(AIRTABLE_BOOKINGS_TABLE!).create(bookingRecord);
+
+    return NextResponse.json({
+      success: true,
+      bookingId: bookingId,
+      record: createdRecord.fields,
+      message: "Booking created successfully."
+    });
+
+  } catch (error) {
+    console.error("Booking creation error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Failed to create booking" },
       { status: 500 }
     );
   }
 }
 
-// GET method to retrieve bookings (optional - for future use)
-export async function GET(req: NextRequest) {
+// GET method to retrieve bookings
+export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
-    
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
+    const role = searchParams.get("role");
+
     if (!userId) {
       return NextResponse.json(
-        { error: "userId parameter is required" },
+        { error: "Missing userId parameter" },
         { status: 400 }
       );
     }
 
-    // Get bookings where user is either booker or invitee
-    const bookings = await base(BOOKINGS_TABLE)
-      .select({
-        filterByFormula: `OR({BookedByUserID} = '${esc(userId)}', {InvitedUserID} = '${esc(userId)}')`,
-        sort: [{ field: 'MeetingTime', direction: 'desc' }]
-      })
-      .firstPage();
+    let filterFormula = "";
+    if (role === "mentor") {
+      // For mentors, show bookings where they are the invitee
+      filterFormula = `{InviteeID} = '${userId}'`;
+    } else {
+      // For bookers, show bookings where they are the booker
+      filterFormula = `{BookedByUserID} = '${userId}'`;
+    }
 
-    const formattedBookings = bookings.map(record => ({
+    const bookings = await base(AIRTABLE_BOOKINGS_TABLE!)
+      .select({
+        filterByFormula: filterFormula,
+        sort: [{ field: "MeetingTime", direction: "desc" }]
+      })
+      .all();
+
+    // Format the response using stored user details from booking records
+    const formattedBookings = bookings.map((record: any) => ({
       id: record.id,
-      ...record.fields
+      bookingId: record.fields.BookingID,
+      bookerName: record.fields.BookerUsername || "Unknown",
+      bookerEmail: record.fields.BookerEmail || "",
+      inviteeName: record.fields.InvitedUsername || "Unknown", 
+      inviteeEmail: record.fields.InvitedEmail || "",
+      meetingTime: record.fields.MeetingTime,
+      status: record.fields.BookingStatus,
+      notes: record.fields.Notes,
+      createdAt: record.fields.CreatedAt,
+      icsFileUrl: record.fields.ICSFileUrl || `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/booking/${record.fields.BookingID}/ics`
     }));
 
-    return NextResponse.json({
-      success: true,
-      bookings: formattedBookings
-    });
+    return NextResponse.json({ bookings: formattedBookings });
 
-  } catch (err: any) {
-    console.error("Booking retrieval error:", err);
+  } catch (error) {
+    console.error("Error fetching bookings:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Failed to fetch bookings" },
       { status: 500 }
     );
   }

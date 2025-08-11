@@ -1,7 +1,7 @@
 // src/app/mentors/[username]/page.tsx
 
 import styles from "./mentor.module.css";
-import MentorBookingForm from "../components/MentorBookingForm";
+import MentorBookingForm from "../components/MentorBookingFormNew";
 
 const mentors = {
   mentor1: {

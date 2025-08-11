@@ -16,6 +16,10 @@ interface BookingDetails {
   InvitedEmail: string;
   Notes?: string;
   ConfirmationTime?: string;
+  // Google Meet details
+  GoogleMeetEventID?: string;
+  GoogleMeetLink?: string;
+  GoogleMeetTitle?: string;
 }
 
 export default function BookingDetailsPage({ params }: { params: { bookingId: string } }) {
@@ -48,10 +52,10 @@ export default function BookingDetailsPage({ params }: { params: { bookingId: st
     }
   };
 
-  const updateBookingStatus = async (status: "Confirmed" | "Rejected") => {
+  const updateBookingStatus = async (status: "Confirmed" | "Rescheduled") => {
     try {
       setUpdating(true);
-      const statusParam = status === "Confirmed" ? 1 : 0;
+      const statusParam = status === "Confirmed" ? 1 : 2;
       const response = await fetch(`/api/booking/${params.bookingId}`, {
         method: "PATCH",
         headers: {
@@ -182,8 +186,8 @@ export default function BookingDetailsPage({ params }: { params: { bookingId: st
                 fontSize: "0.875rem", 
                 fontWeight: "600",
                 textTransform: "uppercase",
-                backgroundColor: booking.BookingStatus === "Confirmed" ? "#dcfce7" : booking.BookingStatus === "Rejected" ? "#fef2f2" : "#fef3c7",
-                color: booking.BookingStatus === "Confirmed" ? "#166534" : booking.BookingStatus === "Rejected" ? "#991b1b" : "#92400e"
+                backgroundColor: booking.BookingStatus === "Confirmed" ? "#dcfce7" : booking.BookingStatus === "Rescheduled" ? "#fef3c7" : "#fef3c7",
+                color: booking.BookingStatus === "Confirmed" ? "#166534" : booking.BookingStatus === "Rescheduled" ? "#92400e" : "#92400e"
               }}>
                 {booking.BookingStatus}
               </span>
@@ -202,6 +206,97 @@ export default function BookingDetailsPage({ params }: { params: { bookingId: st
                 whiteSpace: "pre-wrap"
               }}>
                 {booking.Notes}
+              </div>
+            </div>
+          )}
+
+          {/* Calendar Download Section */}
+          <div style={{ marginBottom: "2rem" }}>
+            <div className={styles.label}>📅 Add to Your Calendar</div>
+            <div style={{ 
+              padding: "1rem", 
+              backgroundColor: "#f0f9ff", 
+              borderRadius: "8px", 
+              marginTop: "0.5rem",
+              border: "1px solid #0ea5e9"
+            }}>
+              <p style={{ color: "#075985", fontSize: "0.875rem", marginBottom: "1rem", lineHeight: "1.4", margin: "0 0 1rem 0" }}>
+                Download this meeting to your personal calendar app (Outlook, Apple Calendar, Google Calendar, etc.)
+              </p>
+              <a 
+                href={`/api/booking/${params.bookingId}/ics`}
+                download={`mentorall-meeting-${params.bookingId}.ics`}
+                className={styles.button}
+                style={{ 
+                  backgroundColor: "#0ea5e9",
+                  borderColor: "#0ea5e9",
+                  textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  fontSize: "0.875rem"
+                }}
+              >
+                💾 Download Calendar File (.ics)
+              </a>
+              <div style={{ 
+                marginTop: "0.75rem", 
+                fontSize: "0.75rem", 
+                color: "#64748b" 
+              }}>
+                💡 Includes 15-minute reminder and all meeting details
+              </div>
+            </div>
+          </div>
+
+          {/* Google Meet Details */}
+          {booking.GoogleMeetLink && (
+            <div style={{ marginBottom: "2rem" }}>
+              <div className={styles.label}>🎥 Google Meet Details</div>
+              <div style={{ 
+                padding: "1.5rem", 
+                backgroundColor: "#eff6ff", 
+                borderRadius: "8px", 
+                marginTop: "0.5rem",
+                border: "1px solid #3b82f6"
+              }}>
+                {booking.GoogleMeetTitle && (
+                  <div style={{ marginBottom: "0.75rem" }}>
+                    <strong style={{ color: "#1e40af" }}>Meeting Title:</strong> 
+                    <span style={{ marginLeft: "0.5rem" }}>{booking.GoogleMeetTitle}</span>
+                  </div>
+                )}
+                {booking.GoogleMeetEventID && (
+                  <div style={{ marginBottom: "1rem" }}>
+                    <strong style={{ color: "#1e40af" }}>Event ID:</strong> 
+                    <span style={{ marginLeft: "0.5rem", fontFamily: "monospace", fontSize: "0.875rem" }}>{booking.GoogleMeetEventID}</span>
+                  </div>
+                )}
+                <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+                  <a 
+                    href={booking.GoogleMeetLink} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className={styles.button}
+                    style={{ 
+                      backgroundColor: "#34a853",
+                      borderColor: "#34a853",
+                      textDecoration: "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "0.5rem"
+                    }}
+                  >
+                    📹 Join Google Meet
+                  </a>
+                </div>
+                <div style={{ 
+                  marginTop: "0.75rem", 
+                  fontSize: "0.75rem", 
+                  color: "#6b7280" 
+                }}>
+                  💡 This meeting was automatically added to participants&apos; Google Calendars
+                </div>
               </div>
             </div>
           )}
@@ -235,15 +330,15 @@ export default function BookingDetailsPage({ params }: { params: { bookingId: st
                   {updating ? "Updating..." : "✓ Confirm Meeting"}
                 </button>
                 <button
-                  onClick={() => updateBookingStatus("Rejected")}
+                  onClick={() => updateBookingStatus("Rescheduled")}
                   disabled={updating}
                   className={styles.button}
                   style={{ 
-                    backgroundColor: "#dc2626",
-                    borderColor: "#dc2626"
+                    backgroundColor: "#f59e0b",
+                    borderColor: "#f59e0b"
                   }}
                 >
-                  {updating ? "Updating..." : "✗ Decline Meeting"}
+                  {updating ? "Updating..." : "📅 Reschedule Meeting"}
                 </button>
               </>
             )}

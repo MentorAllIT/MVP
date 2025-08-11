@@ -98,7 +98,7 @@ export default function BookingsListPage() {
       <div className={styles.wrapper}>
         <div className={styles.card}>
           <h1 className={styles.title}>No Bookings Found</h1>
-          <p className={styles.subtitle}>You haven't created or received any bookings yet.</p>
+          <p className={styles.subtitle}>You haven&apos;t created or received any bookings yet.</p>
           <button 
             onClick={() => router.push("/booking")} 
             className={styles.button}
@@ -141,8 +141,8 @@ export default function BookingsListPage() {
                 fontSize: "0.75rem", 
                 fontWeight: "600",
                 textTransform: "uppercase",
-                backgroundColor: booking.BookingStatus === "Confirmed" ? "#dcfce7" : booking.BookingStatus === "Rejected" ? "#fef2f2" : "#fef3c7",
-                color: booking.BookingStatus === "Confirmed" ? "#166534" : booking.BookingStatus === "Rejected" ? "#991b1b" : "#92400e",
+                backgroundColor: booking.BookingStatus === "Confirmed" ? "#dcfce7" : booking.BookingStatus === "Rescheduled" ? "#fef3c7" : "#f3f4f6",
+                color: booking.BookingStatus === "Confirmed" ? "#166534" : booking.BookingStatus === "Rescheduled" ? "#92400e" : "#6b7280",
                 display: "inline-block"
               }}>
                 {booking.BookingStatus}
