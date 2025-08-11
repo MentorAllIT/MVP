@@ -77,8 +77,13 @@ export default function MetaSetup() {
     setFieldErrs({});
     setFormErr(null);
 
+    if (!uid || !role) {
+      setFormErr("Missing information. Please sign in again.");
+      return;
+    }
+
     const fd = new FormData();
-    fd.append("uid",  uid);
+    fd.append("uid", uid);
     fd.append("role", role);
 
     if (role === "mentor") {
