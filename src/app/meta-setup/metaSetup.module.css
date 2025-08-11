@@ -210,6 +210,46 @@
   text-align: center;
 }
 
+.hint {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: #6b7280;
+}
+
+.fileInput {
+  margin-top: 0.25rem;
+  padding: 0.5rem;
+  border: 1px solid #ddd6fe;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.fileName {
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  color: #374151; /* gray-700 */
+}
+
+.fieldError {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: #ef4444;
+}
+.inputError {
+  border-color: #ef4444 !important;
+}
+.inputError:focus,
+.textarea.inputError:focus {
+  border-color: #dc2626 !important;
+}
+
+/* progress bar */
+.progressWrap  { width: 100%; margin-top: 2rem; }
+.progressTrack { background: #e9e7f5; border-radius: 9999px; height: 8px; overflow: hidden; }
+.progressFill  { background: linear-gradient(90deg, #a78bfa, #7c3aed); height: 100%; width: 0; border-radius: 9999px; transition: width .6s ease; }
+.progressText  { display: block; text-align: right; font-size: .75rem; color: #6b7280; margin-top: .25rem; }
+
 /* Responsive */
 @media (max-width: 768px) {
   .wrapper {
