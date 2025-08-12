@@ -1,4 +1,3 @@
-// app/api/mentee/refresh-match/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import Airtable from "airtable";
 import jwt from "jsonwebtoken";
