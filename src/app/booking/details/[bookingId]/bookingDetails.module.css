@@ -1,0 +1,420 @@
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.header {
+  text-align: center;
+  color: white;
+  margin-bottom: 30px;
+  position: relative;
+}
+
+.header h1 {
+  font-size: 2.5rem;
+  margin: 20px 0 10px 0;
+  font-weight: 700;
+}
+
+.header p {
+  font-size: 1.2rem;
+  opacity: 0.9;
+}
+
+.backButton {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 10px 20px;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-weight: 500;
+}
+
+.backButton:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-50%) translateX(-5px);
+}
+
+.main {
+  display: flex;
+  justify-content: center;
+}
+
+.bookingCard {
+  background: white;
+  border-radius: 16px;
+  padding: 40px;
+  max-width: 800px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+.statusBadge {
+  position: absolute;
+  top: -15px;
+  right: 30px;
+}
+
+.statusIndicator {
+  background: white;
+  padding: 12px 24px;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 1rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  display: inline-block;
+}
+
+.statusIndicator.pending {
+  color: #856404;
+  border: 2px solid #ffc107;
+}
+
+.statusIndicator.confirmed {
+  color: #155724;
+  border: 2px solid #28a745;
+}
+
+.statusIndicator.rejected {
+  color: #721c24;
+  border: 2px solid #dc3545;
+}
+
+.section {
+  margin-bottom: 40px;
+  padding-bottom: 30px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.section:last-of-type {
+  border-bottom: none;
+  margin-bottom: 20px;
+}
+
+.section h2 {
+  color: #333;
+  margin-bottom: 20px;
+  font-size: 1.4rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.detailItem {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 12px;
+  border-left: 4px solid #667eea;
+}
+
+.label {
+  display: block;
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.value {
+  color: #212529;
+  font-weight: 500;
+  font-size: 1.1rem;
+  word-break: break-word;
+}
+
+.value.confirmed {
+  color: #28a745;
+  font-weight: 600;
+}
+
+.value.rejected {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+.value.pending {
+  color: #ffc107;
+  font-weight: 600;
+}
+
+.participantGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.participant {
+  background: #f8f9fa;
+  padding: 25px;
+  border-radius: 12px;
+  text-align: center;
+  border: 2px solid transparent;
+  transition: all 0.3s;
+}
+
+.participant:hover {
+  border-color: #667eea;
+  transform: translateY(-2px);
+}
+
+.participantRole {
+  background: #667eea;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 15px;
+  display: inline-block;
+}
+
+.participantName {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.participantEmail {
+  color: #6c757d;
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+
+.participantId {
+  color: #adb5bd;
+  font-size: 0.85rem;
+  font-family: monospace;
+}
+
+.timeline {
+  position: relative;
+  padding-left: 30px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #dee2e6;
+}
+
+.timelineItem {
+  position: relative;
+  margin-bottom: 30px;
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.timelineIcon {
+  background: white;
+  border: 3px solid #667eea;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  position: absolute;
+  left: -30px;
+  z-index: 1;
+}
+
+.timelineContent {
+  flex: 1;
+}
+
+.timelineTitle {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.timelineDesc {
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.notes {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 12px;
+  border-left: 4px solid #28a745;
+  font-style: italic;
+  color: #495057;
+  line-height: 1.6;
+}
+
+.actionSection {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 30px;
+  padding-top: 30px;
+  border-top: 1px solid #e9ecef;
+}
+
+.actionButton {
+  background: #f8f9fa;
+  border: 2px solid #dee2e6;
+  color: #495057;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-weight: 500;
+}
+
+.actionButton:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+  transform: translateY(-2px);
+}
+
+.primaryButton {
+  background: #28a745;
+  border: 2px solid #28a745;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-weight: 600;
+}
+
+.primaryButton:hover {
+  background: #218838;
+  border-color: #1e7e34;
+  transform: translateY(-2px);
+}
+
+.loading {
+  text-align: center;
+  padding: 80px 20px;
+  color: white;
+}
+
+.spinner {
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid white;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading h2 {
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+.error {
+  background: rgba(248, 215, 218, 0.9);
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+  padding: 40px;
+  border-radius: 16px;
+  text-align: center;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.error h2 {
+  margin-bottom: 20px;
+  color: #721c24;
+}
+
+.error .backButton {
+  background: #dc3545;
+  color: white;
+  border: 1px solid #dc3545;
+  margin-top: 20px;
+  position: static;
+  transform: none;
+}
+
+.error .backButton:hover {
+  background: #c82333;
+  transform: translateY(-2px);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .container {
+    padding: 10px;
+  }
+  
+  .header h1 {
+    font-size: 2rem;
+  }
+  
+  .bookingCard {
+    padding: 20px;
+  }
+  
+  .backButton {
+    position: relative;
+    transform: none;
+    margin-bottom: 20px;
+  }
+  
+  .header {
+    text-align: left;
+  }
+  
+  .detailGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .participantGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .actionSection {
+    flex-direction: column;
+  }
+  
+  .actionButton,
+  .primaryButton {
+    width: 100%;
+  }
+  
+  .statusBadge {
+    position: relative;
+    top: 0;
+    right: 0;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+}
