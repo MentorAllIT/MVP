@@ -2,22 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 import Airtable from "airtable";
 import { nanoid } from "nanoid";
 
-// Environment variables guard
-const { 
-  AIRTABLE_API_KEY, 
-  AIRTABLE_BASE_ID, 
-  AIRTABLE_USERS_TABLE, 
-  AIRTABLE_BOOKINGS_TABLE 
-} = process.env;
-
-if (!AIRTABLE_API_KEY || !AIRTABLE_BASE_ID || !AIRTABLE_USERS_TABLE || !AIRTABLE_BOOKINGS_TABLE) {
-  throw new Error("Missing Airtable environment variables");
-}
-
-const base = new Airtable({ apiKey: AIRTABLE_API_KEY }).base(AIRTABLE_BASE_ID);
+export const dynamic = "force-dynamic";
+const getBase = () => {
+  const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID } = process.env;
+  return AIRTABLE_API_KEY && AIRTABLE_BASE_ID
+    ? new Airtable({ apiKey: AIRTABLE_API_KEY }).base(AIRTABLE_BASE_ID)
+    : null;
+};
+const esc = (s: string) => String(s).replace(/'/g, "\\'");
 
 export async function POST(request: Request) {
   try {
+    const base = getBase();
+    const USERS = process.env.AIRTABLE_USERS_TABLE;
+    const BOOKINGS = process.env.AIRTABLE_BOOKINGS_TABLE;
+    if (!base || !USERS || !BOOKINGS) {
+      return NextResponse.json({ error: "Backend not configured" }, { status: 503 });
+    }
     const body = await request.json();
     
     // Support both old and new parameter names for backward compatibility
@@ -48,9 +49,9 @@ export async function POST(request: Request) {
     let finalInviteeId = inviteeId;
     if (!finalInviteeId && inviteeUsername) {
       try {
-        const userRecords = await base(AIRTABLE_USERS_TABLE!)
+        const userRecords = await base(USERS!)
           .select({
-            filterByFormula: `{Username} = '${inviteeUsername}'`,
+            filterByFormula: `{Username} = '${esc(inviteeUsername)}'`,
             maxRecords: 1
           })
           .firstPage();
@@ -81,9 +82,9 @@ export async function POST(request: Request) {
 
     try {
       // Get booker details
-      const bookerRecords = await base(AIRTABLE_USERS_TABLE!)
+      const bookerRecords = await base(USERS!)
         .select({
-          filterByFormula: `{UserID} = '${bookerId}'`,
+          filterByFormula: `{UserID} = '${esc(bookerId)}'`,
           maxRecords: 1
         })
         .firstPage();
@@ -99,9 +100,9 @@ export async function POST(request: Request) {
       }
 
       // Get invitee details
-      const inviteeRecords = await base(AIRTABLE_USERS_TABLE!)
+      const inviteeRecords = await base(USERS!)
         .select({
-          filterByFormula: `{UserID} = '${finalInviteeId}'`,
+          filterByFormula: `{UserID} = '${esc(finalInviteeId)}'`,
           maxRecords: 1
         })
         .firstPage();
@@ -137,7 +138,7 @@ export async function POST(request: Request) {
     };
 
     // Save to Airtable
-    const createdRecord = await base(AIRTABLE_BOOKINGS_TABLE!).create(bookingRecord);
+    const createdRecord = await base(BOOKINGS).create(bookingRecord);
 
     return NextResponse.json({
       success: true,
@@ -158,6 +159,12 @@ export async function POST(request: Request) {
 // GET method to retrieve bookings
 export async function GET(request: NextRequest) {
   try {
+    const base = getBase();
+    const BOOKINGS = process.env.AIRTABLE_BOOKINGS_TABLE;
+    if (!base || !BOOKINGS) {
+      return NextResponse.json({ error: "Backend not configured" }, { status: 503 });
+     }
+    
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");
     const role = searchParams.get("role");
@@ -178,7 +185,7 @@ export async function GET(request: NextRequest) {
       filterFormula = `{BookedByUserID} = '${userId}'`;
     }
 
-    const bookings = await base(AIRTABLE_BOOKINGS_TABLE!)
+    const bookings = await base(BOOKINGS)
       .select({
         filterByFormula: filterFormula,
         sort: [{ field: "MeetingTime", direction: "desc" }]
