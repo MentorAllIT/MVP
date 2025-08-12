@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import styles from "../../../[role]/signup/signup.module.css";
 
 interface BookingDetails {
@@ -22,8 +22,10 @@ interface BookingDetails {
   GoogleMeetTitle?: string;
 }
 
-export default function BookingDetailsPage({ params }: { params: { bookingId: string } }) {
+export default function BookingDetailsPage() {
   const router = useRouter();
+  const { bookingId } = useParams<{ bookingId: string }>();
+
   const [booking, setBooking] = useState<BookingDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -31,13 +33,14 @@ export default function BookingDetailsPage({ params }: { params: { bookingId: st
   const [currentUserId] = useState("lqweeee"); // This should come from auth
 
   useEffect(() => {
+    if (!bookingId) return;
     loadBookingDetails();
-  }, [params.bookingId]);
+  }, [bookingId]);
 
   const loadBookingDetails = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/booking/${params.bookingId}`);
+      const response = await fetch(`/api/booking/${bookingId}`);
       const data = await response.json();
 
       if (response.ok) {
@@ -56,7 +59,7 @@ export default function BookingDetailsPage({ params }: { params: { bookingId: st
     try {
       setUpdating(true);
       const statusParam = status === "Confirmed" ? 1 : 2;
-      const response = await fetch(`/api/booking/${params.bookingId}`, {
+      const response = await fetch(`/api/booking/${bookingId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json"
@@ -224,8 +227,8 @@ export default function BookingDetailsPage({ params }: { params: { bookingId: st
                 Download this meeting to your personal calendar app (Outlook, Apple Calendar, Google Calendar, etc.)
               </p>
               <a 
-                href={`/api/booking/${params.bookingId}/ics`}
-                download={`mentorall-meeting-${params.bookingId}.ics`}
+                href={`/api/booking/${bookingId}/ics`}
+                download={`mentorall-meeting-${bookingId}.ics`}
                 className={styles.button}
                 style={{ 
                   backgroundColor: "#0ea5e9",
