@@ -20,11 +20,11 @@ const esc = (s: string) => s.replace(/'/g, "\\'");
 
 // PATCH method to update booking status
 export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { bookingId: string } }
+  req: Request,
+  ctx: { params: Record<string, string> }
 ) {
   try {
-    const { bookingId } = params;
+    const bookingId = ctx.params.bookingId?.trim();
     const { status, newMeetingTime } = await req.json();
 
     // Validate required fields
@@ -152,11 +152,11 @@ export async function PATCH(
 
 // GET method to retrieve a specific booking by ID
 export async function GET(
-  req: NextRequest,
-  { params }: { params: { bookingId: string } }
+  _req: Request,
+  ctx: { params: Record<string, string> }
 ) {
   try {
-    const { bookingId } = params;
+    const bookingId = ctx.params.bookingId?.trim();
 
     if (!bookingId) {
       return NextResponse.json(
