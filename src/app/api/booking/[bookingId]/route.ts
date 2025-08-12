@@ -1,19 +1,13 @@
 import { NextResponse } from "next/server";
 import Airtable from "airtable";
 
-// Environment variables guard
-const { 
-  AIRTABLE_API_KEY, 
-  AIRTABLE_BASE_ID, 
-  AIRTABLE_BOOKINGS_TABLE 
-} = process.env;
-
-if (!AIRTABLE_API_KEY || !AIRTABLE_BASE_ID || !AIRTABLE_BOOKINGS_TABLE) {
-  throw new Error("Missing Airtable environment variables");
-}
-
-const base = new Airtable({ apiKey: AIRTABLE_API_KEY }).base(AIRTABLE_BASE_ID);
-const BOOKINGS_TABLE = AIRTABLE_BOOKINGS_TABLE;
+export const dynamic = "force-dynamic";
+const getBase = () => {
+  const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID } = process.env;
+  return AIRTABLE_API_KEY && AIRTABLE_BASE_ID
+    ? new Airtable({ apiKey: AIRTABLE_API_KEY }).base(AIRTABLE_BASE_ID)
+    : null;
+};
 
 // Helper function to escape strings for Airtable formulas
 const esc = (s: string) => s.replace(/'/g, "\\'");
@@ -27,6 +21,12 @@ const getBookingId = (req: Request) => {
 // PATCH method to update booking status
 export async function PATCH(req: Request) {
   try {
+    const base = getBase();
+    const table = process.env.AIRTABLE_BOOKINGS_TABLE;
+    if (!base || !table) {
+      return NextResponse.json({ error: "Backend not configured" }, { status: 503 });
+    }
+    
     const bookingId = getBookingId(req).trim();
     const { status, newMeetingTime } = await req.json();
 
@@ -77,7 +77,7 @@ export async function PATCH(req: Request) {
     const currentTime = new Date().toISOString();
 
     // Find the booking record by BookingID
-    const existingBookings = await base(BOOKINGS_TABLE)
+    const existingBookings = await base(table)
       .select({
         filterByFormula: `{BookingID} = '${esc(bookingId)}'`,
         maxRecords: 1
@@ -114,7 +114,7 @@ export async function PATCH(req: Request) {
     }
 
     // Update the booking status and confirmation time
-    const updatedRecord = await base(BOOKINGS_TABLE).update([
+    const updatedRecord = await base(table).update([
       {
         id: bookingRecord.id,
         fields: updateFields,
@@ -156,6 +156,11 @@ export async function PATCH(req: Request) {
 // GET method to retrieve a specific booking by ID
 export async function GET(req: Request) {
   try {
+    const base = getBase();
+    const table = process.env.AIRTABLE_BOOKINGS_TABLE;
+    if (!base || !table) {
+      return NextResponse.json({ error: "Backend not configured" }, { status: 503 });
+    }
     const bookingId = getBookingId(req).trim();
 
     if (!bookingId) {
@@ -166,7 +171,7 @@ export async function GET(req: Request) {
     }
 
     // Find the booking record by BookingID
-    const existingBookings = await base(BOOKINGS_TABLE)
+    const existingBookings = await base(table)
       .select({
         filterByFormula: `{BookingID} = '${esc(bookingId)}'`,
         maxRecords: 1
