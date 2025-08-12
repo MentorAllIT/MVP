@@ -18,13 +18,16 @@ const BOOKINGS_TABLE = AIRTABLE_BOOKINGS_TABLE;
 // Helper function to escape strings for Airtable formulas
 const esc = (s: string) => s.replace(/'/g, "\\'");
 
+// Extract /api/booking/[bookingId]
+const getBookingId = (req: Request) => {
+  const m = new URL(req.url).pathname.match(/\/api\/booking\/([^/]+)$/);
+  return m ? decodeURIComponent(m[1]) : "";
+};
+
 // PATCH method to update booking status
-export async function PATCH(
-  req: Request,
-  ctx: { params: Record<string, string> }
-) {
+export async function PATCH(req: Request) {
   try {
-    const bookingId = ctx.params.bookingId?.trim();
+    const bookingId = getBookingId(req).trim();
     const { status, newMeetingTime } = await req.json();
 
     // Validate required fields
@@ -151,12 +154,9 @@ export async function PATCH(
 }
 
 // GET method to retrieve a specific booking by ID
-export async function GET(
-  _req: Request,
-  ctx: { params: Record<string, string> }
-) {
+export async function GET(req: Request) {
   try {
-    const bookingId = ctx.params.bookingId?.trim();
+    const bookingId = getBookingId(req).trim();
 
     if (!bookingId) {
       return NextResponse.json(
