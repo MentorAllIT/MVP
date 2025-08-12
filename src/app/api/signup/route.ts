@@ -4,38 +4,79 @@ import bcrypt from "bcrypt";
 import { nanoid } from "nanoid";
 
 // env guard
-const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID, AIRTABLE_USERS_TABLE } = process.env;
-if (!AIRTABLE_API_KEY || !AIRTABLE_BASE_ID || !AIRTABLE_USERS_TABLE) {
-  throw new Error("Missing Airtable env vars");
-}
+const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID, AIRTABLE_USERS_TABLE, AIRTABLE_APPROVED_USERS_TABLE } = process.env;
+const hasAirtableConfig = AIRTABLE_API_KEY && AIRTABLE_BASE_ID && AIRTABLE_USERS_TABLE && AIRTABLE_APPROVED_USERS_TABLE;
 
-const base   = new Airtable({ apiKey: AIRTABLE_API_KEY }).base(AIRTABLE_BASE_ID);
-const TABLE  = AIRTABLE_USERS_TABLE;
-const SALT   = 12;
+let base: any = null;
+let TABLE: string = '';
+let APPROVED_TABLE: string = '';
+const SALT = 12;
+
+if (hasAirtableConfig) {
+  base = new Airtable({ apiKey: AIRTABLE_API_KEY }).base(AIRTABLE_BASE_ID);
+  TABLE = AIRTABLE_USERS_TABLE;
+  APPROVED_TABLE = AIRTABLE_APPROVED_USERS_TABLE;
+}
 
 // route handler
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, password, role } = await req.json();
+    const { name, email, password, role, code } = await req.json();
 
-    if (!name || !email || !password || !role) {
+    if (!name || !email || !password || !role || !code) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
       );
     }
 
+    // Check if Airtable is configured
+    if (!hasAirtableConfig) {
+      return NextResponse.json(
+        { 
+          error: "Backend not configured. This is a demo version. Please contact the administrator to set up the database.",
+          demo: true 
+        },
+        { status: 503 }
+      );
+    }
+
     // Duplicate e-mail check
-    const safeEmail = email.replace(/'/g, "\\'");
-    const existing  = await base(TABLE)
-      .select({ filterByFormula: `{Email} = '${safeEmail}'`, maxRecords: 1 })
+    if (role !== "mentor" && role !== "mentee") {
+      return NextResponse.json(
+        { error: "Invalid role" },
+        { status: 400 }
+      );
+    }
+
+    const safeEmail = String(email).trim().toLowerCase().replace(/'/g, "\\'");
+    const safeCodeL = String(code).trim().toLowerCase().replace(/'/g, "\\'");
+
+    // Duplicate e-mail check in Users table
+    const existing = await base(TABLE)
+      .select({ filterByFormula: `{Email}='${safeEmail}'`, maxRecords: 1 })
       .firstPage();
     if (existing.length) {
       return NextResponse.json({ error: "Email already in use" }, { status: 409 });
     }
 
-    // Hash password
-    const hash   = await bcrypt.hash(password, SALT);
+    // Verify email
+    const approved = await base(APPROVED_TABLE)
+      .select({
+        filterByFormula: `AND({Email}='${safeEmail}', LOWER({Code})='${safeCodeL}')`,
+        maxRecords: 1,
+      })
+      .firstPage();
+
+    if (!approved.length) {
+      return NextResponse.json(
+        { error: "Invalid approval code" },
+        { status: 403 }
+      );
+    }
+
+    // Hash password & create user record
+    const hash   = await bcrypt.hash(String(password), SALT);
     const userId = nanoid(10);
 
     // Create record
@@ -43,8 +84,8 @@ export async function POST(req: NextRequest) {
       {
         fields: {
           UserID:   userId,
-          Name:     name,
-          Email:    email,
+          Name:     String(name),
+          Email:    safeEmail,
           Password: hash,
           Role:     role,
         },

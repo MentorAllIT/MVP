@@ -1,167 +1,599 @@
 .page {
-  --gray-rgb: 0, 0, 0;
-  --gray-alpha-200: rgba(var(--gray-rgb), 0.08);
-  --gray-alpha-100: rgba(var(--gray-rgb), 0.05);
-
-  --button-primary-hover: #383838;
-  --button-secondary-hover: #f2f2f2;
-
-  display: grid;
-  grid-template-rows: 20px 1fr 20px;
-  align-items: center;
-  justify-items: center;
-  min-height: 100svh;
-  padding: 80px;
-  gap: 64px;
+  min-height: 100vh;
   font-family: var(--font-geist-sans);
+  background: 
+    linear-gradient(135deg, #f8f7fc 0%, #f0edf8 100%),
+    radial-gradient(circle at 20% 80%, rgba(102, 77, 162, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(139, 107, 177, 0.03) 0%, transparent 50%);
+  color: #2d1b69;
+  position: relative;
+  overflow-x: hidden;
 }
 
-@media (prefers-color-scheme: dark) {
-  .page {
-    --gray-rgb: 255, 255, 255;
-    --gray-alpha-200: rgba(var(--gray-rgb), 0.145);
-    --gray-alpha-100: rgba(var(--gray-rgb), 0.06);
-
-    --button-primary-hover: #ccc;
-    --button-secondary-hover: #1a1a1a;
-  }
+.page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    linear-gradient(45deg, transparent 48%, rgba(102, 77, 162, 0.02) 50%, transparent 52%),
+    linear-gradient(-45deg, transparent 48%, rgba(139, 107, 177, 0.02) 50%, transparent 52%);
+  background-size: 60px 60px;
+  pointer-events: none;
+  z-index: 1;
 }
 
-.main {
+.header {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(102, 77, 162, 0.1);
+  padding: 1rem 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 
+    0 4px 30px rgba(102, 77, 162, 0.1),
+    0 1px 0 rgba(255, 255, 255, 0.8);
+  position: relative;
+  z-index: 10;
+}
+
+.header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(102, 77, 162, 0.3), transparent);
+}
+
+.headerContent {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
   display: flex;
-  flex-direction: column;
-  gap: 32px;
-  grid-row-start: 2;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.main ol {
-  font-family: var(--font-geist-mono);
-  padding-left: 0;
+.logo {
+  font-size: 2rem;
+  font-weight: 800;
   margin: 0;
-  font-size: 14px;
-  line-height: 24px;
-  letter-spacing: -0.01em;
-  list-style-position: inside;
+  background: linear-gradient(135deg, #664da2, #8b6bb1, #a67fd4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
 }
 
-.main li:not(:last-of-type) {
-  margin-bottom: 8px;
+.aiHighlight {
+  position: relative;
+  display: inline-block;
+  background: linear-gradient(135deg, #664da2, #8b6bb1, #a67fd4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.main code {
-  font-family: inherit;
-  background: var(--gray-alpha-100);
-  padding: 2px 4px;
-  border-radius: 4px;
+.aiHighlight::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #664da2, #8b6bb1, #a67fd4);
+  border-radius: 1px;
+}
+
+.nav {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.navLink {
+  color: #664da2;
+  text-decoration: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+  font-weight: 500;
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.navLink:first-child {
+  background: rgba(102, 77, 162, 0.08);
+  border-color: rgba(102, 77, 162, 0.2);
+  color: #664da2;
   font-weight: 600;
 }
 
-.ctas {
-  display: flex;
-  gap: 16px;
+.navLink:first-child:hover {
+  background: rgba(102, 77, 162, 0.15);
+  border-color: rgba(102, 77, 162, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(102, 77, 162, 0.2);
 }
 
-.ctas a {
-  appearance: none;
-  border-radius: 128px;
-  height: 48px;
-  padding: 0 20px;
-  border: 1px solid transparent;
-  transition:
-    background 0.2s,
-    color 0.2s,
-    border-color 0.2s;
+.navLink::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(102, 77, 162, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.navLink:hover::before {
+  left: 100%;
+}
+
+.navLink:hover {
+  background: rgba(102, 77, 162, 0.08);
+  border-color: rgba(102, 77, 162, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(102, 77, 162, 0.15);
+}
+
+.main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  position: relative;
+  z-index: 2;
+}
+
+.hero {
+  padding: 6rem 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Removed the background block behind the title */
+
+.heroContent {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.heroVisual {
+  display: none; /* Hide the old visual */
+}
+
+.heroOrb {
+  display: none; /* Hide the old orb */
+}
+
+@keyframes float {
+  0%, 100% { 
+    transform: translateY(0px) rotate(0deg); 
+  }
+  50% { 
+    transform: translateY(-20px) rotate(1deg); 
+  }
+}
+
+.title {
+  font-size: 4rem;
+  font-weight: 900;
+  margin: 0 0 1.5rem 0;
+  background: linear-gradient(135deg, #664da2, #8b6bb1, #a67fd4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.1;
+  position: relative;
+}
+
+.title::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 4px;
+  background: linear-gradient(90deg, #664da2, #8b6bb1);
+  border-radius: 2px;
+}
+
+.description {
+  font-size: 1.25rem;
+  line-height: 1.6;
+  margin: 0 0 2.5rem 0;
+  color: #5a4a7a;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.ctaButtons {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 3rem; /* Added margin to separate from circle */
+}
+
+.primary, .secondary {
+  display: inline-block;
+  padding: 1.25rem 2.5rem;
+  border-radius: 16px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1.1rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid transparent;
+  min-width: 200px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.primary {
+  background: linear-gradient(135deg, #664da2, #8b6bb1);
+  color: white;
+  box-shadow: 
+    0 8px 25px rgba(102, 77, 162, 0.3),
+    0 0 0 1px rgba(102, 77, 162, 0.1);
+  border: none;
   cursor: pointer;
+}
+
+.primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.primary:hover::before {
+  left: 100%;
+}
+
+.primary:hover {
+  transform: translateY(-3px);
+  box-shadow: 
+    0 15px 35px rgba(102, 77, 162, 0.4),
+    0 0 0 1px rgba(102, 77, 162, 0.2);
+}
+
+.secondary {
+  background: white;
+  color: #664da2;
+  border-color: #664da2;
+  box-shadow: 
+    0 4px 20px rgba(102, 77, 162, 0.1),
+    0 0 0 1px rgba(102, 77, 162, 0.1);
+}
+
+.secondary:hover {
+  background: linear-gradient(135deg, #664da2, #8b6bb1);
+  color: white;
+  transform: translateY(-3px);
+  box-shadow: 
+    0 15px 35px rgba(102, 77, 162, 0.3),
+    0 0 0 1px rgba(102, 77, 162, 0.2);
+}
+
+/* Role Selection Links Styles */
+.roleSelectionLinks {
+  margin-top: 3rem;
+  text-align: center;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(15px);
+  box-shadow: 0 10px 30px rgba(102, 77, 162, 0.2);
+}
+
+.roleSelectionTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 3rem 0;
+  color: #2d1b69;
+  text-align: center;
+  text-shadow: 0 2px 15px rgba(255, 255, 255, 0.8);
+}
+
+.roleLinks {
+  display: flex;
+  gap: 3rem;
+  justify-content: center;
+  flex-wrap: nowrap;
+}
+
+.roleLink {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 2rem;
+  text-decoration: none;
+  color: #664da2;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 25px rgba(102, 77, 162, 0.2);
+  min-width: 200px;
+  justify-content: center;
+}
+
+.roleLink:hover {
+  background: rgba(255, 255, 255, 1);
+  border-color: rgba(102, 77, 162, 0.5);
+  transform: translateY(-4px);
+  box-shadow: 0 15px 35px rgba(102, 77, 162, 0.3);
+}
+
+.roleLinkIcon {
+  font-size: 2rem;
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
-  line-height: 20px;
-  font-weight: 500;
-}
-
-a.primary {
-  background: var(--foreground);
-  color: var(--background);
-  gap: 8px;
-}
-
-a.secondary {
-  border-color: var(--gray-alpha-200);
-  min-width: 158px;
-}
-
-.footer {
-  grid-row-start: 3;
-  display: flex;
-  gap: 24px;
-}
-
-.footer a {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.footer img {
+  background: linear-gradient(135deg, #664da2, #8b6bb1);
+  border-radius: 50%;
+  color: white;
+  font-weight: bold;
+  box-shadow: 0 4px 15px rgba(102, 77, 162, 0.3);
   flex-shrink: 0;
 }
 
-/* Enable hover only on non-touch devices */
-@media (hover: hover) and (pointer: fine) {
-  a.primary:hover {
-    background: var(--button-primary-hover);
-    border-color: transparent;
-  }
-
-  a.secondary:hover {
-    background: var(--button-secondary-hover);
-    border-color: transparent;
-  }
-
-  .footer a:hover {
-    text-decoration: underline;
-    text-underline-offset: 4px;
-  }
+.roleLinkText {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #664da2;
+  white-space: nowrap;
 }
 
-@media (max-width: 600px) {
-  .page {
-    padding: 32px;
-    padding-bottom: 80px;
+.features {
+  padding: 4rem 0;
+  margin-bottom: 4rem;
+}
+
+.sectionTitle {
+  text-align: center;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0 0 3rem 0;
+  background: linear-gradient(135deg, #664da2, #8b6bb1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+}
+
+.sectionTitle::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, #664da2, #8b6bb1);
+  border-radius: 2px;
+}
+
+.featureGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.feature {
+  background: white;
+  border-radius: 24px;
+  padding: 2.5rem;
+  text-align: center;
+  border: 1px solid rgba(102, 77, 162, 0.1);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 4px 25px rgba(102, 77, 162, 0.08),
+    0 0 0 1px rgba(102, 77, 162, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.feature::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #664da2, #8b6bb1, #a67fd4);
+}
+
+.feature:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 
+    0 20px 40px rgba(102, 77, 162, 0.15),
+    0 0 0 1px rgba(102, 77, 162, 0.1);
+  border-color: rgba(102, 77, 162, 0.2);
+}
+
+.feature h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 1rem 0;
+  color: #664da2;
+  position: relative;
+}
+
+.feature p {
+  margin: 0;
+  line-height: 1.6;
+  color: #5a4a7a;
+}
+
+.cta {
+  text-align: center;
+  padding: 4rem 0;
+  margin-bottom: 2rem;
+  position: relative;
+}
+
+.cta::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(102, 77, 162, 0.03) 0%, transparent 70%);
+  border-radius: 50%;
+  z-index: -1;
+}
+
+.ctaContent {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.ctaContent h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0 0 1rem 0;
+  background: linear-gradient(135deg, #664da2, #8b6bb1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.ctaContent p {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin: 0 0 2rem 0;
+  color: #5a4a7a;
+}
+
+.footer {
+  background: white;
+  border-top: 1px solid rgba(102, 77, 162, 0.1);
+  padding: 2rem 0;
+  margin-top: 4rem;
+  position: relative;
+}
+
+.footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(102, 77, 162, 0.3), transparent);
+}
+
+.footerContent {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  text-align: center;
+}
+
+.footerContent p {
+  margin: 0;
+  color: #5a4a7a;
+}
+
+/* Responsive styles for role selection circle */
+@media (max-width: 768px) {
+  .headerContent {
+    padding: 0 1rem;
   }
 
   .main {
-    align-items: center;
+    padding: 0 1rem;
   }
-
-  .main ol {
-    text-align: center;
+  
+  .hero {
+    padding: 4rem 0;
   }
-
-  .ctas {
+  
+  .title {
+    font-size: 2.5rem;
+  }
+  
+  .ctaButtons {
     flex-direction: column;
-  }
-
-  .ctas a {
-    font-size: 14px;
-    height: 40px;
-    padding: 0 16px;
-  }
-
-  a.secondary {
-    min-width: auto;
-  }
-
-  .footer {
-    flex-wrap: wrap;
     align-items: center;
-    justify-content: center;
   }
-}
 
-@media (prefers-color-scheme: dark) {
-  .logo {
-    filter: invert();
+  .primary, .secondary {
+    min-width: 200px;
+  }
+  
+  .roleSelectionLinks {
+    margin-top: 2rem;
+    padding: 1.5rem;
+  }
+  
+  .roleSelectionTitle {
+    font-size: 1.25rem;
+    margin-bottom: 2rem;
+  }
+  
+  .roleLinks {
+    flex-direction: row;
+    gap: 1.5rem;
+  }
+  
+  .roleLink {
+    padding: 1rem 1.5rem;
+    min-width: 160px;
+  }
+  
+  .roleLinkIcon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+  
+  .roleLinkText {
+    font-size: 1rem;
+  }
+  
+  .featureGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .sectionTitle {
+    font-size: 2rem;
+  }
+  
+  .ctaContent h2 {
+    font-size: 2rem;
   }
 }

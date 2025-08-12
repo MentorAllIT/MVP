@@ -4,12 +4,21 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
 // Airtable
-const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY })
-  .base(process.env.AIRTABLE_BASE_ID!);
+const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID, AIRTABLE_USERS_TABLE, AIRTABLE_PROFILES_TABLE, JWT_SECRET } = process.env;
+const hasAirtableConfig = AIRTABLE_API_KEY && AIRTABLE_BASE_ID && AIRTABLE_USERS_TABLE && AIRTABLE_PROFILES_TABLE && JWT_SECRET;
 
-const USERS    = process.env.AIRTABLE_USERS_TABLE!;
-const PROFILES = process.env.AIRTABLE_PROFILES_TABLE!;
-const JWT_SECRET = process.env.JWT_SECRET!;
+let base: any = null;
+let USERS: string = '';
+let PROFILES: string = '';
+let JWT_SECRET_VALUE: string = '';
+
+if (hasAirtableConfig) {
+  base = new Airtable({ apiKey: AIRTABLE_API_KEY }).base(AIRTABLE_BASE_ID);
+  USERS = AIRTABLE_USERS_TABLE;
+  PROFILES = AIRTABLE_PROFILES_TABLE;
+  JWT_SECRET_VALUE = JWT_SECRET;
+}
+
 const esc = (s: string) => s.replace(/'/g, "\\'");
 
 export async function POST(req: NextRequest) {
@@ -18,6 +27,17 @@ export async function POST(req: NextRequest) {
 
     if (!email || !password) {
       return NextResponse.json({ error: "Missing credentials" }, { status: 400 });
+    }
+
+    // Check if Airtable is configured
+    if (!hasAirtableConfig) {
+      return NextResponse.json(
+        { 
+          error: "Backend not configured. This is a demo version. Please contact the administrator to set up the database.",
+          demo: true 
+        },
+        { status: 503 }
+      );
     }
 
     const [userRec] = await base(USERS)
@@ -52,7 +72,7 @@ export async function POST(req: NextRequest) {
     // JWT + cookie
     const token = jwt.sign(
       { sub: email.toLowerCase(), role: Role, uid: UserID, profile: hasProfile },
-      JWT_SECRET,
+      JWT_SECRET_VALUE,
       { expiresIn: "7d" }
     );
 

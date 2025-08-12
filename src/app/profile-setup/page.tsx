@@ -98,6 +98,11 @@ export default function ProfileSetup() {
       return;
     }
 
+    if (!uid) {
+      setFormErr("Missing user id. Please sign in again.");
+      return;
+    }
+
     setSubmitting(true);
     const fd = new FormData();
     fd.append("uid", uid);
@@ -116,16 +121,19 @@ export default function ProfileSetup() {
   }
 
   return (
-    <div className={styles.wrapper}>
-      <div className={styles.card}>
-        <h1 className={styles.title}>Tell us about you</h1>
-        <p className={styles.subtitle}>
-          {subtitle}
-        </p>
-
-        <form className={styles.form} onSubmit={handleSubmit} noValidate>
+    <div className={styles.page}>
+      <div className={styles.wrapper}>
+        <div className={styles.header}>
+          <h1 className={styles.title}>Tell us about you</h1>
+          <p className={styles.subtitle}>
+            {subtitle}
+          </p>
+        </div>
+        
+        <div className={styles.card}>
+          <form className={styles.form} onSubmit={handleSubmit} noValidate>
           <label className={styles.label}>
-            Short Bio
+            <span className={styles.labelText}>Short Bio</span>
             <textarea
               name="bio"
               value={bio}
@@ -155,7 +163,7 @@ export default function ProfileSetup() {
           </label>
 
           <label className={styles.label}>
-            LinkedIn URL
+            <span className={styles.labelText}>LinkedIn URL</span>
             <input
               name="linkedin"
               type="url"
@@ -181,6 +189,7 @@ export default function ProfileSetup() {
 
           {formErr && <p className={styles.error}>{formErr}</p>}
         </form>
+        </div>
 
         <div className={styles.progressWrap}>
           <div className={styles.progressTrack}>

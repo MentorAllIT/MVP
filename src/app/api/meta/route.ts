@@ -4,8 +4,10 @@ import Airtable from "airtable";
 const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY })
   .base(process.env.AIRTABLE_BASE_ID!);
 
-const MENTEE = process.env.AIRTABLE_MENTEE_META_TABLE!;
-const MENTOR = process.env.AIRTABLE_MENTOR_META_TABLE!;
+const MENTEE_TABLE = process.env.AIRTABLE_MENTEE_META_TABLE!;
+const MENTOR_TABLE = process.env.AIRTABLE_MENTOR_META_TABLE!;
+const ATTACH_FIELD = "CV";
+const CONTENT_URL  = "https://content.airtable.com/v0";
 const esc = (s: string) => s.replace(/'/g, "\\'");
 
 export async function POST(req: NextRequest) {
@@ -18,30 +20,68 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing uid/role" }, { status: 400 });
     }
 
+    const table = role === "mentee" ? MENTEE_TABLE : MENTOR_TABLE;
+    const fields: Record<string, any> = { UserID: uid };
+
     if (role === "mentee") {
-      const goal       = fd.get("goal")       as string | null;
-      const challenges = fd.get("challenges") as string | null;
-      const help       = fd.get("help")       as string | null;
-
-      if (!goal || !challenges || !help)
-        return NextResponse.json({ error: "Missing fields" }, { status: 400 });
-
-      await upsert(MENTEE, uid, { Goal: goal, Challenges: challenges, HelpNeeded: help });
-    } else if (role === "mentor") {
-      const industry  = fd.get("industry")  as string | null;
-      const years     = fd.get("years")     as string | null;
-      const calendly  = fd.get("calendly")  as string | null;
-
-      if (!industry || !years || !calendly)
-        return NextResponse.json({ error: "Missing fields" }, { status: 400 });
-
-      await upsert(MENTOR, uid, {
-        Industry: industry,
-        YearExp: Number(years),
-        Calendly: calendly,
-      });
+        fields.Goal       = fd.get("goal")       as string;
+        fields.Challenges = fd.get("challenges") as string;
+        fields.HelpNeeded = fd.get("help")       as string;
     } else {
-      return NextResponse.json({ error: "Invalid role" }, { status: 400 });
+      fields.Industry = fd.get("industry") as string;
+      fields.YearExp  = Number(fd.get("years") as string);
+      fields.Calendly = fd.get("calendly") as string;
+    }
+
+    // find existing row
+    const [existing] = await base(table)
+      .select({
+        filterByFormula: `{UserID} = '${esc(uid)}'`,
+        maxRecords: 1,
+      })
+      .firstPage();
+
+    let recId: string;
+    if (existing) {
+      recId = existing.id;
+      await base(table).update(recId, fields);
+    } else {
+      const created = await base(table).create([{ fields }]);
+      recId = created[0].id;
+    }
+
+    if (role === "mentee") {
+      const file = fd.get("cv") as File | null;
+      if (!file) {
+        return NextResponse.json({ error: "Missing CV file" }, { status: 400 });
+      }
+
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const b64 = buffer.toString("base64");
+
+      const res = await fetch(
+        `${CONTENT_URL}/${process.env.AIRTABLE_BASE_ID}/${recId}/${ATTACH_FIELD}/uploadAttachment`,
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${process.env.AIRTABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            filename: file.name,
+            contentType: file.type,
+            file: b64,
+          }),
+        }
+      );
+
+      if (!res.ok) {
+        console.error("Airtable uploadAttachment failed:", await res.text());
+        return NextResponse.json(
+          { error: "Failed to upload CV to Airtable" },
+          { status: 502 }
+        );
+      }
     }
 
     return NextResponse.json({ ok: true });
@@ -49,13 +89,4 @@ export async function POST(req: NextRequest) {
     console.error("meta route:", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
-}
-
-async function upsert(table: string, uid: string, fields: Record<string, any>) {
-  const [row] = await base(table)
-    .select({ filterByFormula: `{UserID} = '${esc(uid)}'`, maxRecords: 1 })
-    .firstPage();
-
-  if (row) await base(table).update(row.id, fields);
-  else      await base(table).create([{ fields: { UserID: uid, ...fields } }]);
 }
