@@ -1,28 +1,31 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import Airtable from "airtable";
 
-// Environment variables guard
-const { 
-  AIRTABLE_API_KEY, 
-  AIRTABLE_BASE_ID, 
-  AIRTABLE_BOOKINGS_TABLE 
-} = process.env;
+export const dynamic = "force-dynamic";
+const getBase = () => {
+  const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID } = process.env;
+  return AIRTABLE_API_KEY && AIRTABLE_BASE_ID
+    ? new Airtable({ apiKey: AIRTABLE_API_KEY }).base(AIRTABLE_BASE_ID)
+    : null;
+};
+const getBookingId = (req: Request) => {
+  const m = new URL(req.url).pathname.match(/\/api\/booking\/([^/]+)\/ics$/);
+  return m ? decodeURIComponent(m[1]) : "";
+};
 
-if (!AIRTABLE_API_KEY || !AIRTABLE_BASE_ID || !AIRTABLE_BOOKINGS_TABLE) {
-  throw new Error("Missing Airtable environment variables");
-}
-
-const base = new Airtable({ apiKey: AIRTABLE_API_KEY }).base(AIRTABLE_BASE_ID);
-
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ bookingId: string }> }
-) {
+export async function GET(req: Request) {
   try {
-    const { bookingId } = await params;
+    const base = getBase();
+    const table = process.env.AIRTABLE_BOOKINGS_TABLE;
+
+    if (!base || !table) {
+      return NextResponse.json({ error: "Backend not configured" }, { status: 503 });
+    }
+
+    const bookingId = getBookingId(req).trim();
 
     // Fetch booking details
-    const bookings = await base(AIRTABLE_BOOKINGS_TABLE!)
+    const bookings = await base(table)
       .select({
         filterByFormula: `{BookingID} = '${bookingId}'`,
         maxRecords: 1
