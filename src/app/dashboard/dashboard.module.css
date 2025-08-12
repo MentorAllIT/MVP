@@ -306,6 +306,73 @@
   100% { transform: rotate(360deg); }
 }
 
+/* Overlay while /api/mentee/refresh-match runs */
+.matchOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 20% 80%, rgba(102, 77, 162, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(139, 107, 177, 0.08) 0%, transparent 50%),
+    rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(8px);
+}
+
+.matchCard {
+  width: min(540px, 92vw);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(102, 77, 162, 0.15);
+  border-radius: 24px;
+  padding: 2rem;
+  text-align: center;
+  box-shadow:
+    0 20px 40px rgba(102, 77, 162, 0.18),
+    0 0 0 1px rgba(102, 77, 162, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+.matchCard::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #664da2, #8b6bb1, #a67fd4);
+}
+
+.matchSpinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(102, 77, 162, 0.18);
+  border-top: 4px solid #664da2;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+.matchTitle {
+  margin: 0.25rem 0 0.25rem 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #664da2, #8b6bb1, #a67fd4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.matchSubtitle {
+  margin: 0;
+  color: #5a4a7a;
+  line-height: 1.6;
+}
+
+.matchHint {
+  margin-top: 0.75rem;
+  color: #8b6bb1;
+  font-size: 0.9rem;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .headerContent {

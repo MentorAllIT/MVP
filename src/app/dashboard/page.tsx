@@ -9,6 +9,8 @@ export default function Dashboard() {
   const router = useRouter();
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [matching, setMatching] = useState(false);
+  const [matchError, setMatchError] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if user is authenticated
@@ -33,6 +35,40 @@ export default function Dashboard() {
     checkAuth();
   }, [router]);
 
+  // Kick off refresh-match exactly once after auth confirms mentee
+  useEffect(() => {
+    // Only after auth finished and role known
+    if (loading) return;
+    if (userRole !== "mentee") return;
+
+    // Guard: per-tab session guard
+    const sessionKey = "refreshMatchDone";
+    if (sessionStorage.getItem(sessionKey)) return;
+
+    sessionStorage.setItem(sessionKey, "1");
+
+    let cancelled = false;
+    (async () => {
+      try {
+        setMatchError(null);
+        setMatching(true);
+        const res = await fetch("/api/mentee/refresh-match", {
+          method: "POST",
+          cache: "no-store",
+        });
+        if (!res.ok) {
+          setMatchError("We’ll keep looking for the best matches.");
+        }
+      } catch {
+        setMatchError("We’ll keep looking for the best matches.");
+      } finally {
+        if (!cancelled) setMatching(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [loading, userRole]);
+
   if (loading) {
     return (
       <div className={styles.wrapper}>
@@ -46,6 +82,19 @@ export default function Dashboard() {
 
   return (
     <div className={styles.page}>
+      {matching && (
+        <div className={styles.matchOverlay} role="status" aria-live="polite">
+          <div className={styles.matchCard}>
+            <div className={styles.matchSpinner}></div>
+            <h3 className={styles.matchTitle}>Finding mentors for you…</h3>
+            <p className={styles.matchSubtitle}>
+              We’re comparing your interests with mentor focus areas. This should only take a moment.
+            </p>
+            {matchError && <div className={styles.matchHint}>{matchError}</div>}
+          </div>
+        </div>
+      )}
+
       <header className={styles.header}>
         <div className={styles.headerContent}>
           <h1 className={styles.logo}>MentorAll</h1>
