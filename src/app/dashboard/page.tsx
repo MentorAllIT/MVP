@@ -1,84 +1,167 @@
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import styles from "./dashboard.module.css";
 
-async function getMentors(uid: string) {
-  const url = process.env.NEXT_PUBLIC_BASE_URL + "/api/matches";
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ uid }),
-    cache: "no-store",
-  });
-  const { mentors = [] } = await res.json();
-  return mentors as { uid: string; name: string; bio: string }[];
-}
+export default function Dashboard() {
+  const router = useRouter();
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-export default async function Dashboard() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("session")?.value;
+  useEffect(() => {
+    // Check if user is authenticated
+    const checkAuth = async () => {
+      try {
+        const res = await fetch("/api/auth/check");
+        if (res.ok) {
+          const data = await res.json();
+          setUserRole(data.role);
+        } else {
+          // Redirect to signin if not authenticated
+          router.push("/signin");
+        }
+      } catch (error) {
+        console.error("Auth check failed:", error);
+        router.push("/signin");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  if (!token)
+    checkAuth();
+  }, [router]);
+
+  if (loading) {
     return (
-      <main className={styles.wrapper}>
-        <p className={styles.message}>Not signed in.</p>
-      </main>
-    );
-
-  const { role, uid } = jwt.verify(
-    token,
-    process.env.JWT_SECRET!
-  ) as { role: string; uid: string };
-
-  // mentor view
-  if (role === "mentor") {
-    return (
-      <main className={styles.wrapper}>
-        <section className={styles.card}>
-          <h1 className={styles.heading}>Thank you for supporting MentorAll 🙌</h1>
-          <p className={styles.p}>
-            You’ll receive mentee pairings by email as soon as our matching
-            algorithm runs. Stay tuned — and thanks again for paying it forward!
-          </p>
-        </section>
-      </main>
-    );
-  }
-
-  // mentee view
-  const mentors = await getMentors(uid);
-
-  if (!mentors.length) {
-    return (
-      <main className={styles.wrapper}>
-        <section className={styles.card}>
-          <h1 className={styles.heading}>We’re working on your match!</h1>
-          <p className={styles.p}>
-            Our team is actively looking for the perfect mentor for you. Check
-            back soon.
-          </p>
-        </section>
-      </main>
+      <div className={styles.wrapper}>
+        <div className={styles.loading}>
+          <div className={styles.spinner}></div>
+          <p>Loading your dashboard...</p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <main className={styles.wrapper}>
-      <h1 className={styles.heading}>
-        Your mentor{mentors.length > 1 && "s"}
-      </h1>
+    <div className={styles.page}>
+      <header className={styles.header}>
+        <div className={styles.headerContent}>
+          <h1 className={styles.logo}>MentorAll</h1>
+          <nav className={styles.nav}>
+            <Link href="/profile" className={styles.navLink}>Profile</Link>
+            <button 
+              onClick={() => {
+                fetch("/api/auth/signout", { method: "POST" });
+                router.push("/");
+              }} 
+              className={styles.navLink}
+            >
+              Sign Out
+            </button>
+          </nav>
+        </div>
+      </header>
 
-      <ul className={styles.grid}>
-        {mentors.map((m) => (
-          <li key={m.uid} className={styles.tile}>
-            <Link href={`/mentors/${m.uid}`} className={styles.tileLink}>
-              <h2 className={styles.tileTitle}>{m.name}</h2>
-              <p className={styles.tileBio}>{m.bio}</p>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </main>
+      <main className={styles.main}>
+        <div className={styles.container}>
+          <div className={styles.welcomeSection}>
+            <h2 className={styles.welcomeTitle}>
+              Welcome to your {userRole === "mentor" ? "Mentor" : "Mentee"} Dashboard!
+            </h2>
+            <p className={styles.welcomeSubtitle}>
+              {userRole === "mentor" 
+                ? "Start helping others grow and share your expertise"
+                : "Find the perfect mentor to guide your journey"
+              }
+            </p>
+          </div>
+
+          <div className={styles.contentGrid}>
+            {userRole === "mentor" ? (
+              <>
+                <div className={styles.card}>
+                  <h3 className={styles.cardTitle}>👥 View Mentee Requests</h3>
+                  <p className={styles.cardDescription}>
+                    See who's looking for guidance and accept mentoring opportunities.
+                  </p>
+                  <Link href="/mentor/requests" className={styles.cardButton}>
+                    View Requests
+                  </Link>
+                </div>
+
+                <div className={styles.card}>
+                  <h3 className={styles.cardTitle}>📅 Manage Schedule</h3>
+                  <p className={styles.cardDescription}>
+                    Set your availability and manage mentoring sessions.
+                  </p>
+                  <Link href="/mentor/schedule" className={styles.cardButton}>
+                    Manage Schedule
+                  </Link>
+                </div>
+
+                <div className={styles.card}>
+                  <h3 className={styles.cardTitle}>📊 Your Impact</h3>
+                  <p className={styles.cardDescription}>
+                    Track your mentoring sessions and see your impact.
+                  </p>
+                  <Link href="/mentor/impact" className={styles.cardButton}>
+                    View Stats
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className={styles.card}>
+                  <h3 className={styles.cardTitle}>🔍 Find Mentors</h3>
+                  <p className={styles.cardDescription}>
+                    Browse available mentors and find the perfect match for your goals.
+                  </p>
+                  <Link href="/mentee/browse" className={styles.cardButton}>
+                    Browse Mentors
+                  </Link>
+                </div>
+
+                <div className={styles.card}>
+                  <h3 className={styles.cardTitle}>💬 My Connections</h3>
+                  <p className={styles.cardDescription}>
+                    View your current mentor connections and chat history.
+                  </p>
+                  <Link href="/mentee/connections" className={styles.cardButton}>
+                    View Connections
+                  </Link>
+                </div>
+
+                <div className={styles.card}>
+                  <h3 className={styles.cardTitle}>📚 Learning Path</h3>
+                  <p className={styles.cardDescription}>
+                    Track your learning progress and set new goals.
+                  </p>
+                  <Link href="/mentee/learning" className={styles.cardButton}>
+                    View Progress
+                  </Link>
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className={styles.quickActions}>
+            <h3 className={styles.quickActionsTitle}>Quick Actions</h3>
+            <div className={styles.actionButtons}>
+              <Link href="/profile" className={styles.actionButton}>
+                ✏️ Edit Profile
+              </Link>
+              <Link href="/settings" className={styles.actionButton}>
+                ⚙️ Settings
+              </Link>
+              <Link href="/help" className={styles.actionButton}>
+                ❓ Help & Support
+              </Link>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
   );
 }
