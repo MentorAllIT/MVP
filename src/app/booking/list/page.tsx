@@ -2,20 +2,21 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import styles from "../../[role]/signup/signup.module.css";
+import Link from "next/link";
+import styles from "../../mentee/browse/browse.module.css";
 
 interface Booking {
-  BookingID: string;
-  BookedByUserID: string;
-  InvitedUserID: string;
-  MeetingTime: string;
-  BookingStatus: string;
-  BookerUsername: string;
-  InvitedUsername: string;
-  Email: string;
-  InvitedEmail: string;
-  Notes?: string;
-  ConfirmationTime?: string;
+  id: string;
+  bookingId: string;
+  bookerName: string;
+  bookerEmail: string;
+  inviteeName: string;
+  inviteeEmail: string;
+  meetingTime: string;
+  status: string;
+  notes?: string;
+  createdAt?: string;
+  icsFileUrl?: string;
 }
 
 export default function BookingsListPage() {
@@ -23,24 +24,58 @@ export default function BookingsListPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [currentUserId, setCurrentUserId] = useState("lqweeee"); // This should come from auth
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Get current user from JWT token
+  useEffect(() => {
+    const getUserFromToken = async () => {
+      try {
+        const response = await fetch('/api/profile');
+        if (response.ok) {
+          const data = await response.json();
+          setCurrentUserId(data.uid);
+        } else {
+          setError("Please sign in to view your bookings");
+        }
+      } catch (error) {
+        console.error('Error getting user from token:', error);
+        setError("Authentication error");
+      }
+    };
+    
+    getUserFromToken();
+  }, []);
 
   useEffect(() => {
-    loadBookings();
+    if (currentUserId) {
+      loadBookings();
+    }
   }, [currentUserId]);
 
   const loadBookings = async () => {
+    if (!currentUserId) {
+      setError("Please sign in to view your bookings");
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await fetch(`/api/booking?userId=${currentUserId}`);
       const data = await response.json();
 
+      console.log("Booking API response:", data);
+      console.log("Response status:", response.ok);
+
       if (response.ok) {
         setBookings(data.bookings || []);
+        console.log("Bookings set:", data.bookings || []);
       } else {
         setError(data.error || "Failed to load bookings");
+        console.error("API error:", data.error);
       }
     } catch (err) {
+      console.error("Fetch error:", err);
       setError("Error loading bookings");
     } finally {
       setLoading(false);
@@ -65,157 +100,348 @@ export default function BookingsListPage() {
   };
 
   const filteredBookings = {
-    upcoming: bookings.filter(b => isUpcoming(b.MeetingTime)),
-    past: bookings.filter(b => !isUpcoming(b.MeetingTime))
+    upcoming: bookings.filter(b => isUpcoming(b.meetingTime)),
+    past: bookings.filter(b => !isUpcoming(b.meetingTime))
   };
+
+  console.log("All bookings:", bookings);
+  console.log("Upcoming bookings:", filteredBookings.upcoming);
+  console.log("Past bookings:", filteredBookings.past);
+  console.log("Current time:", new Date().toISOString());
 
   if (loading) {
     return (
-      <div className={styles.wrapper}>
-        <div className={styles.card}>
-          <h1 className={styles.title}>Loading your bookings...</h1>
-        </div>
+      <div className={styles.page}>
+        <header className={styles.header}>
+          <div className={styles.headerContent}>
+            <Link href="/" className={styles.logo}>MentorAll</Link>
+            <nav className={styles.nav}>
+              <Link href="/dashboard" className={styles.navLink}>Dashboard</Link>
+              <Link href="/booking" className={styles.navLink}>New Booking</Link>
+              <Link href="/profile" className={styles.navLink}>Profile</Link>
+            </nav>
+          </div>
+        </header>
+
+        <main className={styles.main}>
+          <div className={styles.container}>
+            <section className={styles.hero}>
+              <h1 className={styles.title}>Loading your bookings...</h1>
+              <p className={styles.subtitle}>Please wait while we fetch your meeting information</p>
+            </section>
+          </div>
+        </main>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className={styles.wrapper}>
-        <div className={styles.card}>
-          <h1 className={styles.title}>Error</h1>
-          <p style={{ color: "#ef4444", marginTop: "1rem" }}>{error}</p>
-          <button onClick={loadBookings} className={styles.button} style={{ marginTop: "1rem" }}>
-            Try Again
-          </button>
-        </div>
+      <div className={styles.page}>
+        <header className={styles.header}>
+          <div className={styles.headerContent}>
+            <Link href="/" className={styles.logo}>MentorAll</Link>
+            <nav className={styles.nav}>
+              <Link href="/dashboard" className={styles.navLink}>Dashboard</Link>
+              <Link href="/booking" className={styles.navLink}>New Booking</Link>
+              <Link href="/profile" className={styles.navLink}>Profile</Link>
+            </nav>
+          </div>
+        </header>
+
+        <main className={styles.main}>
+          <div className={styles.container}>
+            <section className={styles.hero}>
+              <h1 className={styles.title}>Error Loading Bookings</h1>
+              <p className={styles.subtitle}>{error}</p>
+            </section>
+            
+            <div className={styles.emptyBox}>
+              <div className={styles.emptyEmoji}>⚠️</div>
+              <h3>Something went wrong</h3>
+              <p>We couldn&apos;t load your bookings at this time.</p>
+              <button onClick={loadBookings} className={styles.ctaButton}>Try Again</button>
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
 
   if (bookings.length === 0) {
     return (
-      <div className={styles.wrapper}>
-        <div className={styles.card}>
-          <h1 className={styles.title}>No Bookings Found</h1>
-          <p className={styles.subtitle}>You haven&apos;t created or received any bookings yet.</p>
-          <button 
-            onClick={() => router.push("/booking")} 
-            className={styles.button}
-            style={{ marginTop: "1.5rem" }}
-          >
-            Create Your First Booking
-          </button>
-        </div>
+      <div className={styles.page}>
+        <header className={styles.header}>
+          <div className={styles.headerContent}>
+            <Link href="/" className={styles.logo}>MentorAll</Link>
+            <nav className={styles.nav}>
+              <Link href="/dashboard" className={styles.navLink}>Dashboard</Link>
+              <Link href="/booking" className={styles.navLink}>New Booking</Link>
+              <Link href="/profile" className={styles.navLink}>Profile</Link>
+            </nav>
+          </div>
+        </header>
+
+        <main className={styles.main}>
+          <div className={styles.container}>
+            <section className={styles.hero}>
+              <h1 className={styles.title}>My Bookings</h1>
+              <p className={styles.subtitle}>Manage your meeting invitations and appointments</p>
+            </section>
+            
+            <div className={styles.emptyBox}>
+              <div className={styles.emptyEmoji}>📅</div>
+              <h3>No Bookings Found</h3>
+              <p>You haven&apos;t created or received any bookings yet.</p>
+              <Link href="/booking" className={styles.ctaButton}>Create Your First Booking</Link>
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
 
   const bookingsList = (
-    <div className={styles.form}>
+    <div style={{ 
+      maxWidth: "1200px", 
+      margin: "0 auto", 
+      padding: "0 1rem" 
+    }}>
       {/* Upcoming Bookings */}
       {filteredBookings.upcoming.length > 0 && (
-        <>
-          <h3 style={{ marginBottom: "1rem", color: "#374151" }}>Upcoming Meetings</h3>
-          {filteredBookings.upcoming.map((booking) => (
-            <div key={booking.BookingID} style={{ 
-              padding: "1rem", 
-              border: "1px solid #e5e7eb", 
-              borderRadius: "8px", 
-              marginBottom: "1rem",
-              backgroundColor: "#f9fafb",
-              cursor: "pointer"
-            }}
-            onClick={() => router.push(`/booking/details/${booking.BookingID}`)}
-            >
-              <div className={styles.label}>
-                <strong>{booking.BookerUsername}</strong> → <strong>{booking.InvitedUsername}</strong>
+        <div style={{ marginBottom: "3rem" }}>
+          <h2 style={{ 
+            fontSize: "1.5rem", 
+            fontWeight: "700", 
+            color: "#2d1b69", 
+            marginBottom: "1.5rem",
+            borderBottom: "3px solid rgba(102, 77, 162, 0.1)",
+            paddingBottom: "0.5rem"
+          }}>
+            Upcoming Meetings
+          </h2>
+          <div style={{ 
+            display: "grid", 
+            gap: "1.5rem",
+            gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))"
+          }}>
+            {filteredBookings.upcoming.map((booking) => (
+              <div 
+                key={booking.bookingId} 
+                style={{ 
+                  padding: "1.5rem", 
+                  background: "rgba(255, 255, 255, 0.9)",
+                  borderRadius: "20px",
+                  border: "1px solid rgba(102, 77, 162, 0.1)",
+                  boxShadow: "0 10px 40px rgba(102, 77, 162, 0.1)",
+                  backdropFilter: "blur(20px)",
+                  cursor: "pointer",
+                  transition: "transform 0.2s, box-shadow 0.2s"
+                }}
+                onClick={() => router.push(`/booking/details/${booking.bookingId}`)}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = "translateY(-5px)";
+                  e.currentTarget.style.boxShadow = "0 15px 50px rgba(102, 77, 162, 0.15)";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "0 10px 40px rgba(102, 77, 162, 0.1)";
+                }}
+              >
+                <div style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  marginBottom: "1rem",
+                  fontSize: "1.125rem",
+                  fontWeight: "600",
+                  color: "#2d1b69"
+                }}>
+                  <span>{booking.bookerName}</span>
+                  <span style={{ margin: "0 0.5rem", color: "#a855f7" }}>→</span>
+                  <span>{booking.inviteeName}</span>
+                </div>
+                
+                <div style={{ 
+                  fontSize: "0.875rem", 
+                  color: "#6b7280", 
+                  marginBottom: "1rem",
+                  padding: "0.75rem",
+                  backgroundColor: "rgba(102, 77, 162, 0.05)",
+                  borderRadius: "10px"
+                }}>
+                  📅 {formatDateTime(booking.meetingTime)}
+                </div>
+                
+                <div style={{ 
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center"
+                }}>
+                  <span style={{
+                    padding: "0.5rem 1rem", 
+                    borderRadius: "15px", 
+                    fontSize: "0.75rem", 
+                    fontWeight: "600",
+                    textTransform: "uppercase",
+                    backgroundColor: booking.status === "Confirmed" ? "#dcfce7" : 
+                                   booking.status === "Rescheduled" ? "#fef3c7" : "#f3f4f6",
+                    color: booking.status === "Confirmed" ? "#166534" : 
+                           booking.status === "Rescheduled" ? "#92400e" : "#6b7280",
+                    border: `1px solid ${
+                      booking.status === "Confirmed" ? "#16a34a" : 
+                      booking.status === "Rescheduled" ? "#f59e0b" : "#d1d5db"
+                    }`
+                  }}>
+                    {booking.status}
+                  </span>
+                  
+                  <div style={{ 
+                    fontSize: "0.875rem", 
+                    color: "#4f46e5",
+                    fontWeight: "500"
+                  }}>
+                    View Details →
+                  </div>
+                </div>
               </div>
-              <div style={{ fontSize: "0.875rem", color: "#6b7280", marginTop: "0.5rem" }}>
-                {formatDateTime(booking.MeetingTime)}
-              </div>
-              <div style={{ 
-                marginTop: "0.5rem", 
-                padding: "0.25rem 0.75rem", 
-                borderRadius: "12px", 
-                fontSize: "0.75rem", 
-                fontWeight: "600",
-                textTransform: "uppercase",
-                backgroundColor: booking.BookingStatus === "Confirmed" ? "#dcfce7" : booking.BookingStatus === "Rescheduled" ? "#fef3c7" : "#f3f4f6",
-                color: booking.BookingStatus === "Confirmed" ? "#166534" : booking.BookingStatus === "Rescheduled" ? "#92400e" : "#6b7280",
-                display: "inline-block"
-              }}>
-                {booking.BookingStatus}
-              </div>
-              <div style={{ marginTop: "0.75rem", fontSize: "0.875rem", color: "#4f46e5" }}>
-                View Details →
-              </div>
-            </div>
-          ))}
-        </>
+            ))}
+          </div>
+        </div>
       )}
       
       {/* Past Bookings */}
       {filteredBookings.past.length > 0 && (
-        <>
-          <h3 style={{ marginBottom: "1rem", color: "#374151", marginTop: filteredBookings.upcoming.length > 0 ? "2rem" : "0" }}>Past Meetings</h3>
-          {filteredBookings.past.map((booking) => (
-            <div key={booking.BookingID} style={{ 
-              padding: "1rem", 
-              border: "1px solid #e5e7eb", 
-              borderRadius: "8px", 
-              marginBottom: "1rem",
-              backgroundColor: "#f9fafb",
-              opacity: "0.8",
-              cursor: "pointer"
-            }}
-            onClick={() => router.push(`/booking/details/${booking.BookingID}`)}
-            >
-              <div className={styles.label}>
-                <strong>{booking.BookerUsername}</strong> → <strong>{booking.InvitedUsername}</strong>
+        <div>
+          <h2 style={{ 
+            fontSize: "1.5rem", 
+            fontWeight: "700", 
+            color: "#2d1b69", 
+            marginBottom: "1.5rem",
+            borderBottom: "3px solid rgba(102, 77, 162, 0.1)",
+            paddingBottom: "0.5rem"
+          }}>
+            Past Meetings
+          </h2>
+          <div style={{ 
+            display: "grid", 
+            gap: "1.5rem",
+            gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))"
+          }}>
+            {filteredBookings.past.map((booking) => (
+              <div 
+                key={booking.bookingId} 
+                style={{ 
+                  padding: "1.5rem", 
+                  background: "rgba(255, 255, 255, 0.7)",
+                  borderRadius: "20px",
+                  border: "1px solid rgba(102, 77, 162, 0.05)",
+                  boxShadow: "0 10px 40px rgba(102, 77, 162, 0.05)",
+                  backdropFilter: "blur(20px)",
+                  cursor: "pointer",
+                  opacity: "0.8",
+                  transition: "transform 0.2s, box-shadow 0.2s, opacity 0.2s"
+                }}
+                onClick={() => router.push(`/booking/details/${booking.bookingId}`)}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = "translateY(-5px)";
+                  e.currentTarget.style.boxShadow = "0 15px 50px rgba(102, 77, 162, 0.1)";
+                  e.currentTarget.style.opacity = "1";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "0 10px 40px rgba(102, 77, 162, 0.05)";
+                  e.currentTarget.style.opacity = "0.8";
+                }}
+              >
+                <div style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  marginBottom: "1rem",
+                  fontSize: "1.125rem",
+                  fontWeight: "600",
+                  color: "#6b7280"
+                }}>
+                  <span>{booking.bookerName}</span>
+                  <span style={{ margin: "0 0.5rem", color: "#9ca3af" }}>→</span>
+                  <span>{booking.inviteeName}</span>
+                </div>
+                
+                <div style={{ 
+                  fontSize: "0.875rem", 
+                  color: "#9ca3af", 
+                  marginBottom: "1rem",
+                  padding: "0.75rem",
+                  backgroundColor: "rgba(102, 77, 162, 0.03)",
+                  borderRadius: "10px"
+                }}>
+                  📅 {formatDateTime(booking.meetingTime)}
+                </div>
+                
+                <div style={{ 
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center"
+                }}>
+                  <span style={{
+                    padding: "0.5rem 1rem", 
+                    borderRadius: "15px", 
+                    fontSize: "0.75rem", 
+                    fontWeight: "600",
+                    textTransform: "uppercase",
+                    backgroundColor: "#f3f4f6",
+                    color: "#6b7280",
+                    border: "1px solid #d1d5db"
+                  }}>
+                    {booking.status}
+                  </span>
+                  
+                  <div style={{ 
+                    fontSize: "0.875rem", 
+                    color: "#6b7280",
+                    fontWeight: "500"
+                  }}>
+                    View Details →
+                  </div>
+                </div>
               </div>
-              <div style={{ fontSize: "0.875rem", color: "#6b7280", marginTop: "0.5rem" }}>
-                {formatDateTime(booking.MeetingTime)}
-              </div>
-              <div style={{ 
-                marginTop: "0.5rem", 
-                padding: "0.25rem 0.75rem", 
-                borderRadius: "12px", 
-                fontSize: "0.75rem", 
-                fontWeight: "600",
-                textTransform: "uppercase",
-                backgroundColor: "#f3f4f6",
-                color: "#6b7280",
-                display: "inline-block"
-              }}>
-                {booking.BookingStatus}
-              </div>
-              <div style={{ marginTop: "0.75rem", fontSize: "0.875rem", color: "#6b7280" }}>
-                View Details →
-              </div>
-            </div>
-          ))}
-        </>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );
 
   return (
-    <div className={styles.wrapper}>
-      <div className={styles.card}>
-        <h1 className={styles.title}>My Bookings</h1>
-        <p className={styles.subtitle}>Manage your meeting invitations and appointments</p>
-        
-        <button 
-          onClick={() => router.push("/booking")} 
-          className={styles.button}
-          style={{ marginBottom: "2rem" }}
-        >
-          + Create New Booking
-        </button>
+    <div className={styles.page}>
+      <header className={styles.header}>
+        <div className={styles.headerContent}>
+          <Link href="/" className={styles.logo}>MentorAll</Link>
+          <nav className={styles.nav}>
+            <Link href="/dashboard" className={styles.navLink}>Dashboard</Link>
+            <Link href="/booking" className={styles.navLink}>New Booking</Link>
+            <Link href="/profile" className={styles.navLink}>Profile</Link>
+          </nav>
+        </div>
+      </header>
 
-        {bookingsList}
-      </div>
+      <main className={styles.main}>
+        <div className={styles.container}>
+          <section className={styles.hero}>
+            <h1 className={styles.title}>My Bookings</h1>
+            <p className={styles.subtitle}>Manage your meeting invitations and appointments</p>
+            
+            <div style={{ marginTop: "2rem" }}>
+              <Link href="/booking" className={styles.ctaButton}>
+                + Create New Booking
+              </Link>
+            </div>
+          </section>
+
+          <section style={{ marginTop: "3rem" }}>
+            {bookingsList}
+          </section>
+        </div>
+      </main>
     </div>
   );
 }

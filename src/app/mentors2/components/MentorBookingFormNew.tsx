@@ -94,10 +94,10 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
           notes: ""
         });
 
-        // Redirect to booking confirmation after 2 seconds
+        // Redirect to booking details after 2 seconds
         setTimeout(() => {
           if (data.bookingId) {
-            router.push(`/booking/confirm/${data.bookingId}`);
+            router.push(`/booking/details/${data.bookingId}`);
           } else {
             router.push("/booking/list");
           }

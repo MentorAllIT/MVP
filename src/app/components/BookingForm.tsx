@@ -10,9 +10,10 @@ interface User {
 
 interface BookingFormProps {
   currentUserId?: string; // Current logged-in user's ID
+  preselectedMentorId?: string; // Pre-selected mentor ID
 }
 
-export default function BookingForm({ currentUserId }: BookingFormProps) {
+export default function BookingForm({ currentUserId, preselectedMentorId }: BookingFormProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -20,7 +21,7 @@ export default function BookingForm({ currentUserId }: BookingFormProps) {
   
   // Form state
   const [formData, setFormData] = useState({
-    inviteeId: '',
+    inviteeId: preselectedMentorId || '',
     meetingDate: '',
     meetingTime: '',
   });
@@ -135,6 +136,7 @@ export default function BookingForm({ currentUserId }: BookingFormProps) {
             onChange={handleInputChange}
             required
             className={styles.select}
+            disabled={!!preselectedMentorId} // Disable if mentor is preselected
           >
             <option value="">-- Choose a person --</option>
             {users.map((user) => (
@@ -143,6 +145,11 @@ export default function BookingForm({ currentUserId }: BookingFormProps) {
               </option>
             ))}
           </select>
+          {preselectedMentorId && (
+            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>
+              Mentor has been pre-selected for you
+            </div>
+          )}
         </div>
 
         {/* Meeting Date */}
