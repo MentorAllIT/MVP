@@ -1,12 +1,16 @@
 "use client";
 
+import { Suspense } from "react";
 import BookingForm from "../components/BookingForm";
 import MentorBookingForm from "../mentors2/components/MentorBookingFormNew";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import styles from "../mentee/browse/browse.module.css";
 
-export default function BookingPage() {
+// Avoid static generation for this page (optional but nice here)
+export const dynamic = "force-dynamic";
+
+function BookingPageInner() {
   const searchParams = useSearchParams();
   const mentorId = searchParams.get('mentorId');
   const mentorName = searchParams.get('mentorName');
@@ -71,5 +75,24 @@ export default function BookingPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function BookingPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className={styles.main}>
+          <div className={styles.container}>
+            <section className={styles.hero}>
+              <h1 className={styles.title}>Loading booking…</h1>
+              <p className={styles.subtitle}>Preparing your booking form.</p>
+            </section>
+          </div>
+        </div>
+      }
+    >
+      <BookingPageInner />
+    </Suspense>
   );
 }
