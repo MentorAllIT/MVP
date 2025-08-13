@@ -71,21 +71,6 @@ export async function GET(req: Request) {
       '',
       booking.Notes ? `Notes: ${booking.Notes}` : '',
       '',
-      booking.BookingStatus === 'Rescheduled' ? 'This meeting has been rescheduled by the mentor.' : '',
-      booking.BookingStatus === 'Rescheduled' ? '' : '',
-      'Google Meet Instructions:',
-      booking.BookingStatus === 'Confirmed' 
-        ? '• Google Meet link has been created and sent to participants'
-        : '• A Google Meet link will be created automatically when the mentor confirms this booking',
-      booking.BookingStatus === 'Confirmed' 
-        ? '• Check your email for the Google Meet link'
-        : '• You will receive the Google Meet link via email notification',
-      '• Join the meeting using the Google Meet link provided',
-      '',
-      `Booking ID: ${booking.BookingID}`,
-      `Status: ${booking.BookingStatus}`,
-      booking.BookingStatus === 'Rescheduled' ? `Rescheduled Time: ${new Date(booking.MeetingTime as string).toLocaleString()}` : '',
-      '',
       'Powered by MentorAll'
     ].filter(line => line !== null && line !== '').join('\\n');
 
@@ -103,7 +88,7 @@ export async function GET(req: Request) {
       `DTEND:${endTimeICS}`,
       `SUMMARY:Meeting: ${booking.BookerUsername} & ${booking.InvitedUsername}`,
       `DESCRIPTION:${description}`,
-      `LOCATION:Google Meet (Link will be provided upon confirmation)`,
+      `LOCATION:Zoom (Link will be provided in confirmation email)`,
       `STATUS:${booking.BookingStatus === 'Confirmed' ? 'CONFIRMED' : booking.BookingStatus === 'Rescheduled' ? 'TENTATIVE' : 'TENTATIVE'}`,
       `ORGANIZER:CN=${booking.BookerUsername}`,
       `ATTENDEE:CN=${booking.InvitedUsername}`,
