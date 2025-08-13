@@ -460,6 +460,75 @@ export default function BookingDetailsPage() {
                 </div>
               )}
             </div>
+             <div style={{ marginBottom: "2rem" }}>
+              <h3 style={{ 
+                fontSize: "1.125rem", 
+                fontWeight: "600", 
+                color: "#2d1b69", 
+                marginBottom: "1rem",
+                borderBottom: "2px solid rgba(102, 77, 162, 0.1)",
+                paddingBottom: "0.5rem"
+              }}>
+                Add to Calendar
+              </h3>
+              <div style={{ 
+                padding: "1.5rem", 
+                background: "linear-gradient(135deg, #f8f7fc 0%, #f0edf8 100%)", 
+                borderRadius: "15px", 
+                border: "1px solid rgba(102, 77, 162, 0.1)",
+                textAlign: "center"
+              }}>
+                <p style={{ 
+                  color: "#6b7280", 
+                  marginBottom: "1.5rem",
+                  fontSize: "0.875rem"
+                }}>
+                  Download a calendar file to add this meeting to your preferred calendar app
+                </p>
+                <button 
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = `/api/booking/${booking.BookingId}/ics`;
+                    link.download = `mentorall-meeting-${booking.BookingId}.ics`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                  style={{
+                    padding: "1rem 2rem",
+                    background: "linear-gradient(135deg, #2d1b69 0%, #4f2d8a 100%)",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "15px",
+                    cursor: "pointer",
+                    fontWeight: "600",
+                    fontSize: "1rem",
+                    boxShadow: "0 4px 15px rgba(45, 27, 105, 0.3)",
+                    transition: "transform 0.2s, box-shadow 0.2s",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.5rem"
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(45, 27, 105, 0.4)";
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "0 4px 15px rgba(45, 27, 105, 0.3)";
+                  }}
+                >
+                  📅 Download ICS File
+                </button>
+                <div style={{ 
+                  marginTop: "1rem", 
+                  fontSize: "0.75rem", 
+                  color: "#9ca3af"
+                }}>
+                  Compatible with Google Calendar, Outlook, Apple Calendar, and more
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </main>
