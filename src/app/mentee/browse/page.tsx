@@ -28,6 +28,7 @@ type Mentor = {
   fieldOfStudy?: string | null;
   tags?: string[];
   metaUpdatedAt?: string | null;
+  score?: number | null;
 };
 
 function splitSkills(skill?: string | string[] | null): string[] {

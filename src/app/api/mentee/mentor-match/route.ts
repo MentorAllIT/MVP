@@ -118,7 +118,13 @@ export async function GET(req: NextRequest) {
     // Mentee matches
     const matchRows: any[] = await firstPage(AIRTABLE_MATCH_RANKING_TABLE!, {
       filterByFormula: `{MenteeID}='${esc(uid)}'`,
-      fields: ["MentorID", "UpdatedAt"],
+      fields: ["MentorID", "UpdatedAt", "Score"],
+      // Fetch Score, sort by Score desc (then UpdatedAt), and cap to top 2
+      sort: [
+        { field: "Score", direction: "desc" },
+        { field: "UpdatedAt", direction: "desc" },
+      ],
+      maxRecords: 2,
     });
 
     const mentorIds = Array.from(
@@ -173,24 +179,32 @@ export async function GET(req: NextRequest) {
     // Sort and merge
     const mentors = matchRows
       .slice()
-      .sort(
-        (a: any, b: any) =>
+      .sort((a: any, b: any) => {
+        const as = Number(a.fields?.Score);
+        const bs = Number(b.fields?.Score);
+        const scoreCmp =
+          (Number.isFinite(bs) ? bs : -Infinity) - (Number.isFinite(as) ? as : -Infinity);
+        if (scoreCmp !== 0) return scoreCmp;
+        return (
           new Date(b.fields?.UpdatedAt ?? 0).getTime() -
           new Date(a.fields?.UpdatedAt ?? 0).getTime()
-      )
+        );
+      })
       .map((r: any) => {
         const id = r.fields?.MentorID as string;
+        const scoreVal = Number(r.fields?.Score);
         return {
           userId: id,
           rankedUpdatedAt: r.fields?.UpdatedAt ?? null,
+          score: Number.isFinite(scoreVal) ? scoreVal : null,
           name: users[id]?.name ?? null,
           bio: profiles[id]?.bio ?? null,
           linkedIn: profiles[id]?.linkedIn ?? null,
           ...(meta[id] ?? {}),
         };
       });
-    
-    console.log(mentors)
+
+    console.log(mentors);
     return NextResponse.json({ mentors });
   } catch (e: any) {
     const status = e?.statusCode || e?.status || 500;
