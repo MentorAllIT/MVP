@@ -140,7 +140,6 @@ export async function GET(req: NextRequest) {
         "UserID",
         "Industry",
         "YearExp",
-        "Calendly",
         "Skill",
         "Location",
         "Role",
@@ -165,7 +164,6 @@ export async function GET(req: NextRequest) {
     const meta = byId(metaRows, (f) => ({
       industry: clean(f.Industry) ?? null,
       yearExp: typeof f.YearExp === "number" ? f.YearExp : null,
-      calendly: f.Calendly ?? null,
       skill: f.Skill ?? null, // UI splits it
       location: clean(f.Location) ?? null,
       role: clean(f.Role) ?? null,
