@@ -7,14 +7,14 @@ import styles from '../../../mentee/browse/browse.module.css';
 
 interface BookingDetails {
   id: string;
-  bookingId: string;
-  bookerName: string;
-  inviteeName: string;
-  bookerEmail: string;
-  inviteeEmail: string;
-  meetingTime: string;
-  status: string;
-  notes?: string;
+  BookingId: string;
+  BookerUsername: string;
+  InvitedUsername: string;
+  Email: string;
+  InvitedEmail: string;
+  MeetingTime: string;
+  BookingStatus: string;
+  Notes?: string;
 }
 
 export default function BookingDetailsPage() {
@@ -78,7 +78,7 @@ export default function BookingDetailsPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          bookingId: booking?.bookingId,
+          bookingId: booking?.BookingId,
           newDateTime,
           reason: rescheduleReason,
         }),
@@ -179,9 +179,9 @@ export default function BookingDetailsPage() {
           <section className={styles.hero}>
             <h1 className={styles.title}>Meeting Details</h1>
             <p className={styles.subtitle}>
-              {booking.status === "Pending" && "Review and manage your meeting invitation"}
-              {booking.status === "Confirmed" && "Your meeting has been confirmed"}
-              {booking.status === "Rescheduled" && "Your meeting has been rescheduled"}
+              {booking.BookingStatus === "Pending" && "Review and manage your meeting invitation"}
+              {booking.BookingStatus === "Confirmed" && "Your meeting has been confirmed"}
+              {booking.BookingStatus === "Rescheduled" && "Your meeting has been rescheduled"}
             </p>
           </section>
 
@@ -205,17 +205,17 @@ export default function BookingDetailsPage() {
                 fontWeight: "600",
                 textTransform: "uppercase",
                 backgroundColor: 
-                  booking.status === "Confirmed" ? "#dcfce7" :
-                  booking.status === "Rescheduled" ? "#fef3c7" : "#f3f4f6",
+                  booking.BookingStatus === "Confirmed" ? "#dcfce7" :
+                  booking.BookingStatus === "Rescheduled" ? "#fef3c7" : "#f3f4f6",
                 color: 
-                  booking.status === "Confirmed" ? "#166534" :
-                  booking.status === "Rescheduled" ? "#92400e" : "#6b7280",
+                  booking.BookingStatus === "Confirmed" ? "#166534" :
+                  booking.BookingStatus === "Rescheduled" ? "#92400e" : "#6b7280",
                 border: `1px solid ${
-                  booking.status === "Confirmed" ? "#16a34a" :
-                  booking.status === "Rescheduled" ? "#f59e0b" : "#d1d5db"
+                  booking.BookingStatus === "Confirmed" ? "#16a34a" :
+                  booking.BookingStatus === "Rescheduled" ? "#f59e0b" : "#d1d5db"
                 }`
               }}>
-                {booking.status}
+                {booking.BookingStatus}
               </span>
             </div>
 
@@ -247,7 +247,7 @@ export default function BookingDetailsPage() {
                     border: "1px solid rgba(102, 77, 162, 0.2)"
                   }}>
                     <span style={{ fontWeight: "600", color: "#2d1b69", minWidth: "100px" }}>Organizer:</span>
-                    <span style={{ color: "#4b5563" }}>{booking.bookerName} ({booking.bookerEmail})</span>
+                    <span style={{ color: "#4b5563" }}>{booking.BookerUsername} ({booking.Email})</span>
                   </div>
                   <div style={{ 
                     display: "flex", 
@@ -258,7 +258,7 @@ export default function BookingDetailsPage() {
                     border: "1px solid rgba(102, 77, 162, 0.2)"
                   }}>
                     <span style={{ fontWeight: "600", color: "#2d1b69", minWidth: "100px" }}>Invited:</span>
-                    <span style={{ color: "#4b5563" }}>{booking.inviteeName} ({booking.inviteeEmail})</span>
+                    <span style={{ color: "#4b5563" }}>{booking.InvitedUsername} ({booking.InvitedEmail})</span>
                   </div>
                 </div>
               </div>
@@ -292,7 +292,7 @@ export default function BookingDetailsPage() {
                     border: "1px solid rgba(102, 77, 162, 0.2)"
                   }}>
                     <span style={{ fontWeight: "600", color: "#2d1b69", minWidth: "120px" }}>Date & Time:</span>
-                    <span style={{ color: "#4b5563" }}>{formatDateTime(booking.meetingTime)}</span>
+                    <span style={{ color: "#4b5563" }}>{formatDateTime(booking.MeetingTime)}</span>
                   </div>
                   <div style={{ 
                     display: "flex", 
@@ -304,7 +304,7 @@ export default function BookingDetailsPage() {
                   }}>
                     <span style={{ fontWeight: "600", color: "#2d1b69", minWidth: "120px" }}>Status:</span>
                     <span style={{ color: "#4b5563" }}>
-                      {isUpcoming(booking.meetingTime) ? "⏰ Upcoming meeting" : "📅 Past meeting"}
+                      {isUpcoming(booking.MeetingTime) ? "⏰ Upcoming meeting" : "📅 Past meeting"}
                     </span>
                   </div>
                 </div>
@@ -312,7 +312,7 @@ export default function BookingDetailsPage() {
             </div>
 
             {/* Notes */}
-            {booking.notes && (
+            {booking.Notes && (
               <div style={{ marginBottom: "2rem" }}>
                 <h3 style={{ 
                   fontSize: "1.125rem", 
@@ -331,7 +331,7 @@ export default function BookingDetailsPage() {
                   border: "1px solid rgba(102, 77, 162, 0.1)",
                   whiteSpace: "pre-wrap"
                 }}>
-                  {booking.notes}
+                  {booking.Notes}
                 </div>
               </div>
             )}
@@ -459,77 +459,6 @@ export default function BookingDetailsPage() {
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* Download ICS Section */}
-            <div style={{ marginBottom: "2rem" }}>
-              <h3 style={{ 
-                fontSize: "1.125rem", 
-                fontWeight: "600", 
-                color: "#2d1b69", 
-                marginBottom: "1rem",
-                borderBottom: "2px solid rgba(102, 77, 162, 0.1)",
-                paddingBottom: "0.5rem"
-              }}>
-                Add to Calendar
-              </h3>
-              <div style={{ 
-                padding: "1.5rem", 
-                background: "linear-gradient(135deg, #f8f7fc 0%, #f0edf8 100%)", 
-                borderRadius: "15px", 
-                border: "1px solid rgba(102, 77, 162, 0.1)",
-                textAlign: "center"
-              }}>
-                <p style={{ 
-                  color: "#6b7280", 
-                  marginBottom: "1.5rem",
-                  fontSize: "0.875rem"
-                }}>
-                  Download a calendar file to add this meeting to your preferred calendar app
-                </p>
-                <button 
-                  onClick={() => {
-                    const link = document.createElement('a');
-                    link.href = `/api/booking/${booking.bookingId}/ics`;
-                    link.download = `mentorall-meeting-${booking.bookingId}.ics`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                  }}
-                  style={{
-                    padding: "1rem 2rem",
-                    background: "linear-gradient(135deg, #2d1b69 0%, #4f2d8a 100%)",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "15px",
-                    cursor: "pointer",
-                    fontWeight: "600",
-                    fontSize: "1rem",
-                    boxShadow: "0 4px 15px rgba(45, 27, 105, 0.3)",
-                    transition: "transform 0.2s, box-shadow 0.2s",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "0.5rem"
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.transform = "translateY(-2px)";
-                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(45, 27, 105, 0.4)";
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "0 4px 15px rgba(45, 27, 105, 0.3)";
-                  }}
-                >
-                  📅 Download ICS File
-                </button>
-                <div style={{ 
-                  marginTop: "1rem", 
-                  fontSize: "0.75rem", 
-                  color: "#9ca3af"
-                }}>
-                  Compatible with Google Calendar, Outlook, Apple Calendar, and more
-                </div>
-              </div>
             </div>
           </div>
         </div>

@@ -117,7 +117,7 @@ export default function BookingsListPage() {
             <Link href="/" className={styles.logo}>MentorAll</Link>
             <nav className={styles.nav}>
               <Link href="/dashboard" className={styles.navLink}>Dashboard</Link>
-              <Link href="/booking" className={styles.navLink}>New Booking</Link>
+              <Link href="/booking/list" className={styles.navLink}>My Booking</Link>
               <Link href="/profile" className={styles.navLink}>Profile</Link>
             </nav>
           </div>
@@ -143,7 +143,7 @@ export default function BookingsListPage() {
             <Link href="/" className={styles.logo}>MentorAll</Link>
             <nav className={styles.nav}>
               <Link href="/dashboard" className={styles.navLink}>Dashboard</Link>
-              <Link href="/booking" className={styles.navLink}>New Booking</Link>
+              <Link href="/booking/list" className={styles.navLink}>My Bookings</Link>
               <Link href="/profile" className={styles.navLink}>Profile</Link>
             </nav>
           </div>
@@ -176,7 +176,7 @@ export default function BookingsListPage() {
             <Link href="/" className={styles.logo}>MentorAll</Link>
             <nav className={styles.nav}>
               <Link href="/dashboard" className={styles.navLink}>Dashboard</Link>
-              <Link href="/booking" className={styles.navLink}>New Booking</Link>
+              <Link href="/booking" className={styles.navLink}>My Booking</Link>
               <Link href="/profile" className={styles.navLink}>Profile</Link>
             </nav>
           </div>
@@ -193,7 +193,7 @@ export default function BookingsListPage() {
               <div className={styles.emptyEmoji}>📅</div>
               <h3>No Bookings Found</h3>
               <p>You haven&apos;t created or received any bookings yet.</p>
-              <Link href="/booking" className={styles.ctaButton}>Create Your First Booking</Link>
+              <Link href="/mentee/browse" className={styles.ctaButton}>Create Your First Booking</Link>
             </div>
           </div>
         </main>
@@ -418,7 +418,7 @@ export default function BookingsListPage() {
           <Link href="/" className={styles.logo}>MentorAll</Link>
           <nav className={styles.nav}>
             <Link href="/dashboard" className={styles.navLink}>Dashboard</Link>
-            <Link href="/booking" className={styles.navLink}>New Booking</Link>
+            <Link href="/booking/list" className={styles.navLink}>My Bookings</Link>
             <Link href="/profile" className={styles.navLink}>Profile</Link>
           </nav>
         </div>
@@ -431,8 +431,8 @@ export default function BookingsListPage() {
             <p className={styles.subtitle}>Manage your meeting invitations and appointments</p>
             
             <div style={{ marginTop: "2rem" }}>
-              <Link href="/booking" className={styles.ctaButton}>
-                + Create New Booking
+              <Link href="/mentee/browse" className={styles.ctaButton}>
+                + Browse Mentors and Create Booking
               </Link>
             </div>
           </section>
