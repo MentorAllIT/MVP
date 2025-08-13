@@ -19,7 +19,6 @@ type Mentor = {
   // MentorMeta
   industry?: string | null;
   yearExp?: number | null;
-  calendly?: string | null;
   skill?: string | string[] | null;
   location?: string | null;
   role?: string | null;

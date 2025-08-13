@@ -8,13 +8,14 @@ const MENTEE_TABLE = process.env.AIRTABLE_MENTEE_META_TABLE!;
 const MENTOR_TABLE = process.env.AIRTABLE_MENTOR_META_TABLE!;
 const ATTACH_FIELD = "CV";
 const CONTENT_URL  = "https://content.airtable.com/v0";
+
 const esc = (s: string) => s.replace(/'/g, "\\'");
 
 export async function POST(req: NextRequest) {
   try {
     const fd   = await req.formData();
-    const uid  = fd.get("uid")   as string | null;
-    const role = fd.get("role")  as string | null;
+    const uid  = fd.get("uid")  as string | null;
+    const role = fd.get("role") as string | null;
 
     if (!uid || !role) {
       return NextResponse.json({ error: "Missing uid/role" }, { status: 400 });
@@ -22,15 +23,31 @@ export async function POST(req: NextRequest) {
 
     const table = role === "mentee" ? MENTEE_TABLE : MENTOR_TABLE;
     const fields: Record<string, any> = { UserID: uid };
+    console.log(fd);
 
     if (role === "mentee") {
-        fields.Goal       = fd.get("goal")       as string;
-        fields.Challenges = fd.get("challenges") as string;
-        fields.HelpNeeded = fd.get("help")       as string;
+      fields.Goal       = (fd.get("goal")        as string) ?? "";
+      fields.Challenges = (fd.get("challenges")  as string) ?? "";
+      fields.HelpNeeded = (fd.get("help")        as string) ?? "";
     } else {
-      fields.Industry = fd.get("industry") as string;
-      fields.YearExp  = Number(fd.get("years") as string);
-      fields.Calendly = fd.get("calendly") as string;
+      // Mentor meta
+      fields.Industry = (fd.get("industry") as string) ?? "";
+      const years = Number(fd.get("years") as string);
+      fields.YearExp  = Number.isFinite(years) ? years : null;
+
+      const availabilityJson = fd.get("availabilityJson") as string | null;
+      if (!availabilityJson) {
+        return NextResponse.json({ error: "Missing availabilityJson" }, { status: 400 });
+      }
+
+      // Validate & store JSON blob
+      try {
+        JSON.parse(availabilityJson);
+      } catch {
+        return NextResponse.json({ error: "Invalid availabilityJson (must be JSON)" }, { status: 400 });
+      }
+
+      fields.AvailabilityJSON = availabilityJson;
     }
 
     // find existing row
