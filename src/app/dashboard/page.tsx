@@ -100,6 +100,7 @@ export default function Dashboard() {
           <h1 className={styles.logo}>MentorAll</h1>
           <nav className={styles.nav}>
             <Link href="/profile" className={styles.navLink}>Profile</Link>
+            <Link href="/booking/list" className={styles.navLink}>My Bookings</Link>
             <button 
               onClick={() => {
                 fetch("/api/auth/signout", { method: "POST" });

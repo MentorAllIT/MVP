@@ -94,10 +94,10 @@ export default function MentorBookingForm({ mentorName, mentorUsername, mentorUs
           notes: ""
         });
 
-        // Redirect to booking confirmation after 2 seconds
+        // Redirect to booking details after 2 seconds
         setTimeout(() => {
           if (data.bookingId) {
-            router.push(`/booking/confirm/${data.bookingId}`);
+            router.push(`/booking/details/${data.bookingId}`);
           } else {
             router.push("/booking/list");
           }
@@ -135,7 +135,7 @@ export default function MentorBookingForm({ mentorName, mentorUsername, mentorUs
           They will receive a notification to confirm or decline the meeting.
         </p>
         <p style={{ color: "#166534", fontSize: "0.875rem", marginBottom: "1rem" }}>
-          📅 <strong>Calendar event with Google Meet instructions</strong> will be created automatically once the mentor confirms your booking.
+          📅 <strong>Calendar event will be created</strong> once the mentor confirms your booking.
         </p>
         
         {/* Calendar Download Section */}
@@ -275,7 +275,7 @@ export default function MentorBookingForm({ mentorName, mentorUsername, mentorUs
               <li>{mentorName} will receive your meeting request</li>
               <li>They can confirm or suggest an alternative time</li>
               <li>You'll receive a notification with their response</li>
-              <li>Once confirmed, a Google Calendar event with Google Meet instructions will be created automatically</li>
+              <li>Once confirmed, you&apos;ll receive calendar details and meeting instructions</li>
             </ul>
           </div>
         </div>
