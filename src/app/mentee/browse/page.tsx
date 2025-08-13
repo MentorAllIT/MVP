@@ -207,15 +207,9 @@ export default function BrowseMentorsPage() {
                           View LinkedIn
                         </a>
                       )}
-                      {m.calendly ? (
-                        <a className={styles.primaryButton} href={m.calendly} target="_blank" rel="noopener noreferrer">
-                          Book on Calendly
-                        </a>
-                      ) : (
-                        <button className={styles.primaryButton} disabled>
-                          Calendly unavailable
-                        </button>
-                      )}
+                      <Link className={styles.primaryButton} href={`/booking?mentorId=${m.userId}&mentorName=${encodeURIComponent(m.name || 'Mentor')}`}>
+                        Book session
+                      </Link>
                     </div>
                   </article>
                 );

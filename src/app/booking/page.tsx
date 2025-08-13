@@ -1,21 +1,75 @@
 "use client";
 
 import BookingForm from "../components/BookingForm";
-import styles from "../[role]/signup/signup.module.css";
+import MentorBookingForm from "../mentors2/components/MentorBookingFormNew";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import styles from "../mentee/browse/browse.module.css";
 
 export default function BookingPage() {
+  const searchParams = useSearchParams();
+  const mentorId = searchParams.get('mentorId');
+  const mentorName = searchParams.get('mentorName');
+  
   // For now, we'll use a hardcoded user ID
   // In a real app, you'd get this from authentication/session
   const currentUserId = "lqweeee"; // Replace with actual logged-in user ID
 
+  const pageTitle = mentorId && mentorName 
+    ? `Book a Session with ${decodeURIComponent(mentorName)}`
+    : "Book a Meeting";
+
+  const pageSubtitle = mentorId && mentorName
+    ? "Schedule your mentoring session and start your journey"
+    : "Schedule a mentoring session with someone from the community";
+
   return (
-    <div className={styles.wrapper}>
-      <div className={styles.card}>
-        <h1 className={styles.title}>Book a Meeting</h1>
-        <p className={styles.subtitle}>Schedule a mentoring session with someone from the community</p>
-        
-        <BookingForm currentUserId={currentUserId} />
-      </div>
+    <div className={styles.page}>
+      <header className={styles.header}>
+        <div className={styles.headerContent}>
+          <Link href="/" className={styles.logo}>MentorAll</Link>
+          <nav className={styles.nav}>
+            <Link href="/dashboard" className={styles.navLink}>Dashboard</Link>
+            <Link href="/profile" className={styles.navLink}>Profile</Link>
+            <Link href="/settings" className={styles.navLink}>Settings</Link>
+          </nav>
+        </div>
+      </header>
+
+      <main className={styles.main}>
+        <div className={styles.container}>
+          <section className={styles.hero}>
+            <h1 className={styles.title}>{pageTitle}</h1>
+            <p className={styles.subtitle}>{pageSubtitle}</p>
+          </section>
+
+          <div style={{ 
+            maxWidth: "800px", 
+            margin: "0 auto", 
+            padding: "2rem",
+            background: "rgba(255, 255, 255, 0.9)",
+            borderRadius: "20px",
+            border: "1px solid rgba(102, 77, 162, 0.1)",
+            boxShadow: "0 10px 40px rgba(102, 77, 162, 0.1)",
+            backdropFilter: "blur(20px)"
+          }}>
+            {/* If mentorId is provided, use MentorBookingForm */}
+            {mentorId && mentorName ? (
+              <MentorBookingForm 
+                mentorName={decodeURIComponent(mentorName)}
+                mentorUsername={mentorId} // Using mentorId as username for now
+                mentorUserId={mentorId}
+              />
+            ) : (
+              /* Default booking form for general bookings */
+              <BookingForm 
+                currentUserId={currentUserId} 
+                preselectedMentorId={mentorId || undefined}
+              />
+            )}
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

@@ -1,382 +1,537 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
-import styles from "../../../[role]/signup/signup.module.css";
+import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
+import styles from '../../../mentee/browse/browse.module.css';
 
 interface BookingDetails {
-  BookingID: string;
-  BookedByUserID: string;
-  InvitedUserID: string;
-  MeetingTime: string;
-  BookingStatus: string;
+  id: string;
+  BookingId: string;
   BookerUsername: string;
   InvitedUsername: string;
   Email: string;
   InvitedEmail: string;
+  MeetingTime: string;
+  BookingStatus: string;
   Notes?: string;
-  ConfirmationTime?: string;
-  // Google Meet details
-  GoogleMeetEventID?: string;
-  GoogleMeetLink?: string;
-  GoogleMeetTitle?: string;
 }
 
 export default function BookingDetailsPage() {
-  const router = useRouter();
-  const { bookingId } = useParams<{ bookingId: string }>();
-
+  const params = useParams();
+  const bookingId = params.bookingId as string;
   const [booking, setBooking] = useState<BookingDetails | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [updating, setUpdating] = useState(false);
-  const [currentUserId] = useState("lqweeee"); // This should come from auth
+  const [error, setError] = useState<string | null>(null);
+  const [showRescheduleForm, setShowRescheduleForm] = useState(false);
+  const [newDateTime, setNewDateTime] = useState('');
+  const [rescheduleReason, setRescheduleReason] = useState('');
+  const [isRescheduling, setIsRescheduling] = useState(false);
 
   useEffect(() => {
-    if (!bookingId) return;
-    loadBookingDetails();
+    const fetchBookingDetails = async () => {
+      try {
+        const response = await fetch(`/api/booking?bookingId=${bookingId}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch booking details');
+        }
+        const data = await response.json();
+        setBooking(data);
+      } catch (error) {
+        console.error('Error fetching booking details:', error);
+        setError('Failed to load booking details');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (bookingId) {
+      fetchBookingDetails();
+    }
   }, [bookingId]);
 
-  const loadBookingDetails = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`/api/booking/${bookingId}`);
-      const data = await response.json();
-
-      if (response.ok) {
-        setBooking(data.booking);
-      } else {
-        setError(data.error || "Failed to load booking details");
-      }
-    } catch (err) {
-      setError("Error loading booking details");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateBookingStatus = async (status: "Confirmed" | "Rescheduled") => {
-    try {
-      setUpdating(true);
-      const statusParam = status === "Confirmed" ? 1 : 2;
-      const response = await fetch(`/api/booking/${bookingId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ status: statusParam })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setBooking(prev => prev ? { ...prev, BookingStatus: status, ConfirmationTime: new Date().toISOString() } : null);
-      } else {
-        setError(data.error || "Failed to update booking status");
-      }
-    } catch (err) {
-      setError("Error updating booking status");
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZoneName: "short"
+  const formatDateTime = (dateTimeString: string) => {
+    const date = new Date(dateTimeString);
+    return date.toLocaleString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZoneName: 'short'
     });
   };
 
-  const isUpcoming = (dateString: string) => {
-    return new Date(dateString) > new Date();
+  const isUpcoming = (dateTimeString: string) => {
+    return new Date(dateTimeString) > new Date();
   };
 
-  const canManageBooking = () => {
-    return booking && booking.InvitedUserID === currentUserId && booking.BookingStatus === "Pending";
+  const handleReschedule = async () => {
+    if (!newDateTime || !rescheduleReason.trim()) return;
+
+    setIsRescheduling(true);
+    try {
+      const response = await fetch('/api/reschedule', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bookingId: booking?.BookingId,
+          newDateTime,
+          reason: rescheduleReason,
+        }),
+      });
+
+      if (response.ok) {
+        const updatedBooking = await response.json();
+        setBooking(updatedBooking);
+        setShowRescheduleForm(false);
+        setNewDateTime('');
+        setRescheduleReason('');
+        alert('Meeting rescheduled successfully!');
+      } else {
+        alert('Failed to reschedule meeting. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error rescheduling meeting:', error);
+      alert('Failed to reschedule meeting. Please try again.');
+    } finally {
+      setIsRescheduling(false);
+    }
   };
 
   if (loading) {
     return (
-      <div className={styles.wrapper}>
-        <div className={styles.card}>
-          <h1 className={styles.title}>Loading booking details...</h1>
-        </div>
+      <div className={styles.page}>
+        <header className={styles.header}>
+          <div className={styles.headerContent}>
+            <Link href="/" className={styles.logo}>MentorAll</Link>
+            <nav className={styles.nav}>
+              <Link href="/dashboard" className={styles.navLink}>Dashboard</Link>
+              <Link href="/booking/list" className={styles.navLink}>My Bookings</Link>
+              <Link href="/profile" className={styles.navLink}>Profile</Link>
+            </nav>
+          </div>
+        </header>
+
+        <main className={styles.main}>
+          <div className={styles.container}>
+            <section className={styles.hero}>
+              <h1 className={styles.title}>Loading booking details...</h1>
+              <p className={styles.subtitle}>Please wait while we fetch your meeting information</p>
+            </section>
+          </div>
+        </main>
       </div>
     );
   }
 
   if (error || !booking) {
     return (
-      <div className={styles.wrapper}>
-        <div className={styles.card}>
-          <h1 className={styles.title}>Error</h1>
-          <p style={{ color: "#ef4444", marginTop: "1rem" }}>{error || "Booking not found"}</p>
-          <button 
-            onClick={() => router.push("/booking/list")} 
-            className={styles.button}
-            style={{ marginTop: "1rem" }}
-          >
-            Back to Bookings
-          </button>
-        </div>
+      <div className={styles.page}>
+        <header className={styles.header}>
+          <div className={styles.headerContent}>
+            <Link href="/" className={styles.logo}>MentorAll</Link>
+            <nav className={styles.nav}>
+              <Link href="/dashboard" className={styles.navLink}>Dashboard</Link>
+              <Link href="/booking/list" className={styles.navLink}>My Bookings</Link>
+              <Link href="/profile" className={styles.navLink}>Profile</Link>
+            </nav>
+          </div>
+        </header>
+
+        <main className={styles.main}>
+          <div className={styles.container}>
+            <section className={styles.hero}>
+              <h1 className={styles.title}>Booking Not Found</h1>
+              <p className={styles.subtitle}>{error || "The booking you're looking for doesn't exist"}</p>
+            </section>
+            
+            <div className={styles.emptyBox}>
+              <div className={styles.emptyEmoji}>❌</div>
+              <h3>Something went wrong</h3>
+              <p>We couldn&apos;t find the booking details you requested.</p>
+              <Link href="/booking/list" className={styles.ctaButton}>Back to My Bookings</Link>
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className={styles.wrapper}>
-      <div className={styles.card}>
-        <h1 className={styles.title}>Meeting Details</h1>
-        <p className={styles.subtitle}>Review and manage your meeting invitation</p>
+    <div className={styles.page}>
+      <header className={styles.header}>
+        <div className={styles.headerContent}>
+          <Link href="/" className={styles.logo}>MentorAll</Link>
+          <nav className={styles.nav}>
+            <Link href="/dashboard" className={styles.navLink}>Dashboard</Link>
+            <Link href="/booking/list" className={styles.navLink}>My Bookings</Link>
+            <Link href="/profile" className={styles.navLink}>Profile</Link>
+          </nav>
+        </div>
+      </header>
+
+      <main className={styles.main}>
+        <div className={styles.container}>
+          <section className={styles.hero}>
+            <h1 className={styles.title}>Meeting Details</h1>
+            <p className={styles.subtitle}>
+              {booking.BookingStatus === "Pending" && "Review and manage your meeting invitation"}
+              {booking.BookingStatus === "Confirmed" && "Your meeting has been confirmed"}
+              {booking.BookingStatus === "Rescheduled" && "Your meeting has been rescheduled"}
+            </p>
+          </section>
+
+          <div style={{ 
+            maxWidth: "800px", 
+            margin: "0 auto", 
+            padding: "2rem",
+            background: "rgba(255, 255, 255, 0.9)",
+            borderRadius: "20px",
+            border: "1px solid rgba(102, 77, 162, 0.1)",
+            boxShadow: "0 10px 40px rgba(102, 77, 162, 0.1)",
+            backdropFilter: "blur(20px)"
+          }}>
         
-        <div className={styles.form}>
-          {/* Meeting Information */}
-          <div style={{ marginBottom: "2rem" }}>
-            <div className={styles.label}>Meeting Participants</div>
-            <div style={{ 
-              padding: "1rem", 
-              backgroundColor: "#f9fafb", 
-              borderRadius: "8px", 
-              marginTop: "0.5rem",
-              border: "1px solid #e5e7eb"
-            }}>
-              <div style={{ marginBottom: "0.5rem" }}>
-                <strong>Organizer:</strong> {booking.BookerUsername} ({booking.Email})
-              </div>
-              <div>
-                <strong>Invited:</strong> {booking.InvitedUsername} ({booking.InvitedEmail})
-              </div>
-            </div>
-          </div>
-
-          <div style={{ marginBottom: "2rem" }}>
-            <div className={styles.label}>Meeting Time</div>
-            <div style={{ 
-              padding: "1rem", 
-              backgroundColor: "#f9fafb", 
-              borderRadius: "8px", 
-              marginTop: "0.5rem",
-              border: "1px solid #e5e7eb"
-            }}>
-              <div style={{ fontSize: "1.125rem", fontWeight: "600", color: "#374151" }}>
-                {formatDateTime(booking.MeetingTime)}
-              </div>
-              {isUpcoming(booking.MeetingTime) ? (
-                <div style={{ color: "#059669", fontSize: "0.875rem", marginTop: "0.25rem" }}>
-                  ⏰ Upcoming meeting
-                </div>
-              ) : (
-                <div style={{ color: "#6b7280", fontSize: "0.875rem", marginTop: "0.25rem" }}>
-                  📅 Past meeting
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div style={{ marginBottom: "2rem" }}>
-            <div className={styles.label}>Status</div>
-            <div style={{ marginTop: "0.5rem" }}>
-              <span style={{ 
-                padding: "0.5rem 1rem", 
-                borderRadius: "12px", 
-                fontSize: "0.875rem", 
+            {/* Status Badge */}
+            <div style={{ marginBottom: "2rem", textAlign: "center" }}>
+              <span style={{
+                padding: "0.5rem 1.5rem",
+                borderRadius: "25px",
+                fontSize: "0.875rem",
                 fontWeight: "600",
                 textTransform: "uppercase",
-                backgroundColor: booking.BookingStatus === "Confirmed" ? "#dcfce7" : booking.BookingStatus === "Rescheduled" ? "#fef3c7" : "#fef3c7",
-                color: booking.BookingStatus === "Confirmed" ? "#166534" : booking.BookingStatus === "Rescheduled" ? "#92400e" : "#92400e"
+                backgroundColor: 
+                  booking.BookingStatus === "Confirmed" ? "#dcfce7" :
+                  booking.BookingStatus === "Rescheduled" ? "#fef3c7" : "#f3f4f6",
+                color: 
+                  booking.BookingStatus === "Confirmed" ? "#166534" :
+                  booking.BookingStatus === "Rescheduled" ? "#92400e" : "#6b7280",
+                border: `1px solid ${
+                  booking.BookingStatus === "Confirmed" ? "#16a34a" :
+                  booking.BookingStatus === "Rescheduled" ? "#f59e0b" : "#d1d5db"
+                }`
               }}>
                 {booking.BookingStatus}
               </span>
             </div>
-          </div>
 
-          {booking.Notes && (
+            {/* Meeting Information */}
             <div style={{ marginBottom: "2rem" }}>
-              <div className={styles.label}>Notes</div>
-              <div style={{ 
-                padding: "1rem", 
-                backgroundColor: "#f9fafb", 
-                borderRadius: "8px", 
-                marginTop: "0.5rem",
-                border: "1px solid #e5e7eb",
-                whiteSpace: "pre-wrap"
+              <h3 style={{ 
+                fontSize: "1.125rem", 
+                fontWeight: "600", 
+                color: "#2d1b69", 
+                marginBottom: "1rem",
+                borderBottom: "2px solid rgba(102, 77, 162, 0.1)",
+                paddingBottom: "0.5rem"
               }}>
-                {booking.Notes}
-              </div>
-            </div>
-          )}
-
-          {/* Calendar Download Section */}
-          <div style={{ marginBottom: "2rem" }}>
-            <div className={styles.label}>📅 Add to Your Calendar</div>
-            <div style={{ 
-              padding: "1rem", 
-              backgroundColor: "#f0f9ff", 
-              borderRadius: "8px", 
-              marginTop: "0.5rem",
-              border: "1px solid #0ea5e9"
-            }}>
-              <p style={{ color: "#075985", fontSize: "0.875rem", marginBottom: "1rem", lineHeight: "1.4", margin: "0 0 1rem 0" }}>
-                Download this meeting to your personal calendar app (Outlook, Apple Calendar, Google Calendar, etc.)
-              </p>
-              <a 
-                href={`/api/booking/${bookingId}/ics`}
-                download={`mentorall-meeting-${bookingId}.ics`}
-                className={styles.button}
-                style={{ 
-                  backgroundColor: "#0ea5e9",
-                  borderColor: "#0ea5e9",
-                  textDecoration: "none",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  fontSize: "0.875rem"
-                }}
-              >
-                💾 Download Calendar File (.ics)
-              </a>
-              <div style={{ 
-                marginTop: "0.75rem", 
-                fontSize: "0.75rem", 
-                color: "#64748b" 
-              }}>
-                💡 Includes 15-minute reminder and all meeting details
-              </div>
-            </div>
-          </div>
-
-          {/* Google Meet Details */}
-          {booking.GoogleMeetLink && (
-            <div style={{ marginBottom: "2rem" }}>
-              <div className={styles.label}>🎥 Google Meet Details</div>
+                Meeting Participants
+              </h3>
               <div style={{ 
                 padding: "1.5rem", 
-                backgroundColor: "#eff6ff", 
-                borderRadius: "8px", 
-                marginTop: "0.5rem",
-                border: "1px solid #3b82f6"
+                background: "linear-gradient(135deg, #f8f7fc 0%, #f0edf8 100%)", 
+                borderRadius: "15px", 
+                border: "1px solid rgba(102, 77, 162, 0.1)"
               }}>
-                {booking.GoogleMeetTitle && (
-                  <div style={{ marginBottom: "0.75rem" }}>
-                    <strong style={{ color: "#1e40af" }}>Meeting Title:</strong> 
-                    <span style={{ marginLeft: "0.5rem" }}>{booking.GoogleMeetTitle}</span>
+                <div style={{ display: "grid", gap: "1rem" }}>
+                  <div style={{ 
+                    display: "flex", 
+                    alignItems: "center", 
+                    padding: "0.75rem",
+                    backgroundColor: "white",
+                    borderRadius: "8px",
+                    border: "1px solid rgba(102, 77, 162, 0.2)"
+                  }}>
+                    <span style={{ fontWeight: "600", color: "#2d1b69", minWidth: "100px" }}>Organizer:</span>
+                    <span style={{ color: "#4b5563" }}>{booking.BookerUsername} ({booking.Email})</span>
                   </div>
-                )}
-                {booking.GoogleMeetEventID && (
-                  <div style={{ marginBottom: "1rem" }}>
-                    <strong style={{ color: "#1e40af" }}>Event ID:</strong> 
-                    <span style={{ marginLeft: "0.5rem", fontFamily: "monospace", fontSize: "0.875rem" }}>{booking.GoogleMeetEventID}</span>
+                  <div style={{ 
+                    display: "flex", 
+                    alignItems: "center", 
+                    padding: "0.75rem",
+                    backgroundColor: "white",
+                    borderRadius: "8px",
+                    border: "1px solid rgba(102, 77, 162, 0.2)"
+                  }}>
+                    <span style={{ fontWeight: "600", color: "#2d1b69", minWidth: "100px" }}>Invited:</span>
+                    <span style={{ color: "#4b5563" }}>{booking.InvitedUsername} ({booking.InvitedEmail})</span>
                   </div>
-                )}
-                <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-                  <a 
-                    href={booking.GoogleMeetLink} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className={styles.button}
-                    style={{ 
-                      backgroundColor: "#34a853",
-                      borderColor: "#34a853",
-                      textDecoration: "none",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "0.5rem"
-                    }}
-                  >
-                    📹 Join Google Meet
-                  </a>
-                </div>
-                <div style={{ 
-                  marginTop: "0.75rem", 
-                  fontSize: "0.75rem", 
-                  color: "#6b7280" 
-                }}>
-                  💡 This meeting was automatically added to participants&apos; Google Calendars
                 </div>
               </div>
             </div>
-          )}
 
-          {booking.ConfirmationTime && (
+            {/* Time Information */}
             <div style={{ marginBottom: "2rem" }}>
-              <div className={styles.label}>Response Time</div>
-              <div style={{ 
-                fontSize: "0.875rem", 
-                color: "#6b7280", 
-                marginTop: "0.5rem" 
+              <h3 style={{ 
+                fontSize: "1.125rem", 
+                fontWeight: "600", 
+                color: "#2d1b69", 
+                marginBottom: "1rem",
+                borderBottom: "2px solid rgba(102, 77, 162, 0.1)",
+                paddingBottom: "0.5rem"
               }}>
-                {formatDateTime(booking.ConfirmationTime)}
+                Scheduled Time
+              </h3>
+              <div style={{ 
+                padding: "1.5rem", 
+                background: "linear-gradient(135deg, #f8f7fc 0%, #f0edf8 100%)", 
+                borderRadius: "15px", 
+                border: "1px solid rgba(102, 77, 162, 0.1)"
+              }}>
+                <div style={{ display: "grid", gap: "1rem" }}>
+                  <div style={{ 
+                    display: "flex", 
+                    alignItems: "center", 
+                    padding: "0.75rem",
+                    backgroundColor: "white",
+                    borderRadius: "8px",
+                    border: "1px solid rgba(102, 77, 162, 0.2)"
+                  }}>
+                    <span style={{ fontWeight: "600", color: "#2d1b69", minWidth: "120px" }}>Date & Time:</span>
+                    <span style={{ color: "#4b5563" }}>{formatDateTime(booking.MeetingTime)}</span>
+                  </div>
+                  <div style={{ 
+                    display: "flex", 
+                    alignItems: "center", 
+                    padding: "0.75rem",
+                    backgroundColor: "white",
+                    borderRadius: "8px",
+                    border: "1px solid rgba(102, 77, 162, 0.2)"
+                  }}>
+                    <span style={{ fontWeight: "600", color: "#2d1b69", minWidth: "120px" }}>Status:</span>
+                    <span style={{ color: "#4b5563" }}>
+                      {isUpcoming(booking.MeetingTime) ? "⏰ Upcoming meeting" : "📅 Past meeting"}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
-          )}
 
-          {/* Action Buttons */}
-          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginTop: "2rem" }}>
-            {canManageBooking() && (
-              <>
-                <button
-                  onClick={() => updateBookingStatus("Confirmed")}
-                  disabled={updating}
-                  className={styles.button}
-                  style={{ 
-                    backgroundColor: "#059669",
-                    borderColor: "#059669"
-                  }}
-                >
-                  {updating ? "Updating..." : "✓ Confirm Meeting"}
-                </button>
-                <button
-                  onClick={() => updateBookingStatus("Rescheduled")}
-                  disabled={updating}
-                  className={styles.button}
-                  style={{ 
-                    backgroundColor: "#f59e0b",
-                    borderColor: "#f59e0b"
-                  }}
-                >
-                  {updating ? "Updating..." : "📅 Reschedule Meeting"}
-                </button>
-              </>
-            )}
-            
-            <button
-              onClick={() => router.push("/booking/list")}
-              className={styles.button}
-              style={{ 
-                backgroundColor: "#6b7280",
-                borderColor: "#6b7280"
-              }}
-            >
-              ← Back to Bookings
-            </button>
-          </div>
-
-          {/* Additional Information */}
-          <div style={{ 
-            marginTop: "2rem", 
-            padding: "1rem", 
-            backgroundColor: "#eff6ff", 
-            borderRadius: "8px",
-            border: "1px solid #bfdbfe"
-          }}>
-            <div style={{ fontSize: "0.875rem", color: "#1e40af" }}>
-              <strong>Booking ID:</strong> {booking.BookingID}
-            </div>
-            {canManageBooking() && (
-              <div style={{ fontSize: "0.875rem", color: "#1e40af", marginTop: "0.5rem" }}>
-                💡 As the invited participant, you can confirm or decline this meeting above.
+            {/* Notes */}
+            {booking.Notes && (
+              <div style={{ marginBottom: "2rem" }}>
+                <h3 style={{ 
+                  fontSize: "1.125rem", 
+                  fontWeight: "600", 
+                  color: "#2d1b69", 
+                  marginBottom: "1rem",
+                  borderBottom: "2px solid rgba(102, 77, 162, 0.1)",
+                  paddingBottom: "0.5rem"
+                }}>
+                  Notes
+                </h3>
+                <div style={{ 
+                  padding: "1.5rem", 
+                  background: "linear-gradient(135deg, #f8f7fc 0%, #f0edf8 100%)", 
+                  borderRadius: "15px", 
+                  border: "1px solid rgba(102, 77, 162, 0.1)",
+                  whiteSpace: "pre-wrap"
+                }}>
+                  {booking.Notes}
+                </div>
               </div>
             )}
+
+            {/* Reschedule Section */}
+            <div style={{ marginBottom: "2rem" }}>
+              <h3 style={{ 
+                fontSize: "1.125rem", 
+                fontWeight: "600", 
+                color: "#2d1b69", 
+                marginBottom: "1rem",
+                borderBottom: "2px solid rgba(102, 77, 162, 0.1)",
+                paddingBottom: "0.5rem"
+              }}>
+                Need to Reschedule?
+              </h3>
+              <div style={{ textAlign: "center", marginBottom: "1rem" }}>
+                <button 
+                  onClick={() => setShowRescheduleForm(!showRescheduleForm)}
+                  style={{
+                    padding: "1rem 2rem",
+                    background: showRescheduleForm 
+                      ? "linear-gradient(135deg, #dc2626 0%, #ef4444 100%)" 
+                      : "linear-gradient(135deg, #2d1b69 0%, #4f2d8a 100%)",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "15px",
+                    cursor: "pointer",
+                    fontWeight: "600",
+                    fontSize: "1rem",
+                    boxShadow: showRescheduleForm 
+                      ? "0 4px 15px rgba(220, 38, 38, 0.3)" 
+                      : "0 4px 15px rgba(45, 27, 105, 0.3)",
+                    transition: "transform 0.2s, box-shadow 0.2s"
+                  }}
+                >
+                  {showRescheduleForm ? "Cancel" : "Reschedule Meeting"}
+                </button>
+              </div>
+
+              {showRescheduleForm && (
+                <div style={{ 
+                  padding: "2rem", 
+                  background: "linear-gradient(135deg, #f8f7fc 0%, #f0edf8 100%)", 
+                  borderRadius: "15px",
+                  border: "1px solid rgba(102, 77, 162, 0.2)"
+                }}>
+                  <div style={{ marginBottom: "1.5rem" }}>
+                    <label style={{ 
+                      display: "block", 
+                      marginBottom: "0.75rem", 
+                      fontWeight: "600",
+                      color: "#2d1b69",
+                      fontSize: "1rem"
+                    }}>
+                      New Date & Time:
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={newDateTime}
+                      onChange={(e) => setNewDateTime(e.target.value)}
+                      style={{
+                        width: "100%",
+                        padding: "1rem",
+                        border: "2px solid rgba(102, 77, 162, 0.2)",
+                        borderRadius: "12px",
+                        fontSize: "1rem",
+                        backgroundColor: "white",
+                        transition: "border-color 0.2s"
+                      }}
+                    />
+                  </div>
+                  
+                  <div style={{ marginBottom: "1.5rem" }}>
+                    <label style={{ 
+                      display: "block", 
+                      marginBottom: "0.75rem", 
+                      fontWeight: "600",
+                      color: "#2d1b69",
+                      fontSize: "1rem"
+                    }}>
+                      Reason for rescheduling:
+                    </label>
+                    <textarea
+                      value={rescheduleReason}
+                      onChange={(e) => setRescheduleReason(e.target.value)}
+                      placeholder="Please provide a reason for rescheduling..."
+                      style={{
+                        width: "100%",
+                        padding: "1rem",
+                        border: "2px solid rgba(102, 77, 162, 0.2)",
+                        borderRadius: "12px",
+                        fontSize: "1rem",
+                        minHeight: "120px",
+                        resize: "vertical",
+                        backgroundColor: "white",
+                        transition: "border-color 0.2s"
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ textAlign: "center" }}>
+                    <button 
+                      onClick={handleReschedule}
+                      disabled={isRescheduling || !newDateTime || !rescheduleReason.trim()}
+                      style={{
+                        padding: "1rem 2rem",
+                        background: (!newDateTime || !rescheduleReason.trim()) 
+                          ? "linear-gradient(135deg, #9ca3af 0%, #d1d5db 100%)" 
+                          : "linear-gradient(135deg, #2d1b69 0%, #4f2d8a 100%)",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "15px",
+                        cursor: (!newDateTime || !rescheduleReason.trim()) ? "not-allowed" : "pointer",
+                        fontWeight: "600",
+                        fontSize: "1rem",
+                        boxShadow: (!newDateTime || !rescheduleReason.trim()) 
+                          ? "none" 
+                          : "0 4px 15px rgba(45, 27, 105, 0.3)",
+                        transition: "transform 0.2s, box-shadow 0.2s"
+                      }}
+                    >
+                      {isRescheduling ? "Rescheduling..." : "Confirm Reschedule"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+             <div style={{ marginBottom: "2rem" }}>
+              <h3 style={{ 
+                fontSize: "1.125rem", 
+                fontWeight: "600", 
+                color: "#2d1b69", 
+                marginBottom: "1rem",
+                borderBottom: "2px solid rgba(102, 77, 162, 0.1)",
+                paddingBottom: "0.5rem"
+              }}>
+                Add to Calendar
+              </h3>
+              <div style={{ 
+                padding: "1.5rem", 
+                background: "linear-gradient(135deg, #f8f7fc 0%, #f0edf8 100%)", 
+                borderRadius: "15px", 
+                border: "1px solid rgba(102, 77, 162, 0.1)",
+                textAlign: "center"
+              }}>
+                <p style={{ 
+                  color: "#6b7280", 
+                  marginBottom: "1.5rem",
+                  fontSize: "0.875rem"
+                }}>
+                  Download a calendar file to add this meeting to your preferred calendar app
+                </p>
+                <button 
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = `/api/booking/${booking.BookingId}/ics`;
+                    link.download = `mentorall-meeting-${booking.BookingId}.ics`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                  style={{
+                    padding: "1rem 2rem",
+                    background: "linear-gradient(135deg, #2d1b69 0%, #4f2d8a 100%)",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "15px",
+                    cursor: "pointer",
+                    fontWeight: "600",
+                    fontSize: "1rem",
+                    boxShadow: "0 4px 15px rgba(45, 27, 105, 0.3)",
+                    transition: "transform 0.2s, box-shadow 0.2s",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.5rem"
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(45, 27, 105, 0.4)";
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "0 4px 15px rgba(45, 27, 105, 0.3)";
+                  }}
+                >
+                  📅 Download ICS File
+                </button>
+                <div style={{ 
+                  marginTop: "1rem", 
+                  fontSize: "0.75rem", 
+                  color: "#9ca3af"
+                }}>
+                  Compatible with Google Calendar, Outlook, Apple Calendar, and more
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
