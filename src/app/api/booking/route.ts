@@ -92,7 +92,6 @@ export async function POST(request: Request) {
       if (bookerRecords.length > 0) {
         const bookerFields = bookerRecords[0].fields;
         bookerDetails = {
-          username: bookerFields.Username || "",
           email: bookerFields.Email || "",
           name: bookerFields.Name || "",
           tags: bookerFields.Tags || ""
@@ -110,7 +109,7 @@ export async function POST(request: Request) {
       if (inviteeRecords.length > 0) {
         const inviteeFields = inviteeRecords[0].fields;
         inviteeDetails = {
-          username: inviteeFields.Username || "",
+          username: inviteeFields.Name || "",
           email: inviteeFields.Email || "",
           name: inviteeFields.Name || ""
         };
@@ -124,15 +123,15 @@ export async function POST(request: Request) {
     const bookingRecord = {
       BookingID: bookingId,
       BookedByUserID: bookerId,
-      BookerUsername: bookerDetails?.username || "",
+      BookerUsername: bookerDetails?.name || "",
       Email: bookerDetails?.email || "",
       InviteeID: finalInviteeId,
-      InvitedUsername: inviteeDetails?.username || inviteeUsername || "",
+      InvitedUsername: inviteeDetails?.name || inviteeUsername || "",
       InvitedEmail: inviteeDetails?.email || "",
       MeetingTime: meetingTime,
       BookingStatus: "Pending", // Default status
       Notes: notes,
-      Tags: bookerDetails?.tags || [],
+      Tags: bookerDetails?.tags ? String(bookerDetails.tags) : "",
       // ICS file URL for calendar download
       ICSFileUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/booking/${bookingId}/ics`
     };
@@ -167,11 +166,54 @@ export async function GET(request: NextRequest) {
     
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");
+    const bookingId = searchParams.get("bookingId");
     const role = searchParams.get("role");
 
+    // Handle single booking fetch by bookingId
+    if (bookingId) {
+      try {
+        const booking = await base(BOOKINGS)
+          .select({
+            filterByFormula: `{BookingID} = '${esc(bookingId)}'`,
+            maxRecords: 1
+          })
+          .firstPage();
+
+        if (booking.length === 0) {
+          return NextResponse.json(
+            { error: "Booking not found" },
+            { status: 404 }
+          );
+        }
+
+        const record = booking[0];
+        const bookingDetails = {
+          id: record.id,
+          BookingId: record.fields.BookingID,
+          BookerUsername: record.fields.BookerUsername || "Unknown",
+          Email: record.fields.Email || "",
+          InvitedUsername: record.fields.InvitedUsername || "Unknown",
+          InvitedEmail: record.fields.InvitedEmail || "",
+          MeetingTime: record.fields.MeetingTime,
+          BookingStatus: record.fields.BookingStatus || "Pending",
+          Notes: record.fields.Notes || "",
+          ICSFileUrl: record.fields.ICSFileUrl || `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/booking/${record.fields.BookingID}/ics`
+        };
+
+        return NextResponse.json(bookingDetails);
+      } catch (error) {
+        console.error("Error fetching booking by ID:", error);
+        return NextResponse.json(
+          { error: "Failed to fetch booking details" },
+          { status: 500 }
+        );
+      }
+    }
+
+    // Handle multiple bookings fetch by userId (existing functionality)
     if (!userId) {
       return NextResponse.json(
-        { error: "Missing userId parameter" },
+        { error: "Missing userId or bookingId parameter" },
         { status: 400 }
       );
     }
@@ -179,10 +221,10 @@ export async function GET(request: NextRequest) {
     let filterFormula = "";
     if (role === "mentor") {
       // For mentors, show bookings where they are the invitee
-      filterFormula = `{InviteeID} = '${userId}'`;
+      filterFormula = `{InviteeID} = '${esc(userId)}'`;
     } else {
       // For bookers, show bookings where they are the booker
-      filterFormula = `{BookedByUserID} = '${userId}'`;
+      filterFormula = `{BookedByUserID} = '${esc(userId)}'`;
     }
 
     const bookings = await base(BOOKINGS)
