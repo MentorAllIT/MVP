@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState, useEffect } from "react";
 import BookingForm from "../components/BookingForm";
 import MentorBookingForm from "../mentors2/components/MentorBookingFormNew";
 import Link from "next/link";
@@ -14,10 +14,27 @@ function BookingPageInner() {
   const searchParams = useSearchParams();
   const mentorId = searchParams.get('mentorId');
   const mentorName = searchParams.get('mentorName');
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [userLoading, setUserLoading] = useState(true);
   
-  // For now, we'll use a hardcoded user ID
-  // In a real app, you'd get this from authentication/session
-  const currentUserId = "lqweeee"; // Replace with actual logged-in user ID
+  // Get current user from JWT token
+  useEffect(() => {
+    const getUserFromToken = async () => {
+      try {
+        const response = await fetch('/api/profile');
+        if (response.ok) {
+          const data = await response.json();
+          setCurrentUserId(data.uid);
+        }
+      } catch (error) {
+        console.error('Error getting user from token:', error);
+      } finally {
+        setUserLoading(false);
+      }
+    };
+    
+    getUserFromToken();
+  }, []);
 
   const pageTitle = mentorId && mentorName 
     ? `Book a Session with ${decodeURIComponent(mentorName)}`
@@ -26,6 +43,33 @@ function BookingPageInner() {
   const pageSubtitle = mentorId && mentorName
     ? "Schedule your mentoring session and start your journey"
     : "Schedule a mentoring session with someone from the community";
+
+  // Show loading state while fetching user
+  if (userLoading) {
+    return (
+      <div className={styles.page}>
+        <header className={styles.header}>
+          <div className={styles.headerContent}>
+            <Link href="/" className={styles.logo}>MentorAll</Link>
+            <nav className={styles.nav}>
+              <Link href="/dashboard" className={styles.navLink}>Dashboard</Link>
+              <Link href="/profile" className={styles.navLink}>Profile</Link>
+              <Link href="/settings" className={styles.navLink}>Settings</Link>
+            </nav>
+          </div>
+        </header>
+
+        <main className={styles.main}>
+          <div className={styles.container}>
+            <section className={styles.hero}>
+              <h1 className={styles.title}>Loading...</h1>
+              <p className={styles.subtitle}>Preparing your booking form.</p>
+            </section>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.page}>
@@ -67,7 +111,7 @@ function BookingPageInner() {
             ) : (
               /* Default booking form for general bookings */
               <BookingForm 
-                currentUserId={currentUserId} 
+                currentUserId={currentUserId || undefined} 
                 preselectedMentorId={mentorId || undefined}
               />
             )}
