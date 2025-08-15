@@ -167,9 +167,37 @@ export default function Dashboard() {
                   <p className={styles.cardDescription}>
                     Browse available mentors and find the perfect match for your goals.
                   </p>
-                  <Link href="/mentee/browse" className={styles.cardButton}>
-                    Browse Mentors
-                  </Link>
+                  <div className={styles.cardActions}>
+                    <Link href="/mentee/browse" className={styles.cardButton}>
+                      Browse Mentors
+                    </Link>
+                    <button 
+                      onClick={async () => {
+                        try {
+                          setMatchError(null);
+                          setMatching(true);
+                          const res = await fetch("/api/mentee/refresh-match", {
+                            method: "POST",
+                            cache: "no-store",
+                          });
+                          if (res.ok) {
+                            // Success! Redirect to browse page to see results
+                            router.push("/mentee/browse");
+                          } else {
+                            setMatchError("Failed to refresh matches. Please try again.");
+                          }
+                        } catch (error) {
+                          setMatchError("Something went wrong. Please try again.");
+                        } finally {
+                          setMatching(false);
+                        }
+                      }}
+                      className={`${styles.cardButton} ${styles.secondaryButton}`}
+                      disabled={matching}
+                    >
+                      {matching ? "🔄 Refreshing..." : "🔄 Refresh Matches"}
+                    </button>
+                  </div>
                 </div>
 
                 <div className={styles.card}>

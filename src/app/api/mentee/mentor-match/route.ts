@@ -79,24 +79,34 @@ function normalizeTags(raw: any): string[] {
   if (!raw) return [];
   const flat = (Array.isArray(raw) ? raw : [raw]).flat(5);
   const labels = flat.flatMap((t: any) => {
-    const val =
-      typeof t === "string"
-        ? t
-        : t?.name ??
-          t?.label ??
-          t?.value ??
-          t?.title ??
-          t?.text ??
-          t?.fields?.name ??
-          t?.fields?.Name ??
-          t?.fields?.Title ??
-          "";
+    let val = "";
+    
+    // Handle Airtable-generated tag objects
+    if (typeof t === "object" && t !== null) {
+      if (t.value) {
+        val = t.value; // Extract the actual tag value
+      } else if (t.name) {
+        val = t.name;
+      } else if (t.label) {
+        val = t.label;
+      } else if (t.title) {
+        val = t.title;
+      } else if (t.text) {
+        val = t.text;
+      }
+    } else if (typeof t === "string") {
+      val = t;
+    }
+    
     if (!val) return [];
+    
+    // Split comma/semicolon separated values and clean them
     return String(val)
       .split(/[,;]+/g)
       .map((s) => s.trim())
       .filter(Boolean);
   });
+  
   // Dedupe and limit
   return Array.from(new Set(labels)).slice(0, 30);
 }
@@ -115,10 +125,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Invalid session" }, { status: 401 });
     }
 
-    // Mentee matches
+    // Mentee matches with enhanced scoring
     const matchRows: any[] = await firstPage(AIRTABLE_MATCH_RANKING_TABLE!, {
       filterByFormula: `{MenteeID}='${esc(uid)}'`,
-      fields: ["MentorID", "UpdatedAt"],
+      fields: ["MentorID", "UpdatedAt", "Score", "PreferenceScore", "TagScore", "Breakdown"],
     });
 
     const mentorIds = Array.from(
@@ -170,7 +180,7 @@ export async function GET(req: NextRequest) {
       metaUpdatedAt: f.UpdatedAt ?? null,
     }));
 
-    // Sort and merge
+    // Sort and merge with enhanced scoring
     const mentors = matchRows
       .slice()
       .sort(
@@ -186,11 +196,16 @@ export async function GET(req: NextRequest) {
           name: users[id]?.name ?? null,
           bio: profiles[id]?.bio ?? null,
           linkedIn: profiles[id]?.linkedIn ?? null,
+          // Enhanced scoring data
+          score: r.fields?.Score ?? null,
+          preferenceScore: r.fields?.PreferenceScore ?? null,
+          tagScore: r.fields?.TagScore ?? null,
+          breakdown: r.fields?.Breakdown ?? null,
           ...(meta[id] ?? {}),
         };
       });
     
-    console.log(mentors)
+    console.log("Enhanced mentor matches:", mentors);
     return NextResponse.json({ mentors });
   } catch (e: any) {
     const status = e?.statusCode || e?.status || 500;

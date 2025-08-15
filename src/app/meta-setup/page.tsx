@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import styles from "./metaSetup.module.css";
 
@@ -34,6 +34,54 @@ export default function MetaSetup() {
 
   const [fieldErrs, setFieldErrs]   = useState<FieldErrors>({});
   const [formErr, setFormErr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  
+  // Load existing meta data when component mounts
+  useEffect(() => {
+    const loadExistingMeta = async () => {
+      if (!uid || !role) return;
+      
+      try {
+        // Try to fetch existing meta data
+        const res = await fetch(`/api/meta?uid=${uid}&role=${role}`);
+        if (res.ok) {
+          const metaData = await res.json();
+          if (role === "mentee") {
+            setState(prev => ({
+              ...prev,
+              goal: metaData.goal || "",
+              challenges: metaData.challenges || "",
+              help: metaData.help || ""
+            }));
+          } else {
+            setState(prev => ({
+              ...prev,
+              industry: metaData.industry || "",
+              years: metaData.years?.toString() || "",
+              calendly: metaData.calendly || ""
+            }));
+          }
+        }
+      } catch (error) {
+        console.log("No existing meta data found or error loading meta");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadExistingMeta();
+  }, [uid, role]);
+
+  // Loading state check
+  if (loading) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.wrapper}>
+          <div className={styles.loading}>Loading your goals and challenges...</div>
+        </div>
+      </div>
+    );
+  }
   
   // Update helpers
   const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -102,8 +150,13 @@ export default function MetaSetup() {
 
     setSubmitting(false);
 
-    if (res.ok) router.replace("/dashboard");
-    else {
+    if (res.ok) {
+      if (role === "mentee") {
+        router.replace(`/mentee-preferences?uid=${uid}&role=${role}`);
+      } else {
+        router.replace("/dashboard");
+      }
+    } else {
       const { error } = await res.json().catch(() => ({}));
       setFormErr(error ?? "Could not save");
     }
@@ -236,9 +289,14 @@ export default function MetaSetup() {
         </form>
         <div className={styles.progressWrap}>
           <div className={styles.progressTrack}>
-            <div className={styles.progressFill} style={{ width: "100%" }} />
+            <div 
+              className={styles.progressFill} 
+              style={{ width: role === "mentee" ? "66%" : "100%" }} 
+            />
           </div>
-          <span className={styles.progressText}>Step&nbsp;2&nbsp;of&nbsp;2</span>
+          <span className={styles.progressText}>
+            {role === "mentee" ? "Step 2 of 3" : "Step 2 of 2"}
+          </span>
         </div>
       </div>
     </div>

@@ -10,6 +10,66 @@ const ATTACH_FIELD = "CV";
 const CONTENT_URL  = "https://content.airtable.com/v0";
 const esc = (s: string) => s.replace(/'/g, "\\'");
 
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const uid = searchParams.get('uid');
+    const role = searchParams.get('role');
+    
+    if (!uid || !role) {
+      return NextResponse.json({ error: "Missing uid/role" }, { status: 400 });
+    }
+
+    const table = role === "mentee" ? MENTEE_TABLE : MENTOR_TABLE;
+    
+    // Fetch existing meta data
+    const [existing] = await base(table)
+      .select({
+        filterByFormula: `{UserID} = '${esc(uid)}'`,
+        maxRecords: 1,
+      })
+      .firstPage();
+
+    if (existing) {
+      if (role === "mentee") {
+        return NextResponse.json({
+          uid: existing.fields.UserID,
+          goal: existing.fields.Goal || "",
+          challenges: existing.fields.Challenges || "",
+          help: existing.fields.HelpNeeded || ""
+        });
+      } else {
+        return NextResponse.json({
+          uid: existing.fields.UserID,
+          industry: existing.fields.Industry || "",
+          years: existing.fields.YearExp || "",
+          calendly: existing.fields.Calendly || ""
+        });
+      }
+    } else {
+      // No meta data found, return empty
+      if (role === "mentee") {
+        return NextResponse.json({
+          uid,
+          goal: "",
+          challenges: "",
+          help: ""
+        });
+      } else {
+        return NextResponse.json({
+          uid,
+          industry: "",
+          years: "",
+          calendly: ""
+        });
+      }
+    }
+  } catch (err: any) {
+    console.error("meta GET route:", err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const fd   = await req.formData();
