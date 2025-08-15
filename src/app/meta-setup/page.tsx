@@ -147,6 +147,14 @@ export default function MetaSetup() {
     weekly: emptyWeekly(), // Calendly-style schedule
   });
 
+  // Advanced settings state
+  const [advOpen, setAdvOpen] = useState(false);
+  const [dateStart, setDateStart] = useState<string>("");       // YYYY-MM-DD (blank = today)
+  const [dateEnd, setDateEnd] = useState<string>("");           // blank = no end date
+  const [minNotice, setMinNotice] = useState<number>(0);
+
+  const [overrides, setOverrides] = useState<Record<string, Interval[]>>({}); // "YYYY-MM-DD" -> intervals
+
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [fieldErrs, setFieldErrs] = useState<FieldErrors>({});
   const [formErr, setFormErr] = useState<string | null>(null);
@@ -161,18 +169,14 @@ export default function MetaSetup() {
   };
 
   const addInterval = (day: DayKey) =>
-  setState((s) => {
-    const next = structuredClone(s.weekly);
-    const list = next[day];
-
-    // Only add if last range is complete (or there is none)
-    const last = list[list.length - 1];
-    const lastComplete = !!(last && last.start && last.end);
-    if (!last || lastComplete) {
-      list.push({ start: "", end: "" });
-    }
-    return { ...s, weekly: next };
-  });
+    setState((s) => {
+      const next = structuredClone(s.weekly);
+      const list = next[day];
+      const last = list[list.length - 1];
+      const lastComplete = !!(last && last.start && last.end);
+      if (!last || lastComplete) list.push({ start: "", end: "" }); // guard: no double blank
+      return { ...s, weekly: next };
+    });
 
   const removeInterval = (day: DayKey, idx: number) =>
     setState((s) => {
@@ -219,6 +223,28 @@ export default function MetaSetup() {
           }
         }
       }
+
+      // Advanced: date range validity
+      if (dateStart && dateEnd && new Date(dateStart) > new Date(dateEnd)) {
+        errs.dateEnd = "End date must be after start date";
+      }
+
+      // Advanced: overrides validity
+      for (const [odate, list] of Object.entries(overrides)) {
+        for (let i = 0; i < list.length; i++) {
+          const iv = list[i];
+          if (!iv.start) errs[`ov-${odate}-start-${i}`] = "Start required";
+          if (!iv.end) errs[`ov-${odate}-end-${i}`] = "End required";
+          const sM = toMinutes(iv.start);
+          const eM = toMinutes(iv.end);
+          if (Number.isFinite(sM) && Number.isFinite(eM) && eM <= sM) {
+            errs[`ov-${odate}-end-${i}`] = "End must be after start";
+          }
+          for (let j = 0; j < i; j++) {
+            if (overlaps(iv, list[j])) errs[`ov-${odate}-overlap-${i}`] = "Overlaps another range";
+          }
+        }
+      }
     } else {
       if (!state.goal.trim()) errs.goal = "Please describe your main goal";
       if (!state.challenges.trim()) errs.challenges = "Tell us your challenges";
@@ -256,12 +282,17 @@ export default function MetaSetup() {
     if (role === "mentor") {
       fd.append("industry", state.industry.trim());
       fd.append("years", state.years.trim());
-      // Save JSON (timezone fixed to Australia/Sydney)
       fd.append(
         "availabilityJson",
         JSON.stringify({
           timezone: TIMEZONE,
           weekly: state.weekly,
+          dateRange: {
+            start: dateStart || null,
+            end: dateEnd || null,
+          },
+          minNoticeHours: Number.isFinite(minNotice) ? minNotice : 0,
+          overrides,
         })
       );
     } else {
@@ -440,6 +471,178 @@ export default function MetaSetup() {
 
         {fieldErrs.weekly && <span className={styles.fieldError}>{fieldErrs.weekly}</span>}
       </fieldset>
+
+      {/* Advanced settings */}
+      <div className={styles.advCard}>
+        <button
+          type="button"
+          className={styles.advToggle}
+          onClick={() => setAdvOpen((v) => !v)}
+          aria-expanded={advOpen}
+        >
+          {advOpen ? "▲" : "▼"} Advanced settings
+        </button>
+
+        {advOpen && (
+          <div className={styles.advBody}>
+            {/* Date range */}
+            <div className={styles.row2}>
+              <label className={styles.label}>
+                <span className={styles.labelText}>Start date</span>
+                <input
+                  type="date"
+                  value={dateStart}
+                  onChange={(e) => setDateStart(e.target.value)}
+                  className={`${styles.input} ${fieldErrs.dateStart ? styles.inputError : ""}`}
+                />
+              </label>
+
+              <label className={styles.label}>
+                <span className={styles.labelText}>End date (optional)</span>
+                <input
+                  type="date"
+                  value={dateEnd}
+                  onChange={(e) => setDateEnd(e.target.value)}
+                  className={`${styles.input} ${fieldErrs.dateEnd ? styles.inputError : ""}`}
+                />
+                <span className={styles.hint}>Leave empty for “No end date”.</span>
+                {fieldErrs.dateEnd && <span className={styles.fieldError}>{fieldErrs.dateEnd}</span>}
+              </label>
+            </div>
+
+            {/* Minimum notice */}
+            <label className={styles.label}>
+              <span className={styles.labelText}>Minimum notice</span>
+              <select
+                  className={`${styles.input} ${styles.select}`}
+                  value={minNotice}
+                  onChange={(e) => setMinNotice(Number(e.target.value) || 0)}
+              >
+                <option value={0}>0 hours (no minimum)</option>
+                <option value={2}>2 hours</option>
+                <option value={4}>4 hours</option>
+                <option value={12}>12 hours</option>
+                <option value={24}>24 hours</option>
+              </select>
+            </label>
+
+            {/* Date-specific overrides */}
+            <div className={styles.label}>
+              <span className={styles.labelText}>Date-specific overrides</span>
+              <span className={styles.hint}>
+                Add/close slots for particular dates. An empty list means “closed”.
+              </span>
+
+              {/* Add a date row */}
+              <div className={styles.row2}>
+                <input
+                    type="date"
+                    className={styles.input}
+                  onChange={(e) => {
+                    const d = e.target.value;
+                    if (!d) return;
+                    setOverrides((o) => (o[d] ? o : { ...o, [d]: [] }));
+                    // clear the inline date picker value so you can add another date quickly
+                    (e.target as HTMLInputElement).value = "";
+                  }}
+                  placeholder="YYYY-MM-DD"
+                />
+              </div>
+
+              {/* Render each override date with interval rows */}
+              <div className={styles.overridesWrap}>
+                {Object.entries(overrides).map(([d, list]) => (
+                  <div key={d} className={styles.overrideDay}>
+                    <div className={styles.overrideHead}>
+                      <strong>{d}</strong>
+                      <div className={styles.overrideButtons}>
+                        <button
+                          type="button"
+                          className={styles.smallButton}
+                          onClick={() =>
+                            setOverrides((o) => ({
+                              ...o,
+                              [d]: [...(o[d] || []), { start: "", end: "" }],
+                            }))
+                          }
+                        >
+                          + Hours
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.iconButton}
+                          title="Remove date"
+                          onClick={() =>
+                            setOverrides((o) => {
+                              const copy = { ...o };
+                              delete copy[d];
+                              return copy;
+                            })
+                          }
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+
+                    {list.length === 0 && <span className={styles.unavailable}>Closed</span>}
+
+                    {list.map((iv, idx) => (
+                      <div key={idx} className={styles.interval}>
+                        <TimeSelect
+                          value={iv.start}
+                          onChange={(v) =>
+                            setOverrides((o) => {
+                              const copy = { ...o };
+                              copy[d] = copy[d].slice();
+                              copy[d][idx] = { ...copy[d][idx], start: v };
+                              return copy;
+                            })
+                          }
+                          invalid={!!fieldErrs[`ov-${d}-start-${idx}`]}
+                        />
+                        <span className={styles.toSep}>to</span>
+                        <TimeSelect
+                          value={iv.end}
+                          onChange={(v) =>
+                            setOverrides((o) => {
+                              const copy = { ...o };
+                              copy[d] = copy[d].slice();
+                              copy[d][idx] = { ...copy[d][idx], end: v };
+                              return copy;
+                            })
+                          }
+                          invalid={!!fieldErrs[`ov-${d}-end-${idx}`]}
+                        />
+                        <button
+                          type="button"
+                          className={styles.iconButton}
+                          onClick={() =>
+                            setOverrides((o) => {
+                              const copy = { ...o };
+                              copy[d] = copy[d].slice();
+                              copy[d].splice(idx, 1);
+                              return copy;
+                            })
+                          }
+                          title="Remove range"
+                        >
+                          ×
+                        </button>
+                        {fieldErrs[`ov-${d}-overlap-${idx}`] && (
+                          <span className={styles.fieldError} style={{ marginLeft: 8 }}>
+                            {fieldErrs[`ov-${d}-overlap-${idx}`]}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </>
   );
 
