@@ -41,7 +41,7 @@ export async function GET(req: Request) {
 
     const booking = bookings[0].fields;
     
-    // Parse meeting time
+    // Parse meeting time (stored in UTC, will be converted to user's local timezone by calendar apps)
     const meetingTime = new Date(booking.MeetingTime as string);
     if (isNaN(meetingTime.getTime())) {
       return NextResponse.json(
@@ -53,9 +53,23 @@ export async function GET(req: Request) {
     // Calculate end time (1 hour after start)
     const endTime = new Date(meetingTime.getTime() + 60 * 60 * 1000);
 
-    // Format dates for ICS (YYYYMMDDTHHMMSSZ)
+    // Format dates for ICS (YYYYMMDDTHHMMSSZ) - UTC format is standard for ICS files
     const formatICSDate = (date: Date) => {
       return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    };
+
+    // Format time for AEST display in description
+    const formatAESTTime = (date: Date) => {
+      return date.toLocaleString('en-AU', {
+        timeZone: 'Australia/Sydney',
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZoneName: 'short'
+      });
     };
 
     const startTimeICS = formatICSDate(meetingTime);
@@ -65,9 +79,11 @@ export async function GET(req: Request) {
     // Generate unique UID for the event
     const uid = `${booking.BookingID}@mentorall.com`;
 
-    // Create meeting description with Google Meet instructions
+    // Create meeting description with timezone information
     const description = [
       `Meeting between ${booking.BookerUsername} and ${booking.InvitedUsername}`,
+      '',
+      `Scheduled time (AEST): ${formatAESTTime(meetingTime)}`,
       '',
       booking.Notes ? `Notes: ${booking.Notes}` : '',
       '',

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import styles from '../../../mentee/browse/browse.module.css';
+import { formatToAEST } from '../../../../lib/timezone';
 
 interface BookingDetails {
   id: string;
@@ -51,16 +52,7 @@ export default function BookingDetailsPage() {
   }, [bookingId]);
 
   const formatDateTime = (dateTimeString: string) => {
-    const date = new Date(dateTimeString);
-    return date.toLocaleString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZoneName: 'short'
-    });
+    return formatToAEST(dateTimeString);
   };
 
   const isUpcoming = (dateTimeString: string) => {

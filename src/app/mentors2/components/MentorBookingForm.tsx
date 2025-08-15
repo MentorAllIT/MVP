@@ -62,8 +62,13 @@ export default function MentorBookingForm({ mentorName, mentorUsername, mentorUs
 
       // Validate meeting time
       const meetingDate = new Date(formData.meetingTime);
-      if (meetingDate <= new Date()) {
-        setError("Meeting time must be in the future");
+      
+      // Convert user input to AEST for validation and storage
+      const aestMeetingDate = new Date(meetingDate.toLocaleString("en-US", {timeZone: "Australia/Sydney"}));
+      const nowInAEST = new Date(new Date().toLocaleString("en-US", {timeZone: "Australia/Sydney"}));
+      
+      if (aestMeetingDate <= nowInAEST) {
+        setError("Meeting time must be in the future (AEST)");
         setLoading(false);
         return;
       }
@@ -78,7 +83,7 @@ export default function MentorBookingForm({ mentorName, mentorUsername, mentorUs
           currentUserId: currentUserId,
           invitedUsername: mentorUsername,
           invitedUserId: mentorUserId,
-          meetingTime: formData.meetingTime,
+          meetingTime: meetingDate.toISOString(), // Store as UTC but will be displayed in AEST
           notes: formData.notes || ""
         })
       });
@@ -112,11 +117,15 @@ export default function MentorBookingForm({ mentorName, mentorUsername, mentorUs
     }
   };
 
-  // Get minimum datetime (current time + 1 hour)
+  // Get minimum datetime (current time + 1 hour) in AEST
   const getMinDateTime = () => {
     const now = new Date();
-    now.setHours(now.getHours() + 1);
-    return now.toISOString().slice(0, 16);
+    // Convert to AEST (UTC+10/+11 depending on DST)
+    const aestTime = new Date(now.toLocaleString("en-US", {timeZone: "Australia/Sydney"}));
+    aestTime.setHours(aestTime.getHours() + 1);
+    
+    // Convert back to ISO format for the datetime-local input
+    return aestTime.toISOString().slice(0, 16);
   };
 
   if (success) {
@@ -208,7 +217,7 @@ export default function MentorBookingForm({ mentorName, mentorUsername, mentorUs
             style={{ color: "#000" }}
           />
           <div style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.25rem" }}>
-            Select your preferred date and time for the meeting
+            Select your preferred date and time (will be converted to AEST)
           </div>
         </div>
 
