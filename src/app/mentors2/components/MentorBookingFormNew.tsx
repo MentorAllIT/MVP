@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import styles from "../../meta-setup/metaSetup.module.css";
+import { getMinDateTimeAEST, validateMeetingTimeAEST } from "../../../lib/timezone";
 
 interface MentorBookingFormProps {
   mentorName: string;
@@ -60,13 +61,15 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
         return;
       }
 
-      // Validate meeting time
-      const meetingDate = new Date(formData.meetingTime);
-      if (meetingDate <= new Date()) {
-        setError("Meeting time must be in the future");
+      // Validate meeting time using utility function
+      const validation = validateMeetingTimeAEST(formData.meetingTime);
+      if (!validation.isValid) {
+        setError(validation.error || "Invalid meeting time");
         setLoading(false);
         return;
       }
+
+      const meetingDate = new Date(formData.meetingTime);
 
       // Create booking
       const response = await fetch("/api/booking", {
@@ -78,7 +81,7 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
           currentUserId: currentUserId,
           invitedUsername: mentorUsername,
           invitedUserId: mentorUserId,
-          meetingTime: formData.meetingTime,
+          meetingTime: meetingDate.toISOString(), // Store as UTC but will be displayed in AEST
           notes: formData.notes || ""
         })
       });
@@ -112,11 +115,9 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
     }
   };
 
-  // Get minimum datetime (current time + 1 hour)
+  // Get minimum datetime (current time + 1 hour) in AEST
   const getMinDateTime = () => {
-    const now = new Date();
-    now.setHours(now.getHours() + 1);
-    return now.toISOString().slice(0, 16);
+    return getMinDateTimeAEST(1);
   };
 
   if (success) {
@@ -208,7 +209,7 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
             style={{ color: "#000" }}
           />
           <div style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.25rem" }}>
-            Select your preferred date and time for the meeting
+            Select your preferred date and time (will be converted to AEST)
           </div>
         </div>
 

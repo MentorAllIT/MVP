@@ -115,24 +115,33 @@ export default function BookingConfirmPage() {
     }
 
     const newDate = new Date(newMeetingTime);
-    if (newDate <= new Date()) {
-      setError("New meeting time must be in the future");
+    // Convert to AEST for validation
+    const aestNewDate = new Date(newDate.toLocaleString("en-US", {timeZone: "Australia/Sydney"}));
+    const nowInAEST = new Date(new Date().toLocaleString("en-US", {timeZone: "Australia/Sydney"}));
+    
+    if (aestNewDate <= nowInAEST) {
+      setError("New meeting time must be in the future (AEST)");
       return;
     }
 
     updateBookingStatus(2, newMeetingTime);
   };
 
-  // Get minimum datetime (current time + 1 hour)
+  // Get minimum datetime (current time + 1 hour) in AEST
   const getMinDateTime = () => {
     const now = new Date();
-    now.setHours(now.getHours() + 1);
-    return now.toISOString().slice(0, 16);
+    // Convert to AEST (UTC+10/+11 depending on DST)
+    const aestTime = new Date(now.toLocaleString("en-US", {timeZone: "Australia/Sydney"}));
+    aestTime.setHours(aestTime.getHours() + 1);
+    
+    // Convert back to ISO format for the datetime-local input
+    return aestTime.toISOString().slice(0, 16);
   };
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleString("en-US", {
+    return date.toLocaleString("en-AU", {
+      timeZone: "Australia/Sydney",
       weekday: "long",
       year: "numeric",
       month: "long",

@@ -82,8 +82,12 @@ export default function BookingForm({ currentUserId, preselectedMentorId }: Book
       // Combine date and time into ISO string
       const meetingDateTime = new Date(`${formData.meetingDate}T${formData.meetingTime}`);
       
-      if (meetingDateTime <= new Date()) {
-        setError('Meeting time must be in the future');
+      // Convert to AEST for validation
+      const aestMeetingDateTime = new Date(meetingDateTime.toLocaleString("en-US", {timeZone: "Australia/Sydney"}));
+      const nowInAEST = new Date(new Date().toLocaleString("en-US", {timeZone: "Australia/Sydney"}));
+      
+      if (aestMeetingDateTime <= nowInAEST) {
+        setError('Meeting time must be in the future (AEST)');
         return;
       }
 
