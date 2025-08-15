@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import styles from "../../meta-setup/metaSetup.module.css";
 import { getMinDateTimeAEST, validateMeetingTimeAEST } from "../../../lib/timezone";
+import MentorAvailability from "../../components/MentorAvailability";
 
 interface MentorBookingFormProps {
   mentorName: string;
@@ -22,6 +23,7 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [bookingId, setBookingId] = useState<string | null>(null);
+  const [useAvailabilityPicker, setUseAvailabilityPicker] = useState(true); // Default to true to show availability immediately
 
   // Get current user from JWT token
   useEffect(() => {
@@ -48,6 +50,18 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
     }));
   };
 
+  const handleTimeSlotSelect = (selectedDateTime: string) => {
+    // The selectedDateTime is in datetime-local format (YYYY-MM-DDTHH:MM:SS)
+    // representing the AEST time the user selected
+    // We can use it directly since it's already in the correct format
+    const localDateTime = selectedDateTime.slice(0, 16); // Remove seconds if present
+    
+    setFormData(prev => ({
+      ...prev,
+      meetingTime: localDateTime
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -57,6 +71,13 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
       // Check if we have current user ID
       if (!currentUserId) {
         setError("Please sign in to book a session");
+        setLoading(false);
+        return;
+      }
+
+      // Check if time is selected
+      if (!formData.meetingTime) {
+        setError("Please select a meeting time");
         setLoading(false);
         return;
       }
@@ -191,27 +212,77 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
   }
 
   return (
-    <div style={{ maxWidth: "500px", margin: "0 auto" }}>
+    <div style={{ maxWidth: "800px", margin: "0 auto" }}>
       <form onSubmit={handleSubmit} className={styles.form}>
+        {/* Time Selection Toggle */}
         <div style={{ marginBottom: "1.5rem" }}>
-          <label htmlFor="meetingTime" className={styles.label}>
-            Preferred Meeting Time *
-          </label>
-          <input
-            type="datetime-local"
-            id="meetingTime"
-            name="meetingTime"
-            value={formData.meetingTime}
-            onChange={handleInputChange}
-            min={getMinDateTime()}
-            required
-            className={styles.input}
-            style={{ color: "#000" }}
-          />
-          <div style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.25rem" }}>
-            Select your preferred date and time (will be converted to AEST)
+          <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
+            <button
+              type="button"
+              onClick={() => setUseAvailabilityPicker(true)}
+              style={{
+                padding: "0.5rem 1rem",
+                borderRadius: "6px",
+                border: "1px solid #d1d5db",
+                background: useAvailabilityPicker ? "#4f46e5" : "white",
+                color: useAvailabilityPicker ? "white" : "#374151",
+                cursor: "pointer",
+                fontSize: "0.875rem",
+                fontWeight: "500"
+              }}
+            >
+              📅 Choose from Available Times
+            </button>
+            <button
+              type="button"
+              onClick={() => setUseAvailabilityPicker(false)}
+              style={{
+                padding: "0.5rem 1rem",
+                borderRadius: "6px",
+                border: "1px solid #d1d5db",
+                background: !useAvailabilityPicker ? "#4f46e5" : "white",
+                color: !useAvailabilityPicker ? "white" : "#374151",
+                cursor: "pointer",
+                fontSize: "0.875rem",
+                fontWeight: "500"
+              }}
+            >
+              ⏰ Manual Time Entry
+            </button>
           </div>
         </div>
+
+        {/* Availability Picker or Manual Input */}
+        {useAvailabilityPicker ? (
+          <div style={{ marginBottom: "1.5rem" }}>
+            <MentorAvailability
+              mentorUserId={mentorUserId || mentorUsername}
+              onTimeSlotSelect={handleTimeSlotSelect}
+              selectedDateTime={formData.meetingTime ? new Date(formData.meetingTime).toISOString() : undefined}
+              shouldFetchAvailability={useAvailabilityPicker}
+            />
+          </div>
+        ) : (
+          <div style={{ marginBottom: "1.5rem" }}>
+            <label htmlFor="meetingTime" className={styles.label}>
+              Preferred Meeting Time *
+            </label>
+            <input
+              type="datetime-local"
+              id="meetingTime"
+              name="meetingTime"
+              value={formData.meetingTime}
+              onChange={handleInputChange}
+              min={getMinDateTime()}
+              required
+              className={styles.input}
+              style={{ color: "#000" }}
+            />
+            <div style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.25rem" }}>
+              Select your preferred date and time (will be converted to AEST)
+            </div>
+          </div>
+        )}
 
         <div style={{ marginBottom: "1.5rem" }}>
           <label htmlFor="notes" className={styles.label}>
