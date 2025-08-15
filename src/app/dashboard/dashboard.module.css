@@ -233,6 +233,25 @@
   box-shadow: 0 10px 25px rgba(102, 77, 162, 0.3);
 }
 
+.cardActions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.secondaryButton {
+  background: linear-gradient(135deg, #8b6bb1, #a67fd4) !important;
+  opacity: 0.9;
+}
+
+.secondaryButton:hover {
+  opacity: 1;
+  transform: translateY(-2px);
+  box-shadow: 
+    0 6px 20px rgba(139, 107, 177, 0.4),
+    0 3px 6px rgba(0, 0, 0, 0.15);
+}
+
 .quickActions {
   text-align: center;
   background: rgba(255, 255, 255, 0.7);
