@@ -11,6 +11,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [matching, setMatching] = useState(false);
   const [matchError, setMatchError] = useState<string | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     // Check if user is authenticated
@@ -34,6 +35,19 @@ export default function Dashboard() {
 
     checkAuth();
   }, [router]);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isMenuOpen && !(event.target as Element).closest(`.${styles.mobileNav}`) && 
+          !(event.target as Element).closest(`.${styles.hamburgerButton}`)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMenuOpen]);
 
   // Kick off refresh-match exactly once after auth confirms mentee
   useEffect(() => {
@@ -98,17 +112,39 @@ export default function Dashboard() {
       <header className={styles.header}>
         <div className={styles.headerContent}>
           <h1 className={styles.logo}>MentorAll</h1>
-          <nav className={styles.nav}>
-            <Link href="/profile" className={styles.navLink}>Profile</Link>
-            <button 
-              onClick={() => {
-                fetch("/api/auth/signout", { method: "POST" });
-                router.push("/");
-              }} 
-              className={styles.navLink}
-            >
-              Sign Out
-            </button>
+          
+          {/* Hamburger Menu Button */}
+          <button 
+            className={styles.hamburgerButton}
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label="Toggle navigation menu"
+          >
+            <span className={`${styles.hamburgerLine} ${isMenuOpen ? styles.open : ''}`}></span>
+            <span className={`${styles.hamburgerLine} ${isMenuOpen ? styles.open : ''}`}></span>
+            <span className={`${styles.hamburgerLine} ${isMenuOpen ? styles.open : ''}`}></span>
+          </button>
+
+          {/* Mobile Navigation Menu */}
+          <nav className={`${styles.mobileNav} ${isMenuOpen ? styles.open : ''}`}>
+            <div className={styles.mobileNavContent}>
+              <Link 
+                href="/profile" 
+                className={styles.mobileNavLink}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Profile
+              </Link>
+              <button 
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  fetch("/api/auth/signout", { method: "POST" });
+                  router.push("/");
+                }} 
+                className={styles.mobileNavLink}
+              >
+                Sign Out
+              </button>
+            </div>
           </nav>
         </div>
       </header>
@@ -131,7 +167,7 @@ export default function Dashboard() {
             {userRole === "mentor" ? (
               <>
                 <div className={styles.card}>
-                  <h3 className={styles.cardTitle}>👥 View Mentee Requests</h3>
+                  <h3 className={styles.cardTitle}>View Mentee Requests</h3>
                   <p className={styles.cardDescription}>
                     See who's looking for guidance and accept mentoring opportunities.
                   </p>
@@ -141,7 +177,7 @@ export default function Dashboard() {
                 </div>
 
                 <div className={styles.card}>
-                  <h3 className={styles.cardTitle}>📅 Manage Schedule</h3>
+                  <h3 className={styles.cardTitle}>Manage Schedule</h3>
                   <p className={styles.cardDescription}>
                     Set your availability and manage mentoring sessions.
                   </p>
@@ -151,7 +187,7 @@ export default function Dashboard() {
                 </div>
 
                 <div className={styles.card}>
-                  <h3 className={styles.cardTitle}>📊 Your Impact</h3>
+                  <h3 className={styles.cardTitle}>Your Impact</h3>
                   <p className={styles.cardDescription}>
                     Track your mentoring sessions and see your impact.
                   </p>
@@ -163,7 +199,7 @@ export default function Dashboard() {
             ) : (
               <>
                 <div className={styles.card}>
-                  <h3 className={styles.cardTitle}>🔍 Find Mentors</h3>
+                  <h3 className={styles.cardTitle}>Find Mentors</h3>
                   <p className={styles.cardDescription}>
                     Browse available mentors and find the perfect match for your goals.
                   </p>
@@ -195,13 +231,13 @@ export default function Dashboard() {
                       className={`${styles.cardButton} ${styles.secondaryButton}`}
                       disabled={matching}
                     >
-                      {matching ? "🔄 Refreshing..." : "🔄 Refresh Matches"}
+                      {matching ? "Refreshing..." : "Refresh Matches"}
                     </button>
                   </div>
                 </div>
 
                 <div className={styles.card}>
-                  <h3 className={styles.cardTitle}>💬 My Connections</h3>
+                  <h3 className={styles.cardTitle}> My Connections</h3>
                   <p className={styles.cardDescription}>
                     View your current mentor connections and chat history.
                   </p>
@@ -211,7 +247,7 @@ export default function Dashboard() {
                 </div>
 
                 <div className={styles.card}>
-                  <h3 className={styles.cardTitle}>📚 Learning Path</h3>
+                  <h3 className={styles.cardTitle}>Learning Path</h3>
                   <p className={styles.cardDescription}>
                     Track your learning progress and set new goals.
                   </p>
@@ -223,20 +259,7 @@ export default function Dashboard() {
             )}
           </div>
 
-          <div className={styles.quickActions}>
-            <h3 className={styles.quickActionsTitle}>Quick Actions</h3>
-            <div className={styles.actionButtons}>
-              <Link href="/profile" className={styles.actionButton}>
-                ✏️ Edit Profile
-              </Link>
-              <Link href="/settings" className={styles.actionButton}>
-                ⚙️ Settings
-              </Link>
-              <Link href="/help" className={styles.actionButton}>
-                ❓ Help & Support
-              </Link>
-            </div>
-          </div>
+
         </div>
       </main>
     </div>

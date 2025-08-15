@@ -94,6 +94,8 @@ function useMentorMatches() {
 
 export default function BrowseMentorsPage() {
   const { loading, mentors, error } = useMentorMatches();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const router = useRouter();
 
   // Get only the highest scoring mentor
   const topMentor = useMemo(() => {
@@ -110,15 +112,63 @@ export default function BrowseMentorsPage() {
     return `We found your best mentor match with ${topMentor.preferenceScore || 0}% preference alignment!`;
   }, [loading, error, topMentor]);
 
+  // Handle clicks outside the menu
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isMenuOpen && !(event.target as Element).closest(`.${styles.hamburgerButton}`)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMenuOpen]);
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
         <div className={styles.headerContent}>
           <Link href="/" className={styles.logo}>MentorAll</Link>
-          <nav className={styles.nav}>
-            <Link href="/dashboard" className={styles.navLink}>Dashboard</Link>
-            <Link href="/profile" className={styles.navLink}>Profile</Link>
-            <Link href="/settings" className={styles.navLink}>Settings</Link>
+          
+          {/* Hamburger Menu Button */}
+          <button 
+            className={styles.hamburgerButton}
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label="Toggle navigation menu"
+          >
+            <span className={`${styles.hamburgerLine} ${isMenuOpen ? styles.open : ''}`}></span>
+            <span className={`${styles.hamburgerLine} ${isMenuOpen ? styles.open : ''}`}></span>
+            <span className={`${styles.hamburgerLine} ${isMenuOpen ? styles.open : ''}`}></span>
+          </button>
+
+          {/* Mobile Navigation Menu */}
+          <nav className={`${styles.mobileNav} ${isMenuOpen ? styles.open : ''}`}>
+            <div className={styles.mobileNavContent}>
+              <Link 
+                href="/dashboard" 
+                className={styles.mobileNavLink}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Dashboard
+              </Link>
+              <Link 
+                href="/profile" 
+                className={styles.mobileNavLink}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Profile
+              </Link>
+              <button 
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  fetch("/api/auth/signout", { method: "POST" });
+                  router.push("/");
+                }} 
+                className={styles.mobileNavLink}
+              >
+                Sign Out
+              </button>
+            </div>
           </nav>
         </div>
       </header>
