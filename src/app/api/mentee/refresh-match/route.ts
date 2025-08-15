@@ -72,10 +72,13 @@ function calculatePreferenceScore(
   mentorMeta: any
 ): { score: number; preferenceScore: number; breakdown: string } {
   
-  // Pure preference-based scoring with priority-based weighting
-  let preferenceScore = 0;
+  try {
+    console.log("🔍 calculatePreferenceScore called with:", { menteePrefs, mentorMeta });
+    
+    // Pure preference-based scoring with priority-based weighting
+    let preferenceScore = 0;
 
-  if (menteePrefs && mentorMeta) {
+    if (menteePrefs && mentorMeta) {
     // Get the factor order to determine priorities
     const factorOrder = menteePrefs.FactorOrder ? menteePrefs.FactorOrder.split(',') : [];
     
@@ -172,6 +175,14 @@ function calculatePreferenceScore(
     preferenceScore: Math.round(100 * preferenceScore),
     breakdown: `Preference Score: ${Math.round(100 * preferenceScore)}%`
   };
+  } catch (error) {
+    console.log("❌ Error in calculatePreferenceScore:", error);
+    return {
+      score: 0,
+      preferenceScore: 0,
+      breakdown: `Error: ${error}`
+    };
+  }
 }
 
 // Helper function to calculate seniority match
@@ -280,34 +291,56 @@ function calculateAvailabilityMatch(menteeAvailability: string, mentorTags: stri
   return matchCount / availabilityKeywords.length;
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    if (!ready) return NextResponse.json({ error: "Backend not configured" }, { status: 503 });
-
-    // Auth
-    const token = req.cookies.get("session")?.value;
-    if (!token) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-
-    let uid = "", role = "";
-    try {
-      const payload = jwt.verify(token, JWT_SECRET!) as any;
-      uid = payload.uid;
-      role = payload.role;
-    } catch {
-      return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+    console.log("🔄 Refresh match started");
+    
+    if (!ready) {
+      console.log("❌ Environment not ready");
+      return NextResponse.json({ error: "Airtable not configured" }, { status: 503 });
     }
-    if (role && role !== "mentee") {
+
+    const token = request.cookies.get("session")?.value;
+    if (!token) {
+      console.log("❌ No token found");
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    let uid: string;
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET!) as any;
+      uid = decoded.uid;
+      console.log("✅ Token verified, UID:", uid);
+    } catch (err) {
+      console.log("❌ Token verification failed");
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    }
+
+    // Check if user is a mentee
+    const [userRec] = await firstPage("Users", {
+      filterByFormula: `{UserID}='${esc(uid)}'`,
+      maxRecords: 1,
+      fields: ["Role"],
+    });
+    
+    if (!userRec || userRec.fields?.Role !== "mentee") {
+      console.log("❌ User is not a mentee");
       return NextResponse.json({ message: "Only mentees refresh matches" }, { status: 200 });
     }
 
+    console.log("🔍 Loading mentee data...");
     // Load mentee data (preferences only)
     const [menteeRec] = await firstPage(AIRTABLE_MENTEE_META_TABLE!, {
       filterByFormula: `{UserID}='${esc(uid)}'`,
       maxRecords: 1,
       fields: ["UserID", "LastPaired"],
     });
-    if (!menteeRec) return NextResponse.json({ error: "MenteeMeta not found" }, { status: 404 });
+    if (!menteeRec) {
+      console.log("❌ MenteeMeta not found");
+      return NextResponse.json({ error: "MenteeMeta not found" }, { status: 404 });
+    }
 
+    console.log("🔍 Loading mentee preferences...");
     // Load mentee preferences
     const [prefRec] = await firstPage(AIRTABLE_MENTEE_PREFERENCES_TABLE!, {
       filterByFormula: `{UserID}='${esc(uid)}'`,
@@ -316,9 +349,11 @@ export async function POST(req: NextRequest) {
     });
 
     if (!prefRec) {
+      console.log("❌ No mentee preferences found");
       return NextResponse.json({ updated: 0, created: 0, total: 0, info: "No mentee preferences found" });
     }
 
+    console.log("🔍 Loading mentors...");
     const lastPairedISO: string | null = menteeRec.fields?.LastPaired || null;
 
     // Load mentors (only those updated after mentee last paired)
@@ -332,10 +367,13 @@ export async function POST(req: NextRequest) {
     });
     // Fallback if no mentee last paired
     if (!lastPairedISO && mentorRows.length === 0) {
+      console.log("🔍 No mentors found with filter, trying fallback...");
       mentorRows = await firstPage(AIRTABLE_MENTOR_META_TABLE!, {
         fields: ["UserID", "UpdatedAt", "Industry", "Role", "YearExp"],
       });
     }
+
+    console.log(`✅ Found ${mentorRows.length} mentors`);
 
     // Compute enhanced scores
     type ScoreRow = { 
@@ -348,41 +386,58 @@ export async function POST(req: NextRequest) {
     };
     const scores: ScoreRow[] = [];
 
+    console.log("🔍 Calculating scores...");
     for (const r of mentorRows) {
-      const mentorId = r.fields?.UserID as string | undefined;
-      if (!mentorId) continue;
+      try {
+        const mentorId = r.fields?.UserID as string | undefined;
+        if (!mentorId) {
+          console.log("⚠️ Skipping mentor with no UserID");
+          continue;
+        }
 
-      const mentorMeta = {
-        Industry: r.fields?.Industry,
-        Role: r.fields?.Role,
-        YearExp: r.fields?.YearExp
-      };
+        const mentorMeta = {
+          Industry: r.fields?.Industry,
+          Role: r.fields?.Role,
+          YearExp: r.fields?.YearExp
+        };
 
-      const result = calculatePreferenceScore(
-        prefRec?.fields, 
-        mentorMeta
-      );
+        console.log(`🔍 Processing mentor ${mentorId}:`, mentorMeta);
 
-      if (result.score > 0) {
-        scores.push({ 
-          mentorId, 
-          score: result.score, 
-          overlap: 0, // No more tag overlap
-          preferenceScore: result.preferenceScore,
-          tagScore: 0, // No more tag score
-          breakdown: result.breakdown
-        });
+        const result = calculatePreferenceScore(
+          prefRec?.fields, 
+          mentorMeta
+        );
+
+        console.log(`✅ Mentor ${mentorId} score:`, result);
+
+        if (result.score > 0) {
+          scores.push({ 
+            mentorId, 
+            score: result.score, 
+            overlap: 0, // No more tag overlap
+            preferenceScore: result.preferenceScore,
+            tagScore: 0, // No more tag score
+            breakdown: result.breakdown
+          });
+        }
+      } catch (error) {
+        console.log(`❌ Error processing mentor ${r.fields?.UserID}:`, error);
+        continue; // Skip this mentor and continue with others
       }
     }
 
+    console.log(`✅ Calculated ${scores.length} scores`);
+
     // If nobody matches, still bump mentee last paired so next run can be incremental
     if (!scores.length) {
+      console.log("❌ No matching mentors found");
       await withRetry("Update LastPaired", () =>
         base(AIRTABLE_MENTEE_META_TABLE!).update(menteeRec.id, { LastPaired: nowISO() })
       );
       return NextResponse.json({ updated: 0, created: 0, total: 0, info: "No matching mentors found" });
     }
 
+    console.log("🔍 Updating MatchRanking...");
     // Update MatchRanking for this mentee
     const existing = await firstPage(AIRTABLE_MATCH_RANKING_TABLE!, {
       filterByFormula: `{MenteeID}='${esc(uid)}'`,
@@ -426,10 +481,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    console.log(`🔍 Creating ${toCreate.length} new records, updating ${toUpdate.length} existing records`);
+
     try {
       if (toCreate.length) await batchCreate(AIRTABLE_MATCH_RANKING_TABLE!, toCreate);
       if (toUpdate.length) await batchUpdate(AIRTABLE_MATCH_RANKING_TABLE!, toUpdate);
     } catch (err: any) {
+      console.log("❌ Error updating MatchRanking:", err);
       const msg = String(err?.message || err || "");
       if (msg.includes('Unknown field name')) {
         return NextResponse.json(
@@ -446,7 +504,7 @@ export async function POST(req: NextRequest) {
     );
 
     scores.sort((a, b) => b.score - a.score);
-    console.log("Preference-based matching scores:", scores);
+    console.log("✅ Preference-based matching scores:", scores);
     return NextResponse.json({
       total: scores.length,
       created: toCreate.length,

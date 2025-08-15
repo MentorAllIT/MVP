@@ -148,6 +148,17 @@
   font-size: .8rem;
   font-weight: 700;
 }
+
+.scoreBadge {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: 1px solid #10b981;
+  padding: .3rem .6rem;
+  border-radius: 12px;
+  font-size: .75rem;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
 .cardMeta { margin: 0; color: #6b7280; font-size: .95rem; }
 .updatedAt { color: #8b6bb1; font-size: .8rem; }
 
