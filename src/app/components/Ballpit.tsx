@@ -24,7 +24,7 @@ import {
   Raycaster,
   Plane,
 } from "three";
-import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment";
 import { Observer } from "gsap/Observer";
 import { gsap } from "gsap";
 
