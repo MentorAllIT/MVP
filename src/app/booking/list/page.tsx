@@ -107,7 +107,9 @@ export default function BookingsListPage() {
       <div className={styles.page}>
         <header className={styles.header}>
           <div className={styles.headerContent}>
-            <Link href="/" className={styles.logo}>MentorAll</Link>
+            <div className={styles.logoContainer}>
+              <img src="/MentorAll transparent Full logo.png" alt="MentorAll" className={styles.logo} />
+            </div>
             <HamburgerMenu />
           </div>
         </header>
@@ -129,7 +131,9 @@ export default function BookingsListPage() {
       <div className={styles.page}>
         <header className={styles.header}>
           <div className={styles.headerContent}>
-            <Link href="/" className={styles.logo}>MentorAll</Link>
+            <div className={styles.logoContainer}>
+              <img src="/MentorAll transparent Full logo.png" alt="MentorAll" className={styles.logo} />
+            </div>
             <HamburgerMenu />
           </div>
         </header>
@@ -158,7 +162,9 @@ export default function BookingsListPage() {
       <div className={styles.page}>
         <header className={styles.header}>
           <div className={styles.headerContent}>
-            <Link href="/" className={styles.logo}>MentorAll</Link>
+            <div className={styles.logoContainer}>
+              <img src="/MentorAll transparent Full logo.png" alt="MentorAll" className={styles.logo} />
+            </div>
             <HamburgerMenu />
           </div>
         </header>
@@ -396,7 +402,9 @@ export default function BookingsListPage() {
     <div className={styles.page}>
       <header className={styles.header}>
         <div className={styles.headerContent}>
-          <Link href="/" className={styles.logo}>MentorAll</Link>
+          <Link href="/" className={styles.logoContainer}>
+            <img src="/MentorAll transparent Full logo.png" alt="MentorAll" className={styles.logo} />
+          </Link>
           <HamburgerMenu />
         </div>
       </header>

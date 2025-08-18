@@ -180,8 +180,8 @@ export default function SignUpPage() {
     <div className={styles.page}>
       <header className={styles.header}>
         <div className={styles.headerContent}>
-          <Link href="/" className={styles.logo}>
-            Mentor<span className={styles.aiHighlight}>All</span>
+          <Link href="/" className={styles.logoContainer}>
+            <img src="/MentorAll transparent Full logo.png" alt="MentorAll" className={styles.logo} />
           </Link>
         </div>
       </header>
@@ -328,6 +328,9 @@ export default function SignUpPage() {
                     Already have an account?{" "}
                     <Link href="/signin" className={styles.formFooterLink}>
                       Sign In Here
+                    </Link> or {" "}
+                    <Link href={role === 'mentor' ? '/mentee/signup' : '/mentor/signup'} className={styles.formFooterLink}>
+                      Become a {role === 'mentor' ? 'Mentee' : 'Mentor'}
                     </Link>
                   </p>
                 </div>
