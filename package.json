@@ -10,9 +10,13 @@
     "test": "jest"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "airtable": "^0.12.2",
     "axios": "^1.11.0",
     "bcrypt": "^6.0.0",
+    "dotenv": "^17.2.1",
     "googleapis": "^155.0.0",
     "jest": "^30.0.5",
     "jsonwebtoken": "^9.0.2",
@@ -27,8 +31,8 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@types/bcrypt": "^6.0.0",
-    "@types/jsonwebtoken": "^9.0.10",
     "@types/jest": "^30.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

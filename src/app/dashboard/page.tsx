@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import styles from "./dashboard.module.css";
+import HamburgerMenu from "../components/HamburgerMenu";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -34,6 +35,8 @@ export default function Dashboard() {
 
     checkAuth();
   }, [router]);
+
+
 
   // Kick off refresh-match exactly once after auth confirms mentee
   useEffect(() => {
@@ -98,19 +101,9 @@ export default function Dashboard() {
       <header className={styles.header}>
         <div className={styles.headerContent}>
           <h1 className={styles.logo}>MentorAll</h1>
-          <nav className={styles.nav}>
-            <Link href="/profile" className={styles.navLink}>Profile</Link>
-            <Link href="/booking/list" className={styles.navLink}>My Bookings</Link>
-            <button 
-              onClick={() => {
-                fetch("/api/auth/signout", { method: "POST" });
-                router.push("/");
-              }} 
-              className={styles.navLink}
-            >
-              Sign Out
-            </button>
-          </nav>
+          
+          {/* Hamburger Menu */}
+          <HamburgerMenu showBackToDashboard={false} />
         </div>
       </header>
 
@@ -132,7 +125,7 @@ export default function Dashboard() {
             {userRole === "mentor" ? (
               <>
                 <div className={styles.card}>
-                  <h3 className={styles.cardTitle}>👥 View Mentee Requests</h3>
+                  <h3 className={styles.cardTitle}>View Mentee Requests</h3>
                   <p className={styles.cardDescription}>
                     See who's looking for guidance and accept mentoring opportunities.
                   </p>
@@ -142,7 +135,7 @@ export default function Dashboard() {
                 </div>
 
                 <div className={styles.card}>
-                  <h3 className={styles.cardTitle}>📅 Manage Schedule</h3>
+                  <h3 className={styles.cardTitle}>Manage Schedule</h3>
                   <p className={styles.cardDescription}>
                     Set your availability and manage mentoring sessions.
                   </p>
@@ -152,7 +145,7 @@ export default function Dashboard() {
                 </div>
 
                 <div className={styles.card}>
-                  <h3 className={styles.cardTitle}>📊 Your Impact</h3>
+                  <h3 className={styles.cardTitle}>Your Impact</h3>
                   <p className={styles.cardDescription}>
                     Track your mentoring sessions and see your impact.
                   </p>
@@ -164,7 +157,7 @@ export default function Dashboard() {
             ) : (
               <>
                 <div className={styles.card}>
-                  <h3 className={styles.cardTitle}>🔍 Find Mentors</h3>
+                  <h3 className={styles.cardTitle}>Find Mentors</h3>
                   <p className={styles.cardDescription}>
                     Browse available mentors and find the perfect match for your goals.
                   </p>
@@ -174,7 +167,7 @@ export default function Dashboard() {
                 </div>
 
                 <div className={styles.card}>
-                  <h3 className={styles.cardTitle}>💬 My Connections</h3>
+                  <h3 className={styles.cardTitle}>My Connections</h3>
                   <p className={styles.cardDescription}>
                     View your current mentor connections and chat history.
                   </p>
@@ -184,7 +177,7 @@ export default function Dashboard() {
                 </div>
 
                 <div className={styles.card}>
-                  <h3 className={styles.cardTitle}>📚 Learning Path</h3>
+                  <h3 className={styles.cardTitle}>Learning Path</h3>
                   <p className={styles.cardDescription}>
                     Track your learning progress and set new goals.
                   </p>
@@ -196,20 +189,7 @@ export default function Dashboard() {
             )}
           </div>
 
-          <div className={styles.quickActions}>
-            <h3 className={styles.quickActionsTitle}>Quick Actions</h3>
-            <div className={styles.actionButtons}>
-              <Link href="/profile" className={styles.actionButton}>
-                ✏️ Edit Profile
-              </Link>
-              <Link href="/settings" className={styles.actionButton}>
-                ⚙️ Settings
-              </Link>
-              <Link href="/help" className={styles.actionButton}>
-                ❓ Help & Support
-              </Link>
-            </div>
-          </div>
+
         </div>
       </main>
     </div>
