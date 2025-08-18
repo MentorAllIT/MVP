@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { z } from "zod";
 import styles from "./profileSetup.module.css";
@@ -71,12 +71,46 @@ export default function ProfileSetup() {
   const [fieldErrs, setFieldErrs] = useState<FieldErrors>({});
   const [formErr,   setFormErr]   = useState<string | null>(null);
   const [submitting,setSubmitting]= useState(false);
+  const [loading,   setLoading]   = useState(true);
+
+  // Load existing profile data when component mounts
+  useEffect(() => {
+    const loadExistingProfile = async () => {
+      if (!uid) return;
+      
+      try {
+        // Try to fetch existing profile data
+        const res = await fetch(`/api/profile?uid=${uid}`);
+        if (res.ok) {
+          const profileData = await res.json();
+          if (profileData.bio) setBio(profileData.bio);
+          if (profileData.linkedin) setLinkedin(profileData.linkedin);
+        }
+      } catch (error) {
+        console.log("No existing profile found or error loading profile");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadExistingProfile();
+  }, [uid]);
 
   if (!uid) {
     return (
       <p style={{ padding: "2rem" }}>
         Missing user ID. Please sign up again.
       </p>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.wrapper}>
+          <div className={styles.loading}>Loading profile...</div>
+        </div>
+      </div>
     );
   }
 
@@ -123,6 +157,17 @@ export default function ProfileSetup() {
   return (
     <div className={styles.page}>
       <div className={styles.wrapper}>
+        {/* Back to Dashboard Button - Always Visible */}
+        <div className={styles.topBackSection}>
+          <button
+            type="button"
+            onClick={() => router.push("/dashboard")}
+            className={styles.topBackButton}
+          >
+            ← Back to Dashboard
+          </button>
+        </div>
+
         <div className={styles.header}>
           <h1 className={styles.title}>Tell us about you</h1>
           <p className={styles.subtitle}>
@@ -195,10 +240,23 @@ export default function ProfileSetup() {
           <div className={styles.progressTrack}>
             <div
               className={styles.progressFill}
-              style={{ width: "50%" }}
+              style={{ width: role === "mentee" ? "33%" : "50%" }}
             />
           </div>
-          <span className={styles.progressText}>Step&nbsp;1&nbsp;of&nbsp;2</span>
+          <span className={styles.progressText}>
+            {role === "mentee" ? "Step 1 of 3" : "Step 1 of 2"}
+          </span>
+        </div>
+
+        {/* Back to Dashboard Button */}
+        <div className={styles.backSection}>
+          <button
+            type="button"
+            onClick={() => router.push("/dashboard")}
+            className={styles.backButton}
+          >
+            ← Back to Dashboard
+          </button>
         </div>
       </div>
     </div>

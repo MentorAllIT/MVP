@@ -181,11 +181,8 @@ export default function SignUpPage() {
       <header className={styles.header}>
         <div className={styles.headerContent}>
           <Link href="/" className={styles.logo}>
-            Mentor<span className={styles.aiHighlight}>AI</span>l
+            Mentor<span className={styles.aiHighlight}>All</span>
           </Link>
-          <nav className={styles.nav}>
-            <Link href="/" className={styles.navLink}>Home</Link>
-          </nav>
         </div>
       </header>
 
