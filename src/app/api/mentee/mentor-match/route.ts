@@ -128,8 +128,9 @@ export async function GET(req: NextRequest) {
     // Mentee matches with enhanced scoring - get only top 1 by score
     const matchRows: any[] = await firstPage(AIRTABLE_MATCH_RANKING_TABLE!, {
       filterByFormula: `{MenteeID}='${esc(uid)}'`,
-      fields: ["MentorID", "UpdatedAt", "Score", "PreferenceScore", "TagScore", "Breakdown"],
-
+      fields: ["MenteeID", "MentorID", "UpdatedAt", "Score", "PreferenceScore", "TagScore", "Breakdown"],
+      sort: [{ field: "Score", direction: "desc" }],
+      maxRecords: 1,
     });
 
     const mentorIds = Array.from(
@@ -181,20 +182,8 @@ export async function GET(req: NextRequest) {
       metaUpdatedAt: f.UpdatedAt ?? null,
     }));
 
-    // Sort and merge with enhanced scoring - already sorted by score from Airtable
+    // Merge with enhanced scoring - already sorted by score from Airtable
     const mentors = matchRows
-      .slice()
-      .sort((a: any, b: any) => {
-        const as = Number(a.fields?.Score);
-        const bs = Number(b.fields?.Score);
-        const scoreCmp =
-          (Number.isFinite(bs) ? bs : -Infinity) - (Number.isFinite(as) ? as : -Infinity);
-        if (scoreCmp !== 0) return scoreCmp;
-        return (
-          new Date(b.fields?.UpdatedAt ?? 0).getTime() -
-          new Date(a.fields?.UpdatedAt ?? 0).getTime()
-        );
-      })
       .map((r: any) => {
         const id = r.fields?.MentorID as string;
         return {
@@ -213,7 +202,9 @@ export async function GET(req: NextRequest) {
       });
     
     console.log("Enhanced mentor matches:", mentors);
-    return NextResponse.json({ mentors });
+    // Safety check: ensure only 1 mentor is returned
+    const topMentor = mentors.slice(0, 1);
+    return NextResponse.json({ mentors: topMentor });
   } catch (e: any) {
     const status = e?.statusCode || e?.status || 500;
     const msg =
