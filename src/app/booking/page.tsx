@@ -6,6 +6,7 @@ import MentorBookingForm from "../mentors2/components/MentorBookingFormNew";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import styles from "../mentee/browse/browse.module.css";
+import HamburgerMenu from "../components/HamburgerMenu";
 
 // Avoid static generation for this page (optional but nice here)
 export const dynamic = "force-dynamic";
@@ -51,11 +52,7 @@ function BookingPageInner() {
         <header className={styles.header}>
           <div className={styles.headerContent}>
             <Link href="/" className={styles.logo}>MentorAll</Link>
-            <nav className={styles.nav}>
-              <Link href="/dashboard" className={styles.navLink}>Dashboard</Link>
-              <Link href="/profile" className={styles.navLink}>Profile</Link>
-              <Link href="/settings" className={styles.navLink}>Settings</Link>
-            </nav>
+            <HamburgerMenu />
           </div>
         </header>
 
@@ -76,11 +73,7 @@ function BookingPageInner() {
       <header className={styles.header}>
         <div className={styles.headerContent}>
           <Link href="/" className={styles.logo}>MentorAll</Link>
-          <nav className={styles.nav}>
-            <Link href="/dashboard" className={styles.navLink}>Dashboard</Link>
-            <Link href="/profile" className={styles.navLink}>Profile</Link>
-            <Link href="/settings" className={styles.navLink}>Settings</Link>
-          </nav>
+          <HamburgerMenu />
         </div>
       </header>
 

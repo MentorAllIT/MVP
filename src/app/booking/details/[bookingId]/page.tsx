@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import styles from '../../../mentee/browse/browse.module.css';
 import { formatToAEST } from '../../../../lib/timezone';
+import HamburgerMenu from '../../../components/HamburgerMenu';
 
 interface BookingDetails {
   id: string;
@@ -100,11 +101,7 @@ export default function BookingDetailsPage() {
         <header className={styles.header}>
           <div className={styles.headerContent}>
             <Link href="/" className={styles.logo}>MentorAll</Link>
-            <nav className={styles.nav}>
-              <Link href="/dashboard" className={styles.navLink}>Dashboard</Link>
-              <Link href="/booking/list" className={styles.navLink}>My Bookings</Link>
-              <Link href="/profile" className={styles.navLink}>Profile</Link>
-            </nav>
+            <HamburgerMenu />
           </div>
         </header>
 
@@ -126,11 +123,7 @@ export default function BookingDetailsPage() {
         <header className={styles.header}>
           <div className={styles.headerContent}>
             <Link href="/" className={styles.logo}>MentorAll</Link>
-            <nav className={styles.nav}>
-              <Link href="/dashboard" className={styles.navLink}>Dashboard</Link>
-              <Link href="/booking/list" className={styles.navLink}>My Bookings</Link>
-              <Link href="/profile" className={styles.navLink}>Profile</Link>
-            </nav>
+            <HamburgerMenu />
           </div>
         </header>
 
@@ -158,11 +151,7 @@ export default function BookingDetailsPage() {
       <header className={styles.header}>
         <div className={styles.headerContent}>
           <Link href="/" className={styles.logo}>MentorAll</Link>
-          <nav className={styles.nav}>
-            <Link href="/dashboard" className={styles.navLink}>Dashboard</Link>
-            <Link href="/booking/list" className={styles.navLink}>My Bookings</Link>
-            <Link href="/profile" className={styles.navLink}>Profile</Link>
-          </nav>
+          <HamburgerMenu />
         </div>
       </header>
 
