@@ -185,7 +185,7 @@ export default function SignUpPage() {
       }
 
       setSuccess(true);
-      router.replace(`/profile-setup?uid=${data.id}&role=${role}`);
+      router.replace(`/profile-setup?uid=${data.uid}&role=${role}`);
     } catch (err) {
       console.error(err);
       setFormErr("Network error – check your connection.");
