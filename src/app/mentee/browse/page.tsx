@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import styles from "./browse.module.css";
+import HamburgerMenu from "../../components/HamburgerMenu";
 
 type Mentor = {
   userId: string;
@@ -19,6 +20,7 @@ type Mentor = {
   // MentorMeta
   industry?: string | null;
   yearExp?: number | null;
+  calendly?: string | null;
   skill?: string | string[] | null;
   location?: string | null;
   role?: string | null;
@@ -27,7 +29,14 @@ type Mentor = {
   fieldOfStudy?: string | null;
   tags?: string[];
   metaUpdatedAt?: string | null;
+
+  // Matching scores
   score?: number | null;
+  
+  // Enhanced Scoring Data
+  preferenceScore?: number | null;
+  tagScore?: number | null;
+  breakdown?: string | null;
 };
 
 function splitSkills(skill?: string | string[] | null): string[] {
@@ -101,11 +110,7 @@ export default function BrowseMentorsPage() {
       <header className={styles.header}>
         <div className={styles.headerContent}>
           <Link href="/" className={styles.logo}>MentorAll</Link>
-          <nav className={styles.nav}>
-            <Link href="/dashboard" className={styles.navLink}>Dashboard</Link>
-            <Link href="/profile" className={styles.navLink}>Profile</Link>
-            <Link href="/settings" className={styles.navLink}>Settings</Link>
-          </nav>
+          <HamburgerMenu />
         </div>
       </header>
 
@@ -153,6 +158,10 @@ export default function BrowseMentorsPage() {
                           <h3 className={styles.cardTitle}>{m.name || "Unnamed Mentor"}</h3>
                           {typeof m.yearExp === "number" && (
                             <span className={styles.expBadge}>{m.yearExp} yrs exp</span>
+                          )}
+                          {/* Inline Preference Score */}
+                          {m.preferenceScore !== null && m.preferenceScore !== undefined && (
+                            <span className={styles.inlineScore}>Match Score: {m.preferenceScore}%</span>
                           )}
                         </div>
                         <p className={styles.cardMeta}>
