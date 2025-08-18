@@ -100,7 +100,9 @@ export default function Dashboard() {
 
       <header className={styles.header}>
         <div className={styles.headerContent}>
-          <h1 className={styles.logo}>MentorAll</h1>
+          <Link href="/" className={styles.logoContainer}>
+            <img src="/MentorAll transparent Full logo.png" alt="MentorAll" className={styles.logo} />
+          </Link>
           
           {/* Hamburger Menu */}
           <HamburgerMenu showBackToDashboard={false} />
