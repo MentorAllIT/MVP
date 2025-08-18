@@ -7,8 +7,125 @@ import styles from "./metaSetup.module.css";
 // Helpers
 type FieldErrors = Record<string, string>;
 
-const isCalendly = (s: string) =>
-  /^https:\/\/calendly\.com\/[a-z0-9_-]+\/[a-z0-9_-]+/i.test(s);
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+type DayKey = (typeof DAYS)[number];
+
+type Interval = { start: string; end: string }; // "HH:mm" 24h
+type WeeklySchedule = Record<DayKey, Interval[]>;
+
+const TIMEZONE = "Australia/Sydney";
+
+function emptyWeekly(): WeeklySchedule {
+  return DAYS.reduce((acc, d) => {
+    (acc as any)[d] = [];
+    return acc;
+  }, {} as WeeklySchedule);
+}
+
+function toMinutes(t: string): number {
+  const [h, m] = t.split(":").map((n) => Number(n));
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return NaN;
+  return h * 60 + m;
+}
+
+function overlaps(a: Interval, b: Interval) {
+  const a1 = toMinutes(a.start);
+  const a2 = toMinutes(a.end);
+  const b1 = toMinutes(b.start);
+  const b2 = toMinutes(b.end);
+  if (![a1, a2, b1, b2].every(Number.isFinite)) return false;
+  return Math.max(a1, b1) < Math.min(a2, b2);
+}
+
+// Time select
+type TimeParts = { hour: string; minute: string; period: "AM" | "PM" | "" };
+
+function toParts(value: string): TimeParts {
+  if (!value) return { hour: "", minute: "", period: "" };
+  const [hh, mm] = value.split(":").map((n) => Number(n));
+  if (!Number.isFinite(hh) || !Number.isFinite(mm)) return { hour: "", minute: "", period: "" };
+  const period = hh >= 12 ? "PM" : "AM";
+  const hour12 = hh % 12 === 0 ? 12 : hh % 12;
+  return { hour: String(hour12).padStart(2, "0"), minute: String(mm).padStart(2, "0"), period };
+}
+
+function to24(parts: TimeParts): string {
+  const { hour, minute, period } = parts;
+  if (!hour || !minute || !period) return "";
+  let h = Number(hour);
+  if (period === "AM") h = h % 12; // 12 AM = 0
+  else if (period === "PM") h = (h % 12) + 12; // 12 PM = 12
+  return `${String(h).padStart(2, "0")}:${String(Number(minute)).padStart(2, "0")}`;
+}
+
+const HOUR_OPTS = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
+const MINUTE_OPTS = ["00", "15", "30", "45"];
+
+function TimeSelect({
+  value,
+  onChange,
+  invalid,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  invalid?: boolean;
+}) {
+  // Keep local parts so partial selections stick visually
+  const [parts, setParts] = useState<TimeParts>(() => toParts(value));
+
+  // If parent value changes (e.g., resetting form), sync down
+  useEffect(() => {
+    setParts(toParts(value));
+  }, [value]);
+
+  function update(next: Partial<TimeParts>) {
+    const merged: TimeParts = { ...parts, ...next };
+    setParts(merged);
+    const full = to24(merged);
+    if (full) onChange(full); // only notify when complete
+  }
+
+  return (
+    <div className={styles.timeGroup}>
+      <select
+        className={`${styles.input} ${styles.select} ${invalid ? styles.inputError : ""}`}
+        aria-label="Hour"
+        value={parts.hour}
+        onChange={(e) => update({ hour: e.target.value })}
+      >
+        <option value="">HH</option>
+        {HOUR_OPTS.map((h) => (
+          <option key={h} value={h}>{h}</option>
+        ))}
+      </select>
+
+      <span className={styles.colon}>:</span>
+
+      <select
+        className={`${styles.input} ${styles.select} ${invalid ? styles.inputError : ""}`}
+        aria-label="Minute"
+        value={parts.minute}
+        onChange={(e) => update({ minute: e.target.value })}
+      >
+        <option value="">MM</option>
+        {MINUTE_OPTS.map((m) => (
+          <option key={m} value={m}>{m}</option>
+        ))}
+      </select>
+
+      <select
+        className={`${styles.input} ${styles.selectAmPm} ${invalid ? styles.inputError : ""}`}
+        aria-label="AM/PM"
+        value={parts.period}
+        onChange={(e) => update({ period: e.target.value as "AM" | "PM" })}
+      >
+        <option value="">AM/PM</option>
+        <option value="AM">AM</option>
+        <option value="PM">PM</option>
+      </select>
+    </div>
+  );
+}
 
 export default function MetaSetup() {
   const params = useSearchParams();
@@ -25,7 +142,6 @@ export default function MetaSetup() {
   const [state, setState] = useState({
     industry:   "",
     years:      "",
-    calendly:   "",
     currentRole: "",
     seniorityLevel: "",
     previousRoles: "",
@@ -35,7 +151,16 @@ export default function MetaSetup() {
     goal:       "",
     challenges: "",
     help:       "",
+    weekly: emptyWeekly(),
   });
+
+  // Advanced settings state
+  const [advOpen, setAdvOpen] = useState(false);
+  const [dateStart, setDateStart] = useState<string>("");       // YYYY-MM-DD (blank = today)
+  const [dateEnd, setDateEnd] = useState<string>("");           // blank = no end date
+  const [minNotice, setMinNotice] = useState<number>(0);
+  const [overrides, setOverrides] = useState<Record<string, Interval[]>>({}); // "YYYY-MM-DD" -> intervals
+
   const [resumeFile, setResumeFile] = useState<File | null>(null);
 
   const [fieldErrs, setFieldErrs]   = useState<FieldErrors>({});
@@ -64,7 +189,6 @@ export default function MetaSetup() {
               ...prev,
               industry: metaData.industry || "",
               years: metaData.years?.toString() || "",
-              calendly: metaData.calendly || "",
               currentRole: metaData.currentRole || "",
               seniorityLevel: metaData.seniorityLevel || "",
               previousRoles: metaData.previousRoles || "",
@@ -103,6 +227,30 @@ export default function MetaSetup() {
     setResumeFile(e.target.files?.[0] || null);
   };
 
+  const addInterval = (day: DayKey) =>
+    setState((s) => {
+      const next = structuredClone(s.weekly);
+      const list = next[day];
+      const last = list[list.length - 1];
+      const lastComplete = !!(last && last.start && last.end);
+      if (!last || lastComplete) list.push({ start: "", end: "" }); // guard: no double blank
+      return { ...s, weekly: next };
+    });
+
+  const removeInterval = (day: DayKey, idx: number) =>
+    setState((s) => {
+      const next = structuredClone(s.weekly);
+      next[day].splice(idx, 1);
+      return { ...s, weekly: next };
+    });
+
+  const updateInterval = (day: DayKey, idx: number, key: keyof Interval, value: string) =>
+    setState((s) => {
+      const next = structuredClone(s.weekly);
+      next[day][idx] = { ...next[day][idx], [key]: value };
+      return { ...s, weekly: next };
+    });
+
   // Validation
   function validate(): FieldErrors {
     const errs: FieldErrors = {};
@@ -112,11 +260,54 @@ export default function MetaSetup() {
       if (!state.years.trim())             errs.years     = "Years is required";
       else if (!Number.isFinite(yrs) || yrs < 0)
                                            errs.years     = "Years must be ≥ 0";
-      if (!isCalendly(state.calendly))     errs.calendly  = "URL must start with calendly.com";
       if (!state.currentRole.trim())       errs.currentRole = "Current role is required";
       if (!state.seniorityLevel.trim())    errs.seniorityLevel = "Seniority level is required";
       if (!state.mentoringStyle.trim())    errs.mentoringStyle = "Mentoring style is required";
       if (!state.availability.trim())      errs.availability = "Availability is required";
+
+      // At least one interval somewhere
+      const totalIntervals = DAYS.reduce((n, d) => n + state.weekly[d].length, 0);
+      if (totalIntervals === 0) errs.weekly = "Add at least one time range";
+
+      // Per-day checks
+      for (const d of DAYS) {
+        const list = state.weekly[d];
+        for (let i = 0; i < list.length; i++) {
+          const iv = list[i];
+          if (!iv.start) errs[`${d}-start-${i}`] = "Start required";
+          if (!iv.end) errs[`${d}-end-${i}`] = "End required";
+          const sM = toMinutes(iv.start);
+          const eM = toMinutes(iv.end);
+          if (Number.isFinite(sM) && Number.isFinite(eM) && eM <= sM) {
+            errs[`${d}-end-${i}`] = "End must be after start";
+          }
+          for (let j = 0; j < i; j++) {
+            if (overlaps(iv, list[j])) errs[`${d}-overlap-${i}`] = "Overlaps another range";
+          }
+        }
+      }
+
+      // Advanced: date range validity
+      if (dateStart && dateEnd && new Date(dateStart) > new Date(dateEnd)) {
+        errs.dateEnd = "End date must be after start date";
+      }
+
+      // Advanced: overrides validity
+      for (const [odate, list] of Object.entries(overrides)) {
+        for (let i = 0; i < list.length; i++) {
+          const iv = list[i];
+          if (!iv.start) errs[`ov-${odate}-start-${i}`] = "Start required";
+          if (!iv.end) errs[`ov-${odate}-end-${i}`] = "End required";
+          const sM = toMinutes(iv.start);
+          const eM = toMinutes(iv.end);
+          if (Number.isFinite(sM) && Number.isFinite(eM) && eM <= sM) {
+            errs[`ov-${odate}-end-${i}`] = "End must be after start";
+          }
+          for (let j = 0; j < i; j++) {
+            if (overlaps(iv, list[j])) errs[`ov-${odate}-overlap-${i}`] = "Overlaps another range";
+          }
+        }
+      }
     } else {
       if (!state.goal.trim())              errs.goal        = "Please describe your main goal";
       if (!state.challenges.trim())        errs.challenges  = "Tell us your challenges";
@@ -153,13 +344,25 @@ export default function MetaSetup() {
     if (role === "mentor") {
       fd.append("industry",  state.industry.trim());
       fd.append("years",     state.years.trim());
-      fd.append("calendly",  state.calendly.trim());
       fd.append("currentRole", state.currentRole.trim());
       fd.append("seniorityLevel", state.seniorityLevel.trim());
       fd.append("previousRoles", state.previousRoles.trim());
       fd.append("mentoringStyle", state.mentoringStyle.trim());
       fd.append("culturalBackground", state.culturalBackground.trim());
       fd.append("availability", state.availability.trim());
+      fd.append(
+        "availabilityJson",
+        JSON.stringify({
+          timezone: TIMEZONE,
+          weekly: state.weekly,
+          dateRange: {
+            start: dateStart || null,
+            end: dateEnd || null,
+          },
+          minNoticeHours: Number.isFinite(minNotice) ? minNotice : 0,
+          overrides,
+        })
+      );
     } else {
       fd.append("goal",       state.goal.trim());
       fd.append("challenges", state.challenges.trim());
@@ -239,194 +442,426 @@ export default function MetaSetup() {
   );
 
   const mentorInputs = (
-    <>
-      <label className={styles.label}>
-        <span className={styles.labelText}>Industry</span>
-        <span className={styles.hint}>(e.g. FinTech, UX, Cloud)</span>
-        <input
-          name="industry"
-          value={state.industry}
-          onChange={onChange}
-          className={`${styles.input} ${fieldErrs.industry ? styles.inputError : ""}`}
-          placeholder="e.g. SaaS – Product Design"
-        />
-        {fieldErrs.industry && (
-          <span className={styles.fieldError}>{fieldErrs.industry}</span>
-        )}
-      </label>
+      <>
+        <label className={styles.label}>
+          <span className={styles.labelText}>Industry</span>
+          <span className={styles.hint}>(e.g. FinTech, UX, Cloud)</span>
+          <input
+              name="industry"
+              value={state.industry}
+              onChange={onChange}
+              className={`${styles.input} ${fieldErrs.industry ? styles.inputError : ""}`}
+              placeholder="e.g. SaaS – Product Design"
+          />
+          {fieldErrs.industry && (
+              <span className={styles.fieldError}>{fieldErrs.industry}</span>
+          )}
+        </label>
 
-      <label className={styles.label}>
-        <span className={styles.labelText}>Years of experience</span>
-        <input
-          name="years"
-          type="number"
-          min={0}
-          value={state.years}
-          onChange={onChange}
-          className={`${styles.input} ${fieldErrs.years ? styles.inputError : ""}`}
-          placeholder="e.g. 7"
-        />
-        {fieldErrs.years && <span className={styles.fieldError}>{fieldErrs.years}</span>}
-      </label>
+        <label className={styles.label}>
+          <span className={styles.labelText}>Years of experience</span>
+          <input
+              name="years"
+              type="number"
+              min={0}
+              value={state.years}
+              onChange={onChange}
+              className={`${styles.input} ${fieldErrs.years ? styles.inputError : ""}`}
+              placeholder="e.g. 7"
+          />
+          {fieldErrs.years && <span className={styles.fieldError}>{fieldErrs.years}</span>}
+        </label>
 
-      <label className={styles.label}>
-        Calendly URL <span className={styles.hint}>(https://calendly.com/…)</span>
-        <input
-          name="calendly"
-          type="url"
-          value={state.calendly}
-          onChange={onChange}
-          className={`${styles.input} ${fieldErrs.calendly ? styles.inputError : ""}`}
-          placeholder="https://calendly.com/your-handle/30min"
-        />
-        {fieldErrs.calendly && (
-          <span className={styles.fieldError}>{fieldErrs.calendly}</span>
-        )}
-      </label>
+        <label className={styles.label}>
+          <span className={styles.labelText}>Current Role</span>
+          <input
+              name="currentRole"
+              value={state.currentRole}
+              onChange={onChange}
+              className={`${styles.input} ${fieldErrs.currentRole ? styles.inputError : ""}`}
+              placeholder="e.g. Software Engineer, Product Manager"
+          />
+          {fieldErrs.currentRole && (
+              <span className={styles.fieldError}>{fieldErrs.currentRole}</span>
+          )}
+        </label>
 
-      <label className={styles.label}>
-        <span className={styles.labelText}>Current Role</span>
-        <input
-          name="currentRole"
-          value={state.currentRole}
-          onChange={onChange}
-          className={`${styles.input} ${fieldErrs.currentRole ? styles.inputError : ""}`}
-          placeholder="e.g. Software Engineer, Product Manager"
-        />
-        {fieldErrs.currentRole && (
-          <span className={styles.fieldError}>{fieldErrs.currentRole}</span>
-        )}
-      </label>
+        <label className={styles.label}>
+          <span className={styles.labelText}>Seniority Level</span>
+          <select
+              name="seniorityLevel"
+              value={state.seniorityLevel}
+              onChange={onChange}
+              className={`${styles.input} ${fieldErrs.seniorityLevel ? styles.inputError : ""}`}
+          >
+            <option value="">Select your level</option>
+            <option value="Junior">Junior</option>
+            <option value="Mid-level">Mid-level</option>
+            <option value="Senior">Senior</option>
+            <option value="Manager">Manager</option>
+            <option value="Director">Director</option>
+            <option value="Executive">Executive</option>
+          </select>
+          {fieldErrs.seniorityLevel && (
+              <span className={styles.fieldError}>{fieldErrs.seniorityLevel}</span>
+          )}
+        </label>
 
-      <label className={styles.label}>
-        <span className={styles.labelText}>Seniority Level</span>
-        <select
-          name="seniorityLevel"
-          value={state.seniorityLevel}
-          onChange={onChange}
-          className={`${styles.input} ${fieldErrs.seniorityLevel ? styles.inputError : ""}`}
-        >
-          <option value="">Select your level</option>
-          <option value="Junior">Junior</option>
-          <option value="Mid-level">Mid-level</option>
-          <option value="Senior">Senior</option>
-          <option value="Manager">Manager</option>
-          <option value="Director">Director</option>
-          <option value="Executive">Executive</option>
-        </select>
-        {fieldErrs.seniorityLevel && (
-          <span className={styles.fieldError}>{fieldErrs.seniorityLevel}</span>
-        )}
-      </label>
+        <label className={styles.label}>
+          <span className={styles.labelText}>Previous Role Experiences</span>
+          <span className={styles.hint}>(Optional - List roles you've held)</span>
+          <textarea
+              name="previousRoles"
+              value={state.previousRoles}
+              onChange={onChange}
+              className={`${styles.textarea} ${fieldErrs.previousRoles ? styles.inputError : ""}`}
+              placeholder="e.g. Junior Developer, Team Lead, Product Manager"
+          />
+          {fieldErrs.previousRoles && (
+              <span className={styles.fieldError}>{fieldErrs.previousRoles}</span>
+          )}
+        </label>
 
-      <label className={styles.label}>
-        <span className={styles.labelText}>Previous Role Experiences</span>
-        <span className={styles.hint}>(Optional - List roles you've held)</span>
-        <textarea
-          name="previousRoles"
-          value={state.previousRoles}
-          onChange={onChange}
-          className={`${styles.textarea} ${fieldErrs.previousRoles ? styles.inputError : ""}`}
-          placeholder="e.g. Junior Developer, Team Lead, Product Manager"
-        />
-        {fieldErrs.previousRoles && (
-          <span className={styles.fieldError}>{fieldErrs.previousRoles}</span>
-        )}
-      </label>
+        <label className={styles.label}>
+          <span className={styles.labelText}>Mentoring Style</span>
+          <select
+              name="mentoringStyle"
+              value={state.mentoringStyle}
+              onChange={onChange}
+              className={`${styles.input} ${fieldErrs.mentoringStyle ? styles.inputError : ""}`}
+          >
+            <option value="">Select your style</option>
+            <option value="Direct">Direct - Give specific advice and solutions</option>
+            <option value="High-level">High-level - Provide strategic guidance</option>
+            <option value="Task-assigned">Task-assigned - Assign homework and review</option>
+            <option value="Coaching">Coaching - Ask questions to help mentee discover answers</option>
+          </select>
+          {fieldErrs.mentoringStyle && (
+              <span className={styles.fieldError}>{fieldErrs.mentoringStyle}</span>
+          )}
+        </label>
 
-      <label className={styles.label}>
-        <span className={styles.labelText}>Mentoring Style</span>
-        <select
-          name="mentoringStyle"
-          value={state.mentoringStyle}
-          onChange={onChange}
-          className={`${styles.input} ${fieldErrs.mentoringStyle ? styles.inputError : ""}`}
-        >
-          <option value="">Select your style</option>
-          <option value="Direct">Direct - Give specific advice and solutions</option>
-          <option value="High-level">High-level - Provide strategic guidance</option>
-          <option value="Task-assigned">Task-assigned - Assign homework and review</option>
-          <option value="Coaching">Coaching - Ask questions to help mentee discover answers</option>
-        </select>
-        {fieldErrs.mentoringStyle && (
-          <span className={styles.fieldError}>{fieldErrs.mentoringStyle}</span>
-        )}
-      </label>
+        <label className={styles.label}>
+          <span className={styles.labelText}>Cultural / Language Background</span>
+          <span className={styles.hint}>(Optional - For diversity matching)</span>
+          <input
+              name="culturalBackground"
+              value={state.culturalBackground}
+              onChange={onChange}
+              className={`${styles.input} ${fieldErrs.culturalBackground ? styles.inputError : ""}`}
+              placeholder="e.g. International from India, Bilingual (Spanish/English)"
+          />
+          {fieldErrs.culturalBackground && (
+              <span className={styles.fieldError}>{fieldErrs.culturalBackground}</span>
+          )}
+        </label>
 
-      <label className={styles.label}>
-        <span className={styles.labelText}>Cultural / Language Background</span>
-        <span className={styles.hint}>(Optional - For diversity matching)</span>
-        <input
-          name="culturalBackground"
-          value={state.culturalBackground}
-          onChange={onChange}
-          className={`${styles.input} ${fieldErrs.culturalBackground ? styles.inputError : ""}`}
-          placeholder="e.g. International from India, Bilingual (Spanish/English)"
-        />
-        {fieldErrs.culturalBackground && (
-          <span className={styles.fieldError}>{fieldErrs.culturalBackground}</span>
-        )}
-      </label>
+        <label className={styles.label}>
+          <span className={styles.labelText}>Availability to Meet</span>
+          <input
+              name="availability"
+              value={state.availability}
+              onChange={onChange}
+              className={`${styles.input} ${fieldErrs.availability ? styles.inputError : ""}`}
+              placeholder="e.g. Weekly on weekends, Bi-weekly on weekdays"
+          />
+          {fieldErrs.availability && (
+              <span className={styles.fieldError}>{fieldErrs.availability}</span>
+          )}
+        </label>
 
-      <label className={styles.label}>
-        <span className={styles.labelText}>Availability to Meet</span>
-        <input
-          name="availability"
-          value={state.availability}
-          onChange={onChange}
-          className={`${styles.input} ${fieldErrs.availability ? styles.inputError : ""}`}
-          placeholder="e.g. Weekly on weekends, Bi-weekly on weekdays"
-        />
-        {fieldErrs.availability && (
-          <span className={styles.fieldError}>{fieldErrs.availability}</span>
-        )}
-      </label>
-    </>
+        {/* Calendly-like Weekly Hours */}
+        <fieldset className={styles.label} style={{border: 0, padding: 0}}>
+          <legend className={styles.labelText}>Weekly availability</legend>
+          <span className={styles.hint}>Set when you’re typically available for meetings.</span>
+
+          <div className={styles.availabilityTable}>
+            {DAYS.map((d) => {
+              const list = state.weekly[d];
+              const dayHasHours = list.length > 0;
+              return (
+                  <div key={d} className={styles.dayRow}>
+                    <div className={styles.dayBadge}>{d.charAt(0)}</div>
+
+                    <div className={styles.dayContent}>
+                      {dayHasHours ? (
+                          list.map((iv, idx) => (
+                              <div key={idx} className={styles.interval}>
+                                <TimeSelect
+                                    value={iv.start}
+                                    onChange={(v) => updateInterval(d, idx, "start", v)}
+                                    invalid={!!fieldErrs[`${d}-start-${idx}`]}
+                                />
+                                <span className={styles.toSep}>to</span>
+                                <TimeSelect
+                                    value={iv.end}
+                                    onChange={(v) => updateInterval(d, idx, "end", v)}
+                                    invalid={!!fieldErrs[`${d}-end-${idx}`]}
+                                />
+                                <button
+                                    type="button"
+                                    className={styles.iconButton}
+                                    aria-label="Remove range"
+                                    onClick={() => removeInterval(d, idx)}
+                                    title="Remove"
+                                >
+                                  ×
+                                </button>
+                                {fieldErrs[`${d}-overlap-${idx}`] && (
+                                    <span className={styles.fieldError} style={{marginLeft: 8}}>
+                            {fieldErrs[`${d}-overlap-${idx}`]}
+                          </span>
+                                )}
+                              </div>
+                          ))
+                      ) : (
+                          <span className={styles.unavailable}>Unavailable</span>
+                      )}
+                    </div>
+
+                    <div className={styles.dayActions}>
+                      <button
+                          type="button"
+                          className={styles.smallButton}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            addInterval(d);
+                          }}
+                      >
+                        + Hours
+                      </button>
+                    </div>
+                  </div>
+              );
+            })}
+          </div>
+
+          {/* Timezone is fixed: Australia/Sydney (no input shown) */}
+          <div className={styles.hint} style={{marginTop: "0.75rem"}}>
+            Timezone: <strong>{TIMEZONE}</strong>
+          </div>
+
+          {fieldErrs.weekly && <span className={styles.fieldError}>{fieldErrs.weekly}</span>}
+        </fieldset>
+
+        {/* Advanced settings */}
+        <div className={styles.advCard}>
+          <button
+              type="button"
+              className={styles.advToggle}
+              onClick={() => setAdvOpen((v) => !v)}
+              aria-expanded={advOpen}
+          >
+            {advOpen ? "▲" : "▼"} Advanced settings
+          </button>
+
+          {advOpen && (
+              <div className={styles.advBody}>
+                {/* Date range */}
+                <div className={styles.row2}>
+                  <label className={styles.label}>
+                    <span className={styles.labelText}>Start date</span>
+                    <input
+                        type="date"
+                        value={dateStart}
+                        onChange={(e) => setDateStart(e.target.value)}
+                        className={`${styles.input} ${fieldErrs.dateStart ? styles.inputError : ""}`}
+                    />
+                  </label>
+
+                  <label className={styles.label}>
+                    <span className={styles.labelText}>End date (optional)</span>
+                    <input
+                        type="date"
+                        value={dateEnd}
+                        onChange={(e) => setDateEnd(e.target.value)}
+                        className={`${styles.input} ${fieldErrs.dateEnd ? styles.inputError : ""}`}
+                    />
+                    <span className={styles.hint}>Leave empty for “No end date”.</span>
+                    {fieldErrs.dateEnd && <span className={styles.fieldError}>{fieldErrs.dateEnd}</span>}
+                  </label>
+                </div>
+
+                {/* Minimum notice */}
+                <label className={styles.label}>
+                  <span className={styles.labelText}>Minimum notice</span>
+                  <select
+                      className={`${styles.input} ${styles.select}`}
+                      value={minNotice}
+                      onChange={(e) => setMinNotice(Number(e.target.value) || 0)}
+                  >
+                    <option value={0}>0 hours (no minimum)</option>
+                    <option value={2}>2 hours</option>
+                    <option value={4}>4 hours</option>
+                    <option value={12}>12 hours</option>
+                    <option value={24}>24 hours</option>
+                  </select>
+                </label>
+
+                {/* Date-specific overrides */}
+                <div className={styles.label}>
+                  <span className={styles.labelText}>Date-specific overrides</span>
+                  <span className={styles.hint}>
+                Add/close slots for particular dates. An empty list means “closed”.
+              </span>
+
+                  {/* Add a date row */}
+                  <div className={styles.row2}>
+                    <input
+                        type="date"
+                        className={styles.input}
+                        onChange={(e) => {
+                          const d = e.target.value;
+                          if (!d) return;
+                          setOverrides((o) => (o[d] ? o : {...o, [d]: []}));
+                          // clear the inline date picker value so you can add another date quickly
+                          (e.target as HTMLInputElement).value = "";
+                        }}
+                        placeholder="YYYY-MM-DD"
+                    />
+                  </div>
+
+                  {/* Render each override date with interval rows */}
+                  <div className={styles.overridesWrap}>
+                    {Object.entries(overrides).map(([d, list]) => (
+                        <div key={d} className={styles.overrideDay}>
+                          <div className={styles.overrideHead}>
+                            <strong>{d}</strong>
+                            <div className={styles.overrideButtons}>
+                              <button
+                                  type="button"
+                                  className={styles.smallButton}
+                                  onClick={() =>
+                                      setOverrides((o) => ({
+                                        ...o,
+                                        [d]: [...(o[d] || []), {start: "", end: ""}],
+                                      }))
+                                  }
+                              >
+                                + Hours
+                              </button>
+                              <button
+                                  type="button"
+                                  className={styles.iconButton}
+                                  title="Remove date"
+                                  onClick={() =>
+                                      setOverrides((o) => {
+                                        const copy = {...o};
+                                        delete copy[d];
+                                        return copy;
+                                      })
+                                  }
+                              >
+                                ×
+                              </button>
+                            </div>
+                          </div>
+
+                          {list.length === 0 && <span className={styles.unavailable}>Closed</span>}
+
+                          {list.map((iv, idx) => (
+                              <div key={idx} className={styles.interval}>
+                                <TimeSelect
+                                    value={iv.start}
+                                    onChange={(v) =>
+                                        setOverrides((o) => {
+                                          const copy = {...o};
+                                          copy[d] = copy[d].slice();
+                                          copy[d][idx] = {...copy[d][idx], start: v};
+                                          return copy;
+                                        })
+                                    }
+                                    invalid={!!fieldErrs[`ov-${d}-start-${idx}`]}
+                                />
+                                <span className={styles.toSep}>to</span>
+                                <TimeSelect
+                                    value={iv.end}
+                                    onChange={(v) =>
+                                        setOverrides((o) => {
+                                          const copy = {...o};
+                                          copy[d] = copy[d].slice();
+                                          copy[d][idx] = {...copy[d][idx], end: v};
+                                          return copy;
+                                        })
+                                    }
+                                    invalid={!!fieldErrs[`ov-${d}-end-${idx}`]}
+                                />
+                                <button
+                                    type="button"
+                                    className={styles.iconButton}
+                                    onClick={() =>
+                                        setOverrides((o) => {
+                                          const copy = {...o};
+                                          copy[d] = copy[d].slice();
+                                          copy[d].splice(idx, 1);
+                                          return copy;
+                                        })
+                                    }
+                                    title="Remove range"
+                                >
+                                  ×
+                                </button>
+                                {fieldErrs[`ov-${d}-overlap-${idx}`] && (
+                                    <span className={styles.fieldError} style={{marginLeft: 8}}>
+                            {fieldErrs[`ov-${d}-overlap-${idx}`]}
+                          </span>
+                                )}
+                              </div>
+                          ))}
+                        </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+          )}
+        </div>
+      </>
   );
 
   return (
-    <div className={styles.page}>
-      <div className={styles.wrapper}>
-        {/* Back to Dashboard Button - Always Visible */}
-        <div className={styles.topBackSection}>
-          <button
-            type="button"
-            onClick={() => router.push("/dashboard")}
-            className={styles.topBackButton}
-          >
-            ← Back to Dashboard
-          </button>
-        </div>
-
-        <div className={styles.header}>
-          <h1 className={styles.title}>
-            {role === "mentee"
-              ? "A bit more about your journey"
-              : "Share your mentoring background"}
-          </h1>
-          <p className={styles.subtitle}>
-            {role === "mentee"
-              ? "We'll use this to match you with mentors"
-              : "We'll use this to match you with mentee"}
-          </p>
-        </div>
-        
-        <div className={styles.card}>
-          <form className={styles.form} onSubmit={handleSubmit} noValidate>
-            {role === "mentee" ? menteeInputs : mentorInputs}
-
-            <button type="submit" disabled={submitting} className={styles.button}>
-              {submitting ? "Saving…" : "Finish"}
+      <div className={styles.page}>
+        <div className={styles.wrapper}>
+          {/* Back to Dashboard Button - Always Visible */}
+          <div className={styles.topBackSection}>
+            <button
+                type="button"
+                onClick={() => router.push("/dashboard")}
+                className={styles.topBackButton}
+            >
+              ← Back to Dashboard
             </button>
+          </div>
 
-            {formErr && <p className={styles.error}>{formErr}</p>}
-          </form>
-          
+          <div className={styles.header}>
+            <h1 className={styles.title}>
+              {role === "mentee"
+                  ? "A bit more about your journey"
+                  : "Share your mentoring background"}
+            </h1>
+            <p className={styles.subtitle}>
+              {role === "mentee"
+                  ? "We'll use this to match you with mentors"
+                  : "We'll use this to match you with mentee"}
+            </p>
+          </div>
+
+          <div className={styles.card}>
+            <form className={styles.form} onSubmit={handleSubmit} noValidate>
+              {role === "mentee" ? menteeInputs : mentorInputs}
+
+              <button type="submit" disabled={submitting} className={styles.button}>
+                {submitting ? "Saving…" : "Finish"}
+              </button>
+
+              {formErr && <p className={styles.error}>{formErr}</p>}
+            </form>
+          </div>
           <div className={styles.progressWrap}>
             <div className={styles.progressTrack}>
-              <div 
-                className={styles.progressFill} 
-                style={{ width: role === "mentee" ? "66%" : "100%" }} 
+              <div
+                  className={styles.progressFill}
+                  style={{width: role === "mentee" ? "66%" : "100%"}}
               />
             </div>
             <span className={styles.progressText}>
@@ -437,15 +872,14 @@ export default function MetaSetup() {
           {/* Bottom Back to Dashboard Button */}
           <div className={styles.backSection}>
             <button
-              type="button"
-              onClick={() => router.push("/dashboard")}
-              className={styles.backButton}
+                type="button"
+                onClick={() => router.push("/dashboard")}
+                className={styles.backButton}
             >
               ← Back to Dashboard
             </button>
           </div>
         </div>
       </div>
-    </div>
   );
 }
