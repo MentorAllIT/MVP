@@ -109,19 +109,7 @@
   white-space: nowrap;
 }
 
-.navLink:first-child {
-  background: rgba(102, 77, 162, 0.08);
-  border-color: rgba(102, 77, 162, 0.2);
-  color: #664da2;
-  font-weight: 600;
-}
 
-.navLink:first-child:hover {
-  background: rgba(102, 77, 162, 0.15);
-  border-color: rgba(102, 77, 162, 0.3);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 15px rgba(102, 77, 162, 0.2);
-}
 
 .navLink::before {
   content: '';

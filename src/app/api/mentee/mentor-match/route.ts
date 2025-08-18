@@ -79,24 +79,34 @@ function normalizeTags(raw: any): string[] {
   if (!raw) return [];
   const flat = (Array.isArray(raw) ? raw : [raw]).flat(5);
   const labels = flat.flatMap((t: any) => {
-    const val =
-      typeof t === "string"
-        ? t
-        : t?.name ??
-          t?.label ??
-          t?.value ??
-          t?.title ??
-          t?.text ??
-          t?.fields?.name ??
-          t?.fields?.Name ??
-          t?.fields?.Title ??
-          "";
+    let val = "";
+    
+    // Handle Airtable-generated tag objects
+    if (typeof t === "object" && t !== null) {
+      if (t.value) {
+        val = t.value; // Extract the actual tag value
+      } else if (t.name) {
+        val = t.name;
+      } else if (t.label) {
+        val = t.label;
+      } else if (t.title) {
+        val = t.title;
+      } else if (t.text) {
+        val = t.text;
+      }
+    } else if (typeof t === "string") {
+      val = t;
+    }
+    
     if (!val) return [];
+    
+    // Split comma/semicolon separated values and clean them
     return String(val)
       .split(/[,;]+/g)
       .map((s) => s.trim())
       .filter(Boolean);
   });
+  
   // Dedupe and limit
   return Array.from(new Set(labels)).slice(0, 30);
 }
@@ -115,16 +125,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Invalid session" }, { status: 401 });
     }
 
-    // Mentee matches
+    // Mentee matches with enhanced scoring - get only top 1 by score
     const matchRows: any[] = await firstPage(AIRTABLE_MATCH_RANKING_TABLE!, {
       filterByFormula: `{MenteeID}='${esc(uid)}'`,
-      fields: ["MentorID", "UpdatedAt", "Score"],
-      // Fetch Score, sort by Score desc (then UpdatedAt), and cap to top 2
-      sort: [
-        { field: "Score", direction: "desc" },
-        { field: "UpdatedAt", direction: "desc" },
-      ],
-      maxRecords: 2,
+      fields: ["MenteeID", "MentorID", "UpdatedAt", "Score", "PreferenceScore", "TagScore", "Breakdown"],
+      sort: [{ field: "Score", direction: "desc" }],
+      maxRecords: 1,
     });
 
     const mentorIds = Array.from(
@@ -140,6 +146,7 @@ export async function GET(req: NextRequest) {
         "UserID",
         "Industry",
         "YearExp",
+        "Calendly",
         "Skill",
         "Location",
         "Role",
@@ -164,6 +171,7 @@ export async function GET(req: NextRequest) {
     const meta = byId(metaRows, (f) => ({
       industry: clean(f.Industry) ?? null,
       yearExp: typeof f.YearExp === "number" ? f.YearExp : null,
+      calendly: f.Calendly ?? null,
       skill: f.Skill ?? null, // UI splits it
       location: clean(f.Location) ?? null,
       role: clean(f.Role) ?? null,
@@ -174,36 +182,29 @@ export async function GET(req: NextRequest) {
       metaUpdatedAt: f.UpdatedAt ?? null,
     }));
 
-    // Sort and merge
+    // Merge with enhanced scoring - already sorted by score from Airtable
     const mentors = matchRows
-      .slice()
-      .sort((a: any, b: any) => {
-        const as = Number(a.fields?.Score);
-        const bs = Number(b.fields?.Score);
-        const scoreCmp =
-          (Number.isFinite(bs) ? bs : -Infinity) - (Number.isFinite(as) ? as : -Infinity);
-        if (scoreCmp !== 0) return scoreCmp;
-        return (
-          new Date(b.fields?.UpdatedAt ?? 0).getTime() -
-          new Date(a.fields?.UpdatedAt ?? 0).getTime()
-        );
-      })
       .map((r: any) => {
         const id = r.fields?.MentorID as string;
-        const scoreVal = Number(r.fields?.Score);
         return {
           userId: id,
           rankedUpdatedAt: r.fields?.UpdatedAt ?? null,
-          score: Number.isFinite(scoreVal) ? scoreVal : null,
           name: users[id]?.name ?? null,
           bio: profiles[id]?.bio ?? null,
           linkedIn: profiles[id]?.linkedIn ?? null,
+          // Enhanced scoring data
+          score: r.fields?.Score ?? null,
+          preferenceScore: r.fields?.PreferenceScore ?? null,
+          tagScore: r.fields?.TagScore ?? null,
+          breakdown: r.fields?.Breakdown ?? null,
           ...(meta[id] ?? {}),
         };
       });
-
-    console.log(mentors);
-    return NextResponse.json({ mentors });
+    
+    console.log("Enhanced mentor matches:", mentors);
+    // Safety check: ensure only 1 mentor is returned
+    const topMentor = mentors.slice(0, 1);
+    return NextResponse.json({ mentors: topMentor });
   } catch (e: any) {
     const status = e?.statusCode || e?.status || 500;
     const msg =
