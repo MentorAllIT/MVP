@@ -8,7 +8,7 @@ export default function Home() {
     <div className={styles.page}>
       <header className={styles.header}>
         <div className={styles.headerContent}>
-          <h1 className={styles.logo}>Mentor<span className={styles.aiHighlight}>AI</span>l</h1>
+          <h1 className={styles.logo}>Mentor<span className={styles.aiHighlight}>All</span></h1>
           <nav className={styles.nav}>
             Already have an account?
             {/* <Link href="/mentor/signup" className={styles.navLink}>Sign Up</Link> */}
