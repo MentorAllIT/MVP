@@ -73,8 +73,7 @@
 }
 
 .nav {
-  display: flex;
-  gap: 1rem;
+  display: none;
 }
 
 .navLink {
@@ -113,6 +112,8 @@
   transform: translateY(-1px);
   box-shadow: 0 4px 15px rgba(102, 77, 162, 0.15);
 }
+
+/* Hamburger menu is now handled by the HamburgerMenu component */
 
 .main {
   max-width: 1200px;
