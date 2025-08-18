@@ -106,9 +106,16 @@ export default function SignInPage() {
                         required
                         minLength={8}
                         className={styles.input}
+                        disabled={submitting}
+                        autoComplete="current-password"
                         placeholder="Enter your password"
                       />
                     </label>
+                    <div className={styles.forgotPasswordContainer}>
+                      <Link href="/forgot-password" className={styles.forgotPasswordLink}>
+                        Forgot Password?
+                      </Link>
+                    </div>
                   </div>
 
                   <button type="submit" disabled={submitting} className={styles.button}>
