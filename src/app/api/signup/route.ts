@@ -2,20 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 import Airtable from "airtable";
 import bcrypt from "bcrypt";
 import { nanoid } from "nanoid";
+import jwt from "jsonwebtoken";
 
 // env guard
-const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID, AIRTABLE_USERS_TABLE, AIRTABLE_APPROVED_USERS_TABLE } = process.env;
-const hasAirtableConfig = AIRTABLE_API_KEY && AIRTABLE_BASE_ID && AIRTABLE_USERS_TABLE && AIRTABLE_APPROVED_USERS_TABLE;
+const { AIRTABLE_API_KEY, AIRTABLE_BASE_ID, AIRTABLE_USERS_TABLE, AIRTABLE_APPROVED_USERS_TABLE, JWT_SECRET } = process.env;
+const hasAirtableConfig = AIRTABLE_API_KEY && AIRTABLE_BASE_ID && AIRTABLE_USERS_TABLE && AIRTABLE_APPROVED_USERS_TABLE && JWT_SECRET;
 
 let base: any = null;
 let TABLE: string = '';
 let APPROVED_TABLE: string = '';
+let JWT_SECRET_VALUE: string = '';
 const SALT = 12;
 
 if (hasAirtableConfig) {
   base = new Airtable({ apiKey: AIRTABLE_API_KEY }).base(AIRTABLE_BASE_ID);
   TABLE = AIRTABLE_USERS_TABLE;
   APPROVED_TABLE = AIRTABLE_APPROVED_USERS_TABLE;
+  JWT_SECRET_VALUE = JWT_SECRET;
 }
 
 // route handler
@@ -92,7 +95,23 @@ export async function POST(req: NextRequest) {
       },
     ]);
 
+    const token = jwt.sign(
+      { sub: safeEmail, role, uid: userId, profile: false }, // profile may be false until created
+      JWT_SECRET!,
+      { expiresIn: "7d" }
+    );
+
+    const res = NextResponse.json({ ok: true, uid: userId, role, profile: false }, { status: 201 });
+    res.cookies.set("session", token, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+    });
     return NextResponse.json({ id: userId }, { status: 201 });
+
+
   } catch (err) {
     console.error("Signup error:", err);
     return NextResponse.json(
