@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import styles from "./profile.module.css";
 import HamburgerMenu from "../components/HamburgerMenu";
@@ -13,7 +13,7 @@ interface UserProfile {
   createdAt?: string;
 }
 
-export default function ProfilePage() {
+function ProfileContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -141,5 +141,17 @@ export default function ProfilePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={
+      <div className={styles.container}>
+        <div className={styles.loading}>Loading profile...</div>
+      </div>
+    }>
+      <ProfileContent />
+    </Suspense>
   );
 }
