@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { z } from "zod";
@@ -45,6 +45,29 @@ export default function SignUpPage() {
   const [lockedName, setLockedName]   = useState<string | null>(null);
   const [lockedEmail, setLockedEmail] = useState<string | null>(null);
   const [approvedCode, setApprovedCode] = useState<string>("");
+
+  // Session modal state - check already signed in
+  const [session, setSession] = useState<{ email: string } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch("/api/auth/check", { cache: "no-store" });
+        if (!cancelled && r.ok) {
+          const d = await r.json();
+          setSession({ email: d.email });
+        }
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  async function handleSignout() {
+    await fetch("/api/auth/signout", { method: "POST" });
+    setSession(null);
+    router.refresh();
+  }
 
   async function handleVerify() {
     if (verifying || submitting) return;
@@ -185,6 +208,31 @@ export default function SignUpPage() {
           </Link>
         </div>
       </header>
+
+      {session && (
+        <div className={styles.modalOverlay} role="dialog" aria-modal="true">
+          <div className={styles.modal}>
+            <h3 className={styles.modalTitle}>You're already signed in</h3>
+            <p className={styles.modalBody}>
+              Signed in as <strong>{session.email}</strong>.
+            </p>
+            <div className={styles.modalButtons}>
+              <button
+                className={styles.button}
+                onClick={() => router.push("/dashboard")}
+              >
+                Go to Dashboard
+              </button>
+              <button
+                className={styles.buttonSecondary}
+                onClick={handleSignout}
+              >
+                Sign out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className={styles.main}>
         <div className={styles.container}>

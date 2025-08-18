@@ -229,13 +229,11 @@
 /* Progress bar */
 .progressWrap {
   width: 100%;
-  margin: 2rem 0;
-  padding: 1.5rem;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
+  margin-top: 3rem;
+  padding: 2rem;
+  background: rgba(102, 77, 162, 0.05);
   border-radius: 16px;
   border: 1px solid rgba(102, 77, 162, 0.1);
-  box-shadow: 0 4px 16px rgba(102, 77, 162, 0.08);
 }
 
 .progressTrack {
@@ -243,23 +241,36 @@
   border-radius: 9999px;
   height: 10px;
   overflow: hidden;
-  margin-bottom: 0.75rem;
+  position: relative;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .progressFill {
-  background: linear-gradient(90deg, #664da2, #8b6bb1);
+  background: linear-gradient(90deg, #a78bfa, #7c3aed);
   height: 100%;
   width: 0;
   border-radius: 9999px;
   transition: width 0.6s ease;
+  position: relative;
+}
+
+.progressFill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: shimmer 2s infinite;
 }
 
 .progressText {
   display: block;
   text-align: center;
-  font-size: 0.875rem;
-  color: #5a4a7a;
-  font-weight: 500;
+  font-size: 1rem;
+  color: #6b7280;
+  margin-top: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* Responsive */
@@ -307,6 +318,7 @@
   margin-bottom: 2rem;
   padding: 1rem 0;
   text-align: left;
+  border-bottom: 1px solid rgba(102, 77, 162, 0.1);
 }
 
 /* Header Section */
@@ -386,4 +398,151 @@
   background: rgba(102, 77, 162, 0.15);
   border-color: rgba(102, 77, 162, 0.35);
   transform: translateY(-1px);
+}
+
+/* Calendly-like weekly hours */
+.availabilityTable {
+  margin-top: 0.75rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  row-gap: 0.75rem;
+  align-items: start;
+  column-gap: 0.75rem;
+}
+
+.dayRow {
+  display: contents; /* enables 3-column grid entries */
+}
+
+.dayBadge {
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  color: white;
+  background: #7c3aed; /* purple-600 */
+  opacity: 0.9;
+  box-shadow: 0 2px 6px rgba(124, 58, 237, 0.25);
+}
+
+.dayContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.unavailable {
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+.interval {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.toSep {
+  color: #6b7280;
+  margin: 0 0.4rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  user-select: none;
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(102, 77, 162, 0.15);
+  background: white;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: #6b21a8;
+  transition: transform .15s ease, box-shadow .2s ease, border-color .2s ease;
+}
+
+.iconButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(102, 77, 162, 0.15);
+  border-color: rgba(102, 77, 162, 0.3);
+}
+
+.dayActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.smallButton {
+  background: rgba(102, 77, 162, 0.08);
+  color: #5b21b6;
+  border: 1px solid rgba(102, 77, 162, 0.18);
+  padding: 0.5rem 0.8rem;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .2s ease, transform .15s ease, box-shadow .2s ease;
+}
+
+.smallButton:hover {
+  background: rgba(102, 77, 162, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(102, 77, 162, 0.15);
+}
+
+/* Calendly-like selects */
+.timeGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.select {
+  min-width: 88px;
+  padding: 0.7rem 1rem;
+}
+
+.selectAmPm {
+  min-width: 92px;
+  padding: 0.7rem 1rem;
+}
+
+.colon {
+  color: #6b7280;
+  user-select: none;
+  padding: 0 0.1rem;
+}
+
+/*Advanced settings panel*/
+.advCard {
+  margin-top: 0.5rem;
+  border: 1px solid rgba(102, 77, 162, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: 0 2px 12px rgba(102, 77, 162, 0.08);
+  overflow: hidden;
+}
+.advToggle {
+  width: 100%;
+  text-align: left;
+  background: rgba(102, 77, 162, 0.06);
+  border: none;
+  padding: 0.9rem 1.1rem;
+  font-weight: 700;
+  color: #5b21b6;
+  cursor: pointer;
+}
+.advBody {
+  padding: 1rem 1.1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }

@@ -429,6 +429,42 @@
   text-decoration: underline;
 }
 
+/* Already signed in */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+.modal {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  width: 92%;
+  max-width: 420px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.15);
+  text-align: center;
+}
+.modalTitle { font-size: 1.25rem; font-weight: 700; margin-bottom: 8px; }
+.modalBody { margin: 0 0 16px; color: #444; }
+.modalButtons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+/* Secondary button to pair with existing .button */
+.buttonSecondary {
+  background: transparent;
+  border: 1px solid #d0d0d0;
+  color: #111;
+  padding: 10px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.buttonSecondary:disabled { opacity: .6; cursor: not-allowed; }
+
+
 @media (max-width: 768px) {
   .content {
     grid-template-columns: 1fr;
