@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
       path: "/",
       maxAge: 60 * 60 * 24 * 7,
     });
-    return NextResponse.json({ id: userId }, { status: 201 });
+    return res
 
 
   } catch (err) {
