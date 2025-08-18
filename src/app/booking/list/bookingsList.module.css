@@ -323,6 +323,30 @@
   transform: translateX(5px);
 }
 
+.headerContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.logoContainer {
+  display: flex;
+  align-items: center;
+  margin: -3rem 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.logo {
+  height: 200px;
+  width: auto;
+  object-fit: contain;
+  transform: scale(1.2);
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .container {
