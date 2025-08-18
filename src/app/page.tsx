@@ -2,32 +2,27 @@
 
 import Link from "next/link";
 import styles from "./page.module.css";
-import BallpitBackground from "./components/BallpitBackground";
 import DotGrid from "@/app/components/DotGrid";
 
 export default function Home() {
   return (
       <div className={styles.page}>
-        {/*Balls*/}
-        <BallpitBackground />
-
-        {/* OR Grid */}
-        {/*<DotGrid*/}
-        {/*  dotSize={13}*/}
-        {/*  gap={18}*/}
-        {/*  baseColor="#6C56F5"*/}
-        {/*  activeColor="#664DA2"*/}
-        {/*  proximity={120}*/}
-        {/*  shockRadius={240}*/}
-        {/*  shockStrength={5}*/}
-        {/*  resistance={750}*/}
-        {/*  returnDuration={1.4}*/}
-        {/*  alpha={0.05}*/}
-        {/*  scrim*/}
-        {/*  scrimStrength={0.78}*/}
-        {/*  vignette*/}
-        {/*  vignetteStrength={0.0}*/}
-        {/*/>*/}
+        <DotGrid
+          dotSize={13}
+          gap={18}
+          baseColor="#6C56F5"
+          activeColor="#664DA2"
+          proximity={120}
+          shockRadius={240}
+          shockStrength={5}
+          resistance={750}
+          returnDuration={1.4}
+          alpha={0.05}
+          scrim
+          scrimStrength={0.78}
+          vignette
+          vignetteStrength={0.0}
+        />
 
         <header className={styles.header}>
           <div className={styles.headerContent}>
