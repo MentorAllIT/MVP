@@ -59,15 +59,19 @@
   align-items: center;
 }
 
+.logoContainer {
+  display: flex;
+  align-items: center;
+  margin: -3rem 0;
+  text-decoration: none;
+  color: inherit;
+}
+
 .logo {
-  font-size: 2rem;
-  font-weight: 800;
-  margin: 0;
-  background: linear-gradient(135deg, #664da2, #8b6bb1, #a67fd4);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  position: relative;
+  height: 200px;
+  width: auto;
+  object-fit: contain;
+  transform: scale(1.2);
 }
 
 .aiHighlight {

@@ -48,8 +48,8 @@ export default function SignInPage() {
     <div className={styles.page}>
       <header className={styles.header}>
         <div className={styles.headerContent}>
-          <Link href="/" className={styles.logo}>
-            Mentor<span className={styles.aiHighlight}>All</span>
+          <Link href="/" className={styles.logoContainer}>
+            <img src="/MentorAll transparent Full logo.png" alt="MentorAll" className={styles.logo} />
           </Link>
         </div>
       </header>
