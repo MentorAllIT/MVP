@@ -129,8 +129,7 @@ export async function GET(req: NextRequest) {
     const matchRows: any[] = await firstPage(AIRTABLE_MATCH_RANKING_TABLE!, {
       filterByFormula: `{MenteeID}='${esc(uid)}'`,
       fields: ["MentorID", "UpdatedAt", "Score", "PreferenceScore", "TagScore", "Breakdown"],
-      sort: [{ field: "Score", direction: "desc" }], // Sort by score descending
-      maxRecords: 1, // Only get top 1 mentor
+
     });
 
     const mentorIds = Array.from(
@@ -184,6 +183,18 @@ export async function GET(req: NextRequest) {
 
     // Sort and merge with enhanced scoring - already sorted by score from Airtable
     const mentors = matchRows
+      .slice()
+      .sort((a: any, b: any) => {
+        const as = Number(a.fields?.Score);
+        const bs = Number(b.fields?.Score);
+        const scoreCmp =
+          (Number.isFinite(bs) ? bs : -Infinity) - (Number.isFinite(as) ? as : -Infinity);
+        if (scoreCmp !== 0) return scoreCmp;
+        return (
+          new Date(b.fields?.UpdatedAt ?? 0).getTime() -
+          new Date(a.fields?.UpdatedAt ?? 0).getTime()
+        );
+      })
       .map((r: any) => {
         const id = r.fields?.MentorID as string;
         return {
