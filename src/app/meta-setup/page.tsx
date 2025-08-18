@@ -220,7 +220,7 @@ export default function MetaSetup() {
     <>
       <label className={styles.label}>
         <span className={styles.labelText}>Industry</span>
-        <span className={styles.hint}>(e.g. FinTech, UX, Cloud)</span>
+        Industry <span className={styles.hint}>(e.g. FinTech, UX, Cloud)</span>
         <input
           name="industry"
           value={state.industry}
@@ -301,29 +301,29 @@ export default function MetaSetup() {
 
             {formErr && <p className={styles.error}>{formErr}</p>}
           </form>
-        </div>
-
-        <div className={styles.progressWrap}>
-          <div className={styles.progressTrack}>
-            <div 
-              className={styles.progressFill} 
-              style={{ width: role === "mentee" ? "66%" : "100%" }} 
-            />
+          
+          <div className={styles.progressWrap}>
+            <div className={styles.progressTrack}>
+              <div 
+                className={styles.progressFill} 
+                style={{ width: role === "mentee" ? "66%" : "100%" }} 
+              />
+            </div>
+            <span className={styles.progressText}>
+              {role === "mentee" ? "Step 2 of 3" : "Step 2 of 2"}
+            </span>
           </div>
-          <span className={styles.progressText}>
-            {role === "mentee" ? "Step 2 of 3" : "Step 2 of 2"}
-          </span>
-        </div>
 
-        {/* Bottom Back to Dashboard Button */}
-        <div className={styles.backSection}>
-          <button
-            type="button"
-            onClick={() => router.push("/dashboard")}
-            className={styles.backButton}
-          >
-            ← Back to Dashboard
-          </button>
+          {/* Bottom Back to Dashboard Button */}
+          <div className={styles.backSection}>
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard")}
+              className={styles.backButton}
+            >
+              ← Back to Dashboard
+            </button>
+          </div>
         </div>
       </div>
     </div>

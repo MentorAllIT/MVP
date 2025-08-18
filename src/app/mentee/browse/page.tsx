@@ -20,6 +20,7 @@ type Mentor = {
   // MentorMeta
   industry?: string | null;
   yearExp?: number | null;
+  calendly?: string | null;
   skill?: string | string[] | null;
   location?: string | null;
   role?: string | null;
@@ -28,6 +29,8 @@ type Mentor = {
   fieldOfStudy?: string | null;
   tags?: string[];
   metaUpdatedAt?: string | null;
+
+  // Matching scores
   score?: number | null;
   
   // Enhanced Scoring Data
