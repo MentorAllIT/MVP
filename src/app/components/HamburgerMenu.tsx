@@ -7,9 +7,10 @@ import styles from "./HamburgerMenu.module.css";
 
 interface HamburgerMenuProps {
   className?: string;
+  showBackToDashboard?: boolean;
 }
 
-export default function HamburgerMenu({ className }: HamburgerMenuProps) {
+export default function HamburgerMenu({ className, showBackToDashboard = true }: HamburgerMenuProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
 
@@ -57,11 +58,22 @@ export default function HamburgerMenu({ className }: HamburgerMenuProps) {
       {/* Navigation Menu */}
       <div className={`${styles.menu} ${isMenuOpen ? styles.menuOpen : ''}`}>
         <nav className={styles.nav}>
+          {showBackToDashboard && (
+            <Link href="/dashboard" className={styles.navLink} onClick={() => setIsMenuOpen(false)}>
+              Back to Dashboard
+            </Link>
+          )}
           <Link href="/profile" className={styles.navLink} onClick={() => setIsMenuOpen(false)}>
             Profile
           </Link>
           <Link href="/booking/list" className={styles.navLink} onClick={() => setIsMenuOpen(false)}>
             My Bookings
+          </Link>
+          <Link href="/mentee/connections" className={styles.navLink} onClick={() => setIsMenuOpen(false)}>
+            My Connections
+          </Link>
+          <Link href="/mentee/learning" className={styles.navLink} onClick={() => setIsMenuOpen(false)}>
+            Learning Resources
           </Link>
           <button 
             onClick={handleSignOut}

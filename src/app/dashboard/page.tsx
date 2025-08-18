@@ -103,7 +103,7 @@ export default function Dashboard() {
           <h1 className={styles.logo}>MentorAll</h1>
           
           {/* Hamburger Menu */}
-          <HamburgerMenu />
+          <HamburgerMenu showBackToDashboard={false} />
         </div>
       </header>
 

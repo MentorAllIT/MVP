@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import styles from "./profile.module.css";
+import HamburgerMenu from "../components/HamburgerMenu";
 
 interface UserProfile {
   uid: string;
@@ -85,8 +86,14 @@ export default function ProfilePage() {
 
   return (
     <div className={styles.container}>
+      <header className={styles.header}>
+        <div className={styles.headerContent}>
+          <h1 className={styles.title}>Profile</h1>
+          <HamburgerMenu />
+        </div>
+      </header>
+      
       <div className={styles.card}>
-        <h1 className={styles.title}>Profile</h1>
         
         <div className={styles.profileSection}>
           <h2 className={styles.sectionTitle}>Basic Information</h2>
