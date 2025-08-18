@@ -26,6 +26,12 @@ export default function MetaSetup() {
     industry:   "",
     years:      "",
     calendly:   "",
+    currentRole: "",
+    seniorityLevel: "",
+    previousRoles: "",
+    mentoringStyle: "",
+    culturalBackground: "",
+    availability: "",
     goal:       "",
     challenges: "",
     help:       "",
@@ -58,7 +64,13 @@ export default function MetaSetup() {
               ...prev,
               industry: metaData.industry || "",
               years: metaData.years?.toString() || "",
-              calendly: metaData.calendly || ""
+              calendly: metaData.calendly || "",
+              currentRole: metaData.currentRole || "",
+              seniorityLevel: metaData.seniorityLevel || "",
+              previousRoles: metaData.previousRoles || "",
+              mentoringStyle: metaData.mentoringStyle || "",
+              culturalBackground: metaData.culturalBackground || "",
+              availability: metaData.availability || ""
             }));
           }
         }
@@ -84,7 +96,7 @@ export default function MetaSetup() {
   }
   
   // Update helpers
-  const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+  const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setState({ ...state, [e.target.name]: e.target.value });
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,6 +113,10 @@ export default function MetaSetup() {
       else if (!Number.isFinite(yrs) || yrs < 0)
                                            errs.years     = "Years must be ≥ 0";
       if (!isCalendly(state.calendly))     errs.calendly  = "URL must start with calendly.com";
+      if (!state.currentRole.trim())       errs.currentRole = "Current role is required";
+      if (!state.seniorityLevel.trim())    errs.seniorityLevel = "Seniority level is required";
+      if (!state.mentoringStyle.trim())    errs.mentoringStyle = "Mentoring style is required";
+      if (!state.availability.trim())      errs.availability = "Availability is required";
     } else {
       if (!state.goal.trim())              errs.goal        = "Please describe your main goal";
       if (!state.challenges.trim())        errs.challenges  = "Tell us your challenges";
@@ -138,6 +154,12 @@ export default function MetaSetup() {
       fd.append("industry",  state.industry.trim());
       fd.append("years",     state.years.trim());
       fd.append("calendly",  state.calendly.trim());
+      fd.append("currentRole", state.currentRole.trim());
+      fd.append("seniorityLevel", state.seniorityLevel.trim());
+      fd.append("previousRoles", state.previousRoles.trim());
+      fd.append("mentoringStyle", state.mentoringStyle.trim());
+      fd.append("culturalBackground", state.culturalBackground.trim());
+      fd.append("availability", state.availability.trim());
     } else {
       fd.append("goal",       state.goal.trim());
       fd.append("challenges", state.challenges.trim());
@@ -220,7 +242,7 @@ export default function MetaSetup() {
     <>
       <label className={styles.label}>
         <span className={styles.labelText}>Industry</span>
-        Industry <span className={styles.hint}>(e.g. FinTech, UX, Cloud)</span>
+        <span className={styles.hint}>(e.g. FinTech, UX, Cloud)</span>
         <input
           name="industry"
           value={state.industry}
@@ -259,6 +281,104 @@ export default function MetaSetup() {
         />
         {fieldErrs.calendly && (
           <span className={styles.fieldError}>{fieldErrs.calendly}</span>
+        )}
+      </label>
+
+      <label className={styles.label}>
+        <span className={styles.labelText}>Current Role</span>
+        <input
+          name="currentRole"
+          value={state.currentRole}
+          onChange={onChange}
+          className={`${styles.input} ${fieldErrs.currentRole ? styles.inputError : ""}`}
+          placeholder="e.g. Software Engineer, Product Manager"
+        />
+        {fieldErrs.currentRole && (
+          <span className={styles.fieldError}>{fieldErrs.currentRole}</span>
+        )}
+      </label>
+
+      <label className={styles.label}>
+        <span className={styles.labelText}>Seniority Level</span>
+        <select
+          name="seniorityLevel"
+          value={state.seniorityLevel}
+          onChange={onChange}
+          className={`${styles.input} ${fieldErrs.seniorityLevel ? styles.inputError : ""}`}
+        >
+          <option value="">Select your level</option>
+          <option value="Junior">Junior</option>
+          <option value="Mid-level">Mid-level</option>
+          <option value="Senior">Senior</option>
+          <option value="Manager">Manager</option>
+          <option value="Director">Director</option>
+          <option value="Executive">Executive</option>
+        </select>
+        {fieldErrs.seniorityLevel && (
+          <span className={styles.fieldError}>{fieldErrs.seniorityLevel}</span>
+        )}
+      </label>
+
+      <label className={styles.label}>
+        <span className={styles.labelText}>Previous Role Experiences</span>
+        <span className={styles.hint}>(Optional - List roles you've held)</span>
+        <textarea
+          name="previousRoles"
+          value={state.previousRoles}
+          onChange={onChange}
+          className={`${styles.textarea} ${fieldErrs.previousRoles ? styles.inputError : ""}`}
+          placeholder="e.g. Junior Developer, Team Lead, Product Manager"
+        />
+        {fieldErrs.previousRoles && (
+          <span className={styles.fieldError}>{fieldErrs.previousRoles}</span>
+        )}
+      </label>
+
+      <label className={styles.label}>
+        <span className={styles.labelText}>Mentoring Style</span>
+        <select
+          name="mentoringStyle"
+          value={state.mentoringStyle}
+          onChange={onChange}
+          className={`${styles.input} ${fieldErrs.mentoringStyle ? styles.inputError : ""}`}
+        >
+          <option value="">Select your style</option>
+          <option value="Direct">Direct - Give specific advice and solutions</option>
+          <option value="High-level">High-level - Provide strategic guidance</option>
+          <option value="Task-assigned">Task-assigned - Assign homework and review</option>
+          <option value="Coaching">Coaching - Ask questions to help mentee discover answers</option>
+        </select>
+        {fieldErrs.mentoringStyle && (
+          <span className={styles.fieldError}>{fieldErrs.mentoringStyle}</span>
+        )}
+      </label>
+
+      <label className={styles.label}>
+        <span className={styles.labelText}>Cultural / Language Background</span>
+        <span className={styles.hint}>(Optional - For diversity matching)</span>
+        <input
+          name="culturalBackground"
+          value={state.culturalBackground}
+          onChange={onChange}
+          className={`${styles.input} ${fieldErrs.culturalBackground ? styles.inputError : ""}`}
+          placeholder="e.g. International from India, Bilingual (Spanish/English)"
+        />
+        {fieldErrs.culturalBackground && (
+          <span className={styles.fieldError}>{fieldErrs.culturalBackground}</span>
+        )}
+      </label>
+
+      <label className={styles.label}>
+        <span className={styles.labelText}>Availability to Meet</span>
+        <input
+          name="availability"
+          value={state.availability}
+          onChange={onChange}
+          className={`${styles.input} ${fieldErrs.availability ? styles.inputError : ""}`}
+          placeholder="e.g. Weekly on weekends, Bi-weekly on weekdays"
+        />
+        {fieldErrs.availability && (
+          <span className={styles.fieldError}>{fieldErrs.availability}</span>
         )}
       </label>
     </>
