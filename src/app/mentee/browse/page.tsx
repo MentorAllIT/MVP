@@ -19,6 +19,7 @@ type Mentor = {
   // MentorMeta
   industry?: string | null;
   yearExp?: number | null;
+  calendly?: string | null;
   skill?: string | string[] | null;
   location?: string | null;
   role?: string | null;
@@ -27,7 +28,12 @@ type Mentor = {
   fieldOfStudy?: string | null;
   tags?: string[];
   metaUpdatedAt?: string | null;
+
+  // Matching scores
   score?: number | null;
+  preferenceScore?: number | null;
+  tagScore?: number | null;
+  breakdown?: string | null;
 };
 
 function splitSkills(skill?: string | string[] | null): string[] {
@@ -88,23 +94,81 @@ function useMentorMatches() {
 
 export default function BrowseMentorsPage() {
   const { loading, mentors, error } = useMentorMatches();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const router = useRouter();
+
+  // Get only the highest scoring mentor
+  const topMentor = useMemo(() => {
+    if (!mentors.length) return null;
+    return mentors.reduce((top, current) => 
+      (current.preferenceScore || 0) > (top.preferenceScore || 0) ? current : top
+    );
+  }, [mentors]);
 
   const subtitle = useMemo(() => {
-    if (loading) return "Finding your best matches…";
-    if (error) return "We hit a snag while loading your matches.";
-    if (!mentors.length) return "No matches yet — check back soon!";
-    return `We found ${mentors.length} mentor${mentors.length > 1 ? "s" : ""} for you`;
-  }, [loading, error, mentors.length]);
+    if (loading) return "Finding your best match…";
+    if (error) return "We hit a snag while loading your match.";
+    if (!topMentor) return "No matches yet — check back soon!";
+    return `We found your best mentor match with ${topMentor.preferenceScore || 0}% preference alignment!`;
+  }, [loading, error, topMentor]);
+
+  // Handle clicks outside the menu
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isMenuOpen && !(event.target as Element).closest(`.${styles.hamburgerButton}`)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMenuOpen]);
 
   return (
     <div className={styles.page}>
       <header className={styles.header}>
         <div className={styles.headerContent}>
           <Link href="/" className={styles.logo}>MentorAll</Link>
-          <nav className={styles.nav}>
-            <Link href="/dashboard" className={styles.navLink}>Dashboard</Link>
-            <Link href="/profile" className={styles.navLink}>Profile</Link>
-            <Link href="/settings" className={styles.navLink}>Settings</Link>
+          
+          {/* Hamburger Menu Button */}
+          <button 
+            className={styles.hamburgerButton}
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label="Toggle navigation menu"
+          >
+            <span className={`${styles.hamburgerLine} ${isMenuOpen ? styles.open : ''}`}></span>
+            <span className={`${styles.hamburgerLine} ${isMenuOpen ? styles.open : ''}`}></span>
+            <span className={`${styles.hamburgerLine} ${isMenuOpen ? styles.open : ''}`}></span>
+          </button>
+
+          {/* Mobile Navigation Menu */}
+          <nav className={`${styles.mobileNav} ${isMenuOpen ? styles.open : ''}`}>
+            <div className={styles.mobileNavContent}>
+              <Link 
+                href="/dashboard" 
+                className={styles.mobileNavLink}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Dashboard
+              </Link>
+              <Link 
+                href="/profile" 
+                className={styles.mobileNavLink}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Profile
+              </Link>
+              <button 
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  fetch("/api/auth/signout", { method: "POST" });
+                  router.push("/");
+                }} 
+                className={styles.mobileNavLink}
+              >
+                Sign Out
+              </button>
+            </div>
           </nav>
         </div>
       </header>
@@ -135,85 +199,95 @@ export default function BrowseMentorsPage() {
             </div>
           )}
 
-          {!loading && !error && mentors.length > 0 && (
+          {!loading && !error && topMentor && (
             <div className={styles.grid}>
-              {mentors.map((m) => {
-                const skills = splitSkills(m.skill);
-                const updated = timeAgo(m.rankedUpdatedAt || m.metaUpdatedAt) || undefined;
-                const education = [m.fieldOfStudy, m.schoolName].filter(Boolean).join(" @ ");
-
-                return (
-                  <article className={styles.card} key={m.userId}>
-                    <div className={styles.cardTop}>
-                      <div className={styles.avatar}>
-                        {(m.name || "?").charAt(0).toUpperCase()}
-                      </div>
-                      <div className={styles.headings}>
-                        <div className={styles.titleRow}>
-                          <h3 className={styles.cardTitle}>{m.name || "Unnamed Mentor"}</h3>
-                          {typeof m.yearExp === "number" && (
-                            <span className={styles.expBadge}>{m.yearExp} yrs exp</span>
-                          )}
-                        </div>
-                        <p className={styles.cardMeta}>
-                          {m.role || "Mentor"}{m.company ? ` @ ${m.company}` : ""}
-                        </p>
-                        {updated && <span className={styles.updatedAt}>Updated {updated}</span>}
-                      </div>
-                    </div>
-
-                    {m.bio && <p className={styles.bio}>{m.bio}</p>}
-
-                    {/* Quick facts */}
-                    <div className={styles.chips}>
-                      {m.industry && <span className={styles.chip}>{m.industry}</span>}
-                      {m.location && (
-                        <span className={`${styles.chip} ${styles.locationChip} ${styles.bigChip}`}>
-                          📍 {m.location}
+              <article className={styles.card} key={topMentor.userId}>
+                <div className={styles.cardTop}>
+                  <div className={styles.avatar}>
+                    {(topMentor.name || "?").charAt(0).toUpperCase()}
+                  </div>
+                  <div className={styles.headings}>
+                    <div className={styles.titleRow}>
+                      <h3 className={styles.cardTitle}>{topMentor.name || "Unnamed Mentor"}</h3>
+                      {typeof topMentor.yearExp === "number" && (
+                        <span className={styles.expBadge}>{topMentor.yearExp} yrs exp</span>
+                      )}
+                      {/* Show preference score prominently */}
+                      {typeof topMentor.preferenceScore === "number" && (
+                        <span className={styles.scoreBadge}>
+                          {topMentor.preferenceScore}% Match
                         </span>
                       )}
-                      {education && (
-                        <span className={`${styles.chip} ${styles.bigChip}`}>{education}</span>
-                      )}
                     </div>
-
-                    {/* Focus areas / Tags */}
-                    {m.tags && m.tags.length > 0 && (
-                      <div className={styles.tagSection}>
-                        <h4 className={styles.sectionTitle}>Focus areas</h4>
-                        <div className={styles.tagList}>
-                          {m.tags.slice(0, 12).map((t, i) => (
-                            <span className={styles.tagPill} key={i}>{t}</span>
-                          ))}
-                        </div>
-                      </div>
+                    <p className={styles.cardMeta}>
+                      {topMentor.role || "Mentor"}{topMentor.company ? ` @ ${topMentor.company}` : ""}
+                    </p>
+                    {timeAgo(topMentor.rankedUpdatedAt || topMentor.metaUpdatedAt) && (
+                      <span className={styles.updatedAt}>
+                        Updated {timeAgo(topMentor.rankedUpdatedAt || topMentor.metaUpdatedAt)}
+                      </span>
                     )}
+                  </div>
+                </div>
 
-                    {/* Skills */}
-                    {skills.length > 0 && (
-                      <div className={styles.skillSection}>
-                        <h4 className={styles.sectionTitle}>Skills</h4>
-                        <div className={styles.skills}>
-                          {skills.map((s, i) => (
-                            <span key={i} className={styles.skillPill}>{s}</span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                {topMentor.bio && <p className={styles.bio}>{topMentor.bio}</p>}
 
-                    <div className={styles.actions}>
-                      {m.linkedIn && (
-                        <a className={styles.secondaryButton} href={m.linkedIn} target="_blank" rel="noopener noreferrer">
-                          View LinkedIn
-                        </a>
-                      )}
-                      <Link className={styles.primaryButton} href={`/booking?mentorId=${m.userId}&mentorName=${encodeURIComponent(m.name || 'Mentor')}`}>
-                        Book session
-                      </Link>
+                {/* Quick facts */}
+                <div className={styles.chips}>
+                  {topMentor.industry && <span className={styles.chip}>{topMentor.industry}</span>}
+                  {topMentor.location && (
+                    <span className={`${styles.chip} ${styles.locationChip} ${styles.bigChip}`}>
+                      📍 {topMentor.location}
+                    </span>
+                  )}
+                  {[topMentor.fieldOfStudy, topMentor.schoolName].filter(Boolean).join(" @ ") && (
+                    <span className={`${styles.chip} ${styles.bigChip}`}>
+                      {[topMentor.fieldOfStudy, topMentor.schoolName].filter(Boolean).join(" @ ")}
+                    </span>
+                  )}
+                </div>
+
+                {/* Focus areas / Tags */}
+                {topMentor.tags && topMentor.tags.length > 0 && (
+                  <div className={styles.tagSection}>
+                    <h4 className={styles.sectionTitle}>Focus areas</h4>
+                    <div className={styles.tagList}>
+                      {topMentor.tags.slice(0, 12).map((t, i) => (
+                        <span className={styles.tagPill} key={i}>{t}</span>
+                      ))}
                     </div>
-                  </article>
-                );
-              })}
+                  </div>
+                )}
+
+                {/* Skills */}
+                {splitSkills(topMentor.skill).length > 0 && (
+                  <div className={styles.skillSection}>
+                    <h4 className={styles.sectionTitle}>Skills</h4>
+                    <div className={styles.skills}>
+                      {splitSkills(topMentor.skill).map((s, i) => (
+                        <span key={i} className={styles.skillPill}>{s}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className={styles.actions}>
+                  {topMentor.linkedIn && (
+                    <a className={styles.secondaryButton} href={topMentor.linkedIn} target="_blank" rel="noopener noreferrer">
+                      View LinkedIn
+                    </a>
+                  )}
+                  {topMentor.calendly ? (
+                    <a className={styles.primaryButton} href={topMentor.calendly} target="_blank" rel="noopener noreferrer">
+                      Book on Calendly
+                    </a>
+                  ) : (
+                    <button className={styles.primaryButton} disabled>
+                      Calendly unavailable
+                    </button>
+                  )}
+                </div>
+              </article>
             </div>
           )}
         </div>
