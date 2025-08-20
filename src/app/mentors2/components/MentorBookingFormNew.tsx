@@ -21,6 +21,7 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [conflictWarning, setConflictWarning] = useState("");
   const [success, setSuccess] = useState(false);
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [useAvailabilityPicker, setUseAvailabilityPicker] = useState(true); // Default to true to show availability immediately
@@ -29,13 +30,21 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
   useEffect(() => {
     const getUserFromToken = async () => {
       try {
-        const response = await fetch('/api/profile');
+        console.log('Checking authentication...');
+        const response = await fetch('/api/auth/check');
+        console.log('Auth check response status:', response.status);
+        
         if (response.ok) {
           const data = await response.json();
+          console.log('Auth check data:', data);
           setCurrentUserId(data.uid);
+        } else {
+          console.error('Authentication check failed:', response.status);
+          const errorData = await response.json();
+          console.error('Error details:', errorData);
         }
       } catch (error) {
-        console.error('Error getting user from token:', error);
+        console.error('Error checking authentication:', error);
       }
     };
     
@@ -48,6 +57,37 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
       ...prev,
       [name]: value
     }));
+
+    // Check for conflicts when meetingTime changes
+    if (name === 'meetingTime' && value && mentorUserId) {
+      checkTimeConflict(value);
+    }
+  };
+
+  const checkTimeConflict = async (meetingTime: string) => {
+    if (!mentorUserId) return;
+    
+    try {
+      setConflictWarning("");
+      const selectedDate = new Date(meetingTime);
+      
+      // Check for conflicts within the meeting duration window (40 minutes)
+      const startTime = new Date(selectedDate.getTime() - 10 * 60 * 1000); // 10 min before (buffer)
+      const endTime = new Date(selectedDate.getTime() + 40 * 60 * 1000); // 40 min after (meeting duration)
+      
+      const response = await fetch(
+        `/api/booking-conflicts?mentorUserId=${encodeURIComponent(mentorUserId)}&startTime=${startTime.toISOString()}&endTime=${endTime.toISOString()}`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.bookedTimes.length > 0) {
+          setConflictWarning("⚠️ Warning: This time slot may conflict with an existing booking. Please choose a different time or check with the mentor.");
+        }
+      }
+    } catch (err) {
+      console.error('Error checking time conflict:', err);
+    }
   };
 
   const handleTimeSlotSelect = (selectedDateTime: string) => {
@@ -60,6 +100,9 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
       ...prev,
       meetingTime: localDateTime
     }));
+
+    // Clear any previous conflict warning since availability picker already filters booked times
+    setConflictWarning("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -213,13 +256,30 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
 
   return (
     <div style={{ maxWidth: "800px", margin: "0 auto" }}>
+      {/* Debug info - remove this later
+      {process.env.NODE_ENV === 'development' && (
+        <div style={{ 
+          padding: "0.5rem", 
+          backgroundColor: "#f3f4f6", 
+          borderRadius: "4px", 
+          marginBottom: "1rem",
+          fontSize: "0.75rem",
+          color: "#6b7280"
+        }}>
+          Auth Status: {currentUserId ? `✅ Logged in as ${currentUserId}` : "❌ Not authenticated"}
+        </div>
+      )} */}
+      
       <form onSubmit={handleSubmit} className={styles.form}>
         {/* Time Selection Toggle */}
         <div style={{ marginBottom: "1.5rem" }}>
           <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
             <button
               type="button"
-              onClick={() => setUseAvailabilityPicker(true)}
+              onClick={() => {
+                setUseAvailabilityPicker(true);
+                setConflictWarning(""); // Clear warning when switching to availability picker
+              }}
               style={{
                 padding: "0.5rem 1rem",
                 borderRadius: "6px",
@@ -233,9 +293,12 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
             >
               📅 Choose from Available Times
             </button>
-            <button
+            {/* <button
               type="button"
-              onClick={() => setUseAvailabilityPicker(false)}
+              onClick={() => {
+                setUseAvailabilityPicker(false);
+                setConflictWarning(""); // Clear warning when switching to manual input
+              }}
               style={{
                 padding: "0.5rem 1rem",
                 borderRadius: "6px",
@@ -248,7 +311,7 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
               }}
             >
               ⏰ Manual Time Entry
-            </button>
+            </button> */}
           </div>
         </div>
 
@@ -281,6 +344,33 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
             <div style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.25rem" }}>
               Select your preferred date and time (will be converted to AEST)
             </div>
+            {conflictWarning && (
+              <div style={{ 
+                marginTop: "0.5rem", 
+                padding: "0.75rem", 
+                backgroundColor: "#fef3c7", 
+                border: "1px solid #f59e0b", 
+                borderRadius: "6px" 
+              }}>
+                <p style={{ color: "#92400e", fontSize: "0.875rem", margin: 0 }}>
+                  {conflictWarning}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {conflictWarning && useAvailabilityPicker && (
+          <div style={{ 
+            marginBottom: "1.5rem",
+            padding: "0.75rem", 
+            backgroundColor: "#fef3c7", 
+            border: "1px solid #f59e0b", 
+            borderRadius: "6px" 
+          }}>
+            <p style={{ color: "#92400e", fontSize: "0.875rem", margin: 0 }}>
+              {conflictWarning}
+            </p>
           </div>
         )}
 
@@ -344,7 +434,7 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
           <div style={{ fontSize: "0.875rem", color: "#1e40af" }}>
             <strong>How it works:</strong>
             <ul style={{ margin: "0.5rem 0", paddingLeft: "1.25rem" }}>
-              <li>{mentorName} will receive your meeting request</li>
+              <li>{mentorName} will receive your 40-minute meeting request</li>
               <li>They can confirm or suggest an alternative time</li>
               <li>You&apos;ll receive a notification with their response</li>
               <li>Once confirmed, you&apos;ll receive calendar details and meeting instructions</li>

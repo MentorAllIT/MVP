@@ -32,7 +32,7 @@ export default function BookingsListPage() {
   useEffect(() => {
     const getUserFromToken = async () => {
       try {
-        const response = await fetch('/api/profile');
+        const response = await fetch('/api/auth/check');
         if (response.ok) {
           const data = await response.json();
           setCurrentUserId(data.uid);
@@ -40,7 +40,7 @@ export default function BookingsListPage() {
           setError("Please sign in to view your bookings");
         }
       } catch (error) {
-        console.error('Error getting user from token:', error);
+        console.error('Error checking authentication:', error);
         setError("Authentication error");
       }
     };

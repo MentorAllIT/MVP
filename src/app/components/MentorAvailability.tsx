@@ -43,6 +43,7 @@ const DAY_NAMES = {
 
 const MentorAvailability = ({ mentorUserId, onTimeSlotSelect, selectedDateTime, shouldFetchAvailability = true }: MentorAvailabilityProps) => {
   const [availability, setAvailability] = useState<MentorAvailability | null>(null);
+  const [bookedTimes, setBookedTimes] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedWeekStart, setSelectedWeekStart] = useState<Date>(getWeekStart(new Date()));
@@ -50,8 +51,9 @@ const MentorAvailability = ({ mentorUserId, onTimeSlotSelect, selectedDateTime, 
   useEffect(() => {
     if (shouldFetchAvailability) {
       fetchMentorAvailability();
+      fetchBookedTimes();
     }
-  }, [mentorUserId, shouldFetchAvailability]);
+  }, [mentorUserId, shouldFetchAvailability, selectedWeekStart]);
 
   const fetchMentorAvailability = async () => {
     try {
@@ -72,6 +74,29 @@ const MentorAvailability = ({ mentorUserId, onTimeSlotSelect, selectedDateTime, 
     }
   };
 
+  const fetchBookedTimes = async () => {
+    try {
+      // Get start and end of the current week
+      const weekEnd = new Date(selectedWeekStart);
+      weekEnd.setDate(weekEnd.getDate() + 7);
+      
+      const response = await fetch(
+        `/api/booking-conflicts?mentorUserId=${encodeURIComponent(mentorUserId)}&startTime=${selectedWeekStart.toISOString()}&endTime=${weekEnd.toISOString()}`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        const bookedTimeStrings = data.bookedTimes.map((booking: any) => 
+          new Date(booking.meetingTime).toISOString()
+        );
+        setBookedTimes(bookedTimeStrings);
+      }
+    } catch (err) {
+      console.error('Error fetching booked times:', err);
+      // Don't show error for booked times fetch failure
+    }
+  };
+
   function getWeekStart(date: Date): Date {
     const d = new Date(date);
     const day = d.getDay();
@@ -79,14 +104,14 @@ const MentorAvailability = ({ mentorUserId, onTimeSlotSelect, selectedDateTime, 
     return new Date(d.setDate(diff));
   }
 
-  const generateTimeSlots = (timeSlot: TimeSlot, date: Date, timezone: string): Array<{ time: string; datetime: string }> => {
-    const slots: Array<{ time: string; datetime: string }> = [];
+  const generateTimeSlots = (timeSlot: TimeSlot, date: Date, timezone: string): Array<{ time: string; datetime: string; isBooked?: boolean }> => {
+    const slots: Array<{ time: string; datetime: string; isBooked?: boolean }> = [];
     const [startHour, startMinute] = timeSlot.start.split(':').map(Number);
     const [endHour, endMinute] = timeSlot.end.split(':').map(Number);
     
-    // Generate 30-minute slots
+    // Generate 40-minute slots
     for (let hour = startHour; hour < endHour || (hour === endHour && startMinute < endMinute); hour++) {
-      for (let minute = (hour === startHour ? startMinute : 0); minute < 60; minute += 30) {
+      for (let minute = (hour === startHour ? startMinute : 0); minute < 60; minute += 40) {
         if (hour === endHour && minute >= endMinute) break;
         
         // Create a date object representing the exact AEST time
@@ -108,9 +133,26 @@ const MentorAvailability = ({ mentorUserId, onTimeSlotSelect, selectedDateTime, 
           // So we create a datetime-local compatible string with the AEST time
           const datetimeString = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T${timeString}:00`;
           
+          // Check if this time slot would conflict with any existing bookings
+          // For 40-minute meetings, check if any booking falls within this slot's duration
+          const isBooked = bookedTimes.some(bookedTime => {
+            const bookedDate = new Date(bookedTime);
+            const slotEnd = new Date(aestDateTime.getTime() + 40 * 60 * 1000); // 40 minutes after slot start
+            
+            // Check if the booked time overlaps with this 40-minute slot
+            const bookedEnd = new Date(bookedDate.getTime() + 40 * 60 * 1000); // Assume existing bookings are also 40 minutes
+            
+            return (
+              (bookedDate >= aestDateTime && bookedDate < slotEnd) || // Booking starts within this slot
+              (bookedEnd > aestDateTime && bookedEnd <= slotEnd) || // Booking ends within this slot
+              (bookedDate <= aestDateTime && bookedEnd >= slotEnd) // Booking spans this entire slot
+            );
+          });
+          
           slots.push({
             time: timeString,
-            datetime: datetimeString
+            datetime: datetimeString,
+            isBooked: isBooked
           });
         }
       }
@@ -216,14 +258,19 @@ const MentorAvailability = ({ mentorUserId, onTimeSlotSelect, selectedDateTime, 
                 ) : (
                   daySlots.flatMap(slot => 
                     generateTimeSlots(slot, date, availability.timezone)
-                  ).map(({ time, datetime }) => (
+                  ).map(({ time, datetime, isBooked }) => (
                     <button
                       key={datetime}
                       type="button"
-                      onClick={() => onTimeSlotSelect(datetime)}
-                      className={`${styles.timeSlot} ${selectedDateTime === datetime ? styles.selected : ''}`}
+                      onClick={() => !isBooked && onTimeSlotSelect(datetime)}
+                      disabled={isBooked}
+                      className={`${styles.timeSlot} ${
+                        selectedDateTime === datetime ? styles.selected : ''
+                      } ${isBooked ? styles.booked : ''}`}
+                      title={isBooked ? 'This time slot is already booked' : ''}
                     >
                       {time}
+                      {isBooked && <span className={styles.bookedIndicator}>🚫</span>}
                     </button>
                   ))
                 )}
