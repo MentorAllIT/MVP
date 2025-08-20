@@ -139,6 +139,55 @@ export async function POST(request: Request) {
     // Save to Airtable
     const createdRecord = await base(BOOKINGS).create(bookingRecord);
 
+    // Update MentorMeta and MenteeMeta tables with booking IDs
+    try {
+      const MENTOR_META = process.env.AIRTABLE_MENTOR_META_TABLE || "MentorMeta";
+      const MENTEE_META = process.env.AIRTABLE_MENTEE_META_TABLE || "MenteeMeta";
+
+      // Update mentor's booking list
+      const mentorRecords = await base(MENTOR_META)
+        .select({
+          filterByFormula: `{UserID} = '${esc(finalInviteeId)}'`,
+          maxRecords: 1
+        })
+        .firstPage();
+
+      if (mentorRecords.length > 0) {
+        const mentorRecord = mentorRecords[0];
+        const existingBookings = mentorRecord.fields.Bookings as string || "";
+        const updatedBookings = existingBookings 
+          ? `${existingBookings}, ${bookingId}` 
+          : bookingId;
+        
+        await base(MENTOR_META).update(mentorRecord.id, {
+          Bookings: updatedBookings
+        });
+      }
+
+      // Update mentee's booking list
+      const menteeRecords = await base(MENTEE_META)
+        .select({
+          filterByFormula: `{UserID} = '${esc(bookerId)}'`,
+          maxRecords: 1
+        })
+        .firstPage();
+
+      if (menteeRecords.length > 0) {
+        const menteeRecord = menteeRecords[0];
+        const existingBookings = menteeRecord.fields.Bookings as string || "";
+        const updatedBookings = existingBookings 
+          ? `${existingBookings}, ${bookingId}` 
+          : bookingId;
+        
+        await base(MENTEE_META).update(menteeRecord.id, {
+          Bookings: updatedBookings
+        });
+      }
+    } catch (metaUpdateError) {
+      console.error("Error updating meta tables with booking ID:", metaUpdateError);
+      // Don't fail the booking creation if meta update fails
+    }
+
     return NextResponse.json({
       success: true,
       bookingId: bookingId,
