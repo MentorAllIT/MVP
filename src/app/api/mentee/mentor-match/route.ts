@@ -125,13 +125,22 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Invalid session" }, { status: 401 });
     }
 
-    // Mentee matches with enhanced scoring - get only top 1 by score
-    const matchRows: any[] = await firstPage(AIRTABLE_MATCH_RANKING_TABLE!, {
-      filterByFormula: `{MenteeID}='${esc(uid)}'`,
-      fields: ["MenteeID", "MentorID", "UpdatedAt", "Score", "PreferenceScore", "TagScore", "Breakdown"],
-      sort: [{ field: "Score", direction: "desc" }],
-      maxRecords: 1,
-    });
+    // Mentee matches with enhanced scoring - get all mentors sorted by score
+    // Use all() instead of firstPage() to ensure we get all records
+    const matchRows: any[] = await base(AIRTABLE_MATCH_RANKING_TABLE!)
+      .select({
+        filterByFormula: `{MenteeID}='${esc(uid)}'`,
+        fields: ["MenteeID", "MentorID", "UpdatedAt", "Score", "PreferenceScore", "TagScore", "Breakdown"],
+        sort: [{ field: "Score", direction: "desc" }],
+      })
+      .all();
+    
+    console.log(`🔍 Found ${matchRows.length} mentor matches for mentee ${uid}`);
+    console.log("Raw match rows:", matchRows.map(r => ({
+      mentorId: r.fields?.MentorID,
+      score: r.fields?.Score,
+      preferenceScore: r.fields?.PreferenceScore
+    })));
 
     const mentorIds = Array.from(
       new Set(matchRows.map((r: any) => r.fields?.MentorID).filter(Boolean) as string[])
@@ -200,9 +209,20 @@ export async function GET(req: NextRequest) {
       });
     
     console.log("Enhanced mentor matches:", mentors);
-    // Safety check: ensure only 1 mentor is returned
-    const topMentor = mentors.slice(0, 1);
-    return NextResponse.json({ mentors: topMentor });
+    
+    // Return all mentors that share the highest score
+    if (mentors.length > 0) {
+      const highestScore = mentors[0].score;
+      console.log(`🔍 Highest score found: ${highestScore}`);
+      console.log(`🔍 All mentor scores:`, mentors.map(m => ({ userId: m.userId, score: m.score, name: m.name })));
+      
+      const topMentors = mentors.filter(mentor => mentor.score === highestScore);
+      console.log(`🏆 Returning ${topMentors.length} mentors with highest score ${highestScore}:`, topMentors.map(m => ({ userId: m.userId, score: m.score, name: m.name })));
+      return NextResponse.json({ mentors: topMentors });
+    }
+    
+    console.log("❌ No mentors found");
+    return NextResponse.json({ mentors: [] });
   } catch (e: any) {
     const status = e?.statusCode || e?.status || 500;
     const msg =
