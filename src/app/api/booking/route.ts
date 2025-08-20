@@ -131,6 +131,7 @@ export async function POST(request: Request) {
       MeetingTime: meetingTime,
       BookingStatus: "Pending", // Default status
       Notes: notes,
+      SessionStatus: "To be completed",
       Tags: bookerDetails?.tags ? String(bookerDetails.tags) : "",
       // ICS file URL for calendar download
       ICSFileUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/booking/${bookingId}/ics`
