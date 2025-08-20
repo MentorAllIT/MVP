@@ -77,9 +77,9 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
       setConflictWarning("");
       const selectedDate = new Date(meetingTime);
       
-      // Check for conflicts within the meeting duration window (40 minutes)
+      // Check for conflicts within the meeting duration window (30 minutes)
       const startTime = new Date(selectedDate.getTime() - 10 * 60 * 1000); // 10 min before (buffer)
-      const endTime = new Date(selectedDate.getTime() + 40 * 60 * 1000); // 40 min after (meeting duration)
+      const endTime = new Date(selectedDate.getTime() + 30 * 60 * 1000); // 30 min after (meeting duration)
       
       const response = await fetch(
         `/api/booking-conflicts?mentorUserId=${encodeURIComponent(mentorUserId)}&startTime=${startTime.toISOString()}&endTime=${endTime.toISOString()}`
@@ -471,7 +471,7 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
           <div style={{ fontSize: "0.875rem", color: "#1e40af" }}>
             <strong>How it works:</strong>
             <ul style={{ margin: "0.5rem 0", paddingLeft: "1.25rem" }}>
-              <li>{mentorName} will receive your 40-minute meeting request</li>
+              <li>{mentorName} will receive your 30-minute meeting request</li>
               <li>They can confirm or suggest an alternative time</li>
               <li>You&apos;ll receive a notification with their response</li>
               <li>Once confirmed, you&apos;ll receive calendar details and meeting instructions</li>
