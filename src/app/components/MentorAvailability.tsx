@@ -28,6 +28,7 @@ interface MentorAvailabilityProps {
   onTimeSlotSelect: (selectedDateTime: string) => void;
   selectedDateTime?: string;
   shouldFetchAvailability?: boolean; // New prop to control when to fetch
+  onAvailabilityStatus?: (status: { hasAvailability: boolean; isLoading: boolean; error: string | null }) => void; // New callback
 }
 
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -41,7 +42,7 @@ const DAY_NAMES = {
   Sat: 'Saturday'
 };
 
-const MentorAvailability = ({ mentorUserId, onTimeSlotSelect, selectedDateTime, shouldFetchAvailability = true }: MentorAvailabilityProps) => {
+const MentorAvailability = ({ mentorUserId, onTimeSlotSelect, selectedDateTime, shouldFetchAvailability = true, onAvailabilityStatus }: MentorAvailabilityProps) => {
   const [availability, setAvailability] = useState<MentorAvailability | null>(null);
   const [bookedTimes, setBookedTimes] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -58,6 +59,8 @@ const MentorAvailability = ({ mentorUserId, onTimeSlotSelect, selectedDateTime, 
   const fetchMentorAvailability = async () => {
     try {
       setLoading(true);
+      onAvailabilityStatus?.({ hasAvailability: false, isLoading: true, error: null });
+      
       const response = await fetch(`/api/mentor-availability?userId=${encodeURIComponent(mentorUserId)}`);
       
       if (!response.ok) {
@@ -66,9 +69,11 @@ const MentorAvailability = ({ mentorUserId, onTimeSlotSelect, selectedDateTime, 
 
       const data = await response.json();
       setAvailability(data.availability);
+      onAvailabilityStatus?.({ hasAvailability: !!data.availability, isLoading: false, error: null });
     } catch (err) {
       console.error('Error fetching mentor availability:', err);
       setError('Failed to load mentor availability');
+      onAvailabilityStatus?.({ hasAvailability: false, isLoading: false, error: 'Failed to load mentor availability' });
     } finally {
       setLoading(false);
     }
@@ -200,9 +205,9 @@ const MentorAvailability = ({ mentorUserId, onTimeSlotSelect, selectedDateTime, 
     return (
       <div className={styles.container}>
         <div className={styles.error}>
-          <h3>Availability Not Available</h3>
-          <p>{error || 'Mentor availability not configured'}</p>
-          <p>Please contact the mentor directly to schedule a meeting.</p>
+          <h3>📅 Availability Not Found</h3>
+          <p>{error || 'Mentor availability is not configured yet'}</p>
+          <p>📝 You can still request a meeting using manual time entry below.</p>
         </div>
       </div>
     );
