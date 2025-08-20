@@ -25,6 +25,12 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
   const [success, setSuccess] = useState(false);
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [useAvailabilityPicker, setUseAvailabilityPicker] = useState(true); // Default to true to show availability immediately
+  const [availabilityStatus, setAvailabilityStatus] = useState({
+    hasAvailability: true,
+    isLoading: false,
+    error: null as string | null
+  });
+  const [showManualInput, setShowManualInput] = useState(false);
 
   // Get current user from JWT token
   useEffect(() => {
@@ -103,6 +109,13 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
 
     // Clear any previous conflict warning since availability picker already filters booked times
     setConflictWarning("");
+  };
+
+  const handleAvailabilityStatus = (status: { hasAvailability: boolean; isLoading: boolean; error: string | null }) => {
+    setAvailabilityStatus(status);
+    
+    // Don't automatically switch to manual input, just update the status
+    // Let the user decide when to switch to manual input via the toggle buttons
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -273,30 +286,37 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
       <form onSubmit={handleSubmit} className={styles.form}>
         {/* Time Selection Toggle */}
         <div style={{ marginBottom: "1.5rem" }}>
-          <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
+          <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+            {/* Show availability picker option if availability exists or is loading */}
+            {(availabilityStatus.hasAvailability || availabilityStatus.isLoading) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setUseAvailabilityPicker(true);
+                  setShowManualInput(false);
+                  setConflictWarning(""); // Clear warning when switching to availability picker
+                }}
+                style={{
+                  padding: "0.5rem 1rem",
+                  borderRadius: "6px",
+                  border: "1px solid #d1d5db",
+                  background: useAvailabilityPicker ? "#4f46e5" : "white",
+                  color: useAvailabilityPicker ? "white" : "#374151",
+                  cursor: "pointer",
+                  fontSize: "0.875rem",
+                  fontWeight: "500"
+                }}
+              >
+                📅 Choose from Available Times
+              </button>
+            )}
+            
+            {/* Always show manual input option, but make it more prominent when no availability */}
             <button
               type="button"
               onClick={() => {
-                setUseAvailabilityPicker(true);
-                setConflictWarning(""); // Clear warning when switching to availability picker
-              }}
-              style={{
-                padding: "0.5rem 1rem",
-                borderRadius: "6px",
-                border: "1px solid #d1d5db",
-                background: useAvailabilityPicker ? "#4f46e5" : "white",
-                color: useAvailabilityPicker ? "white" : "#374151",
-                cursor: "pointer",
-                fontSize: "0.875rem",
-                fontWeight: "500"
-              }}
-            >
-              📅 Choose from Available Times
-            </button>
-            {/* <button
-              type="button"
-              onClick={() => {
                 setUseAvailabilityPicker(false);
+                setShowManualInput(true);
                 setConflictWarning(""); // Clear warning when switching to manual input
               }}
               style={{
@@ -311,8 +331,24 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
               }}
             >
               ⏰ Manual Time Entry
-            </button> */}
+            </button>
           </div>
+          
+          {/* Show helpful message when using manual input and no availability exists */}
+          {!useAvailabilityPicker && !availabilityStatus.hasAvailability && !availabilityStatus.isLoading && (
+            <div style={{ 
+              padding: "0.75rem", 
+              backgroundColor: "#f0f9ff", 
+              border: "1px solid #0ea5e9", 
+              borderRadius: "6px",
+              marginBottom: "1rem"
+            }}>
+              <p style={{ color: "#0c4a6e", fontSize: "0.875rem", margin: 0 }}>
+                💡 This mentor's availability schedule isn't set up yet, so you can request any time that works for you. 
+                They'll confirm or suggest an alternative time.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Availability Picker or Manual Input */}
@@ -323,6 +359,7 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
               onTimeSlotSelect={handleTimeSlotSelect}
               selectedDateTime={formData.meetingTime ? new Date(formData.meetingTime).toISOString() : undefined}
               shouldFetchAvailability={useAvailabilityPicker}
+              onAvailabilityStatus={handleAvailabilityStatus}
             />
           </div>
         ) : (
