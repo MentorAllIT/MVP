@@ -114,9 +114,9 @@ const MentorAvailability = ({ mentorUserId, onTimeSlotSelect, selectedDateTime, 
     const [startHour, startMinute] = timeSlot.start.split(':').map(Number);
     const [endHour, endMinute] = timeSlot.end.split(':').map(Number);
     
-    // Generate 40-minute slots
+    // Generate 30-minute slots
     for (let hour = startHour; hour < endHour || (hour === endHour && startMinute < endMinute); hour++) {
-      for (let minute = (hour === startHour ? startMinute : 0); minute < 60; minute += 40) {
+      for (let minute = (hour === startHour ? startMinute : 0); minute < 60; minute += 30) {
         if (hour === endHour && minute >= endMinute) break;
         
         // Create a date object representing the exact AEST time
@@ -139,13 +139,13 @@ const MentorAvailability = ({ mentorUserId, onTimeSlotSelect, selectedDateTime, 
           const datetimeString = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T${timeString}:00`;
           
           // Check if this time slot would conflict with any existing bookings
-          // For 40-minute meetings, check if any booking falls within this slot's duration
+          // For 30-minute meetings, check if any booking falls within this slot's duration
           const isBooked = bookedTimes.some(bookedTime => {
             const bookedDate = new Date(bookedTime);
-            const slotEnd = new Date(aestDateTime.getTime() + 40 * 60 * 1000); // 40 minutes after slot start
+            const slotEnd = new Date(aestDateTime.getTime() + 30 * 60 * 1000); // 30 minutes after slot start
             
-            // Check if the booked time overlaps with this 40-minute slot
-            const bookedEnd = new Date(bookedDate.getTime() + 40 * 60 * 1000); // Assume existing bookings are also 40 minutes
+            // Check if the booked time overlaps with this 30-minute slot
+            const bookedEnd = new Date(bookedDate.getTime() + 30 * 60 * 1000); // Assume existing bookings are also 30 minutes
             
             return (
               (bookedDate >= aestDateTime && bookedDate < slotEnd) || // Booking starts within this slot
