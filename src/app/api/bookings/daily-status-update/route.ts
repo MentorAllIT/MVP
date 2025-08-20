@@ -65,7 +65,8 @@ export async function POST(request: NextRequest) {
       IS_BEFORE({MeetingTime}, DATETIME_PARSE('${yesterdayEnd.toISOString()}', 'YYYY-MM-DDTHH:mm:ss.SSS[Z]')),
       OR(
         {BookingStatus} = 'Confirmed',
-        {BookingStatus} = 'Pending'
+        {BookingStatus} = 'Pending',
+        {BookingStatus} = 'Rescheduled'
       )
     )`;
 
