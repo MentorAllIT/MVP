@@ -217,7 +217,7 @@ export default function BrowseMentorsPage() {
                           View LinkedIn
                         </a>
                       )}
-                      <Link className={styles.primaryButton} href={`/booking?mentorId=${m.userId}&mentorName=${encodeURIComponent(m.name || 'Mentor')}`}>
+                      <Link className={styles.primaryButton} href={`/booking?mentorId=${m.userId}`}>
                         Book session
                       </Link>
                     </div>
