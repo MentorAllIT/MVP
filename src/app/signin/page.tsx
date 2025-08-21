@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+
 import styles from "./signin.module.css";
 
 export default function SignInPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
 
   // Session modal state - check already signed in
   const [session, setSession] = useState<{ email: string } | null>(null);
@@ -27,11 +29,16 @@ export default function SignInPage() {
     return () => { cancelled = true; };
   }, []);
 
+  // This can be removed since we're no longer auto-redirecting from forgot password
+  // Users will manually navigate here using the "Go to Sign In" button
+
   async function handleSignout() {
     await fetch("/api/auth/signout", { method: "POST" });
     setSession(null);
     router.refresh();
   }
+
+
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -53,7 +60,18 @@ export default function SignInPage() {
 
       const data = await res.json();
 
-      if (!res.ok) throw new Error(data.error || "Invalid credentials");
+      if (!res.ok) {
+        // Handle specific error cases with user-friendly messages
+        if (data.error === "Invalid credentials") {
+          throw new Error("Email and password do not match");
+        } else if (data.error === "Missing credentials") {
+          throw new Error("Please enter both email and password");
+        } else if (data.error && data.error.includes("not configured")) {
+          throw new Error("System temporarily unavailable. Please try again later.");
+        } else {
+          throw new Error(data.error || "Email and password do not match");
+        }
+      }
 
       /* route based on profile existence */
       if (data.profile) {
@@ -101,6 +119,8 @@ export default function SignInPage() {
           </div>
         </div>
       )}
+
+
 
       <main className={styles.main}>
         <div className={styles.container}>
@@ -177,7 +197,18 @@ export default function SignInPage() {
                     )}
                   </button>
 
-                  {error && <div className={styles.error}>{error}</div>}
+                  {error && (
+                    <div className={styles.error}>
+                      {error}
+                      {error === "Email and password do not match" && (
+                        <div className={styles.errorHelp}>
+                          <Link href="/forgot-password" className={styles.errorHelpLink}>
+                            Forgot your password?
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </form>
 
                 <div className={styles.formFooter}>
