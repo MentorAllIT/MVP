@@ -50,8 +50,8 @@ export async function GET(req: Request) {
       );
     }
 
-    // Calculate end time (1 hour after start)
-    const endTime = new Date(meetingTime.getTime() + 60 * 60 * 1000);
+    // Calculate end time (30 minutes after start)
+    const endTime = new Date(meetingTime.getTime() + 30 * 60 * 1000);
 
     // Format dates for ICS (YYYYMMDDTHHMMSSZ) - UTC format is standard for ICS files
     const formatICSDate = (date: Date) => {

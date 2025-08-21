@@ -26,13 +26,13 @@ export default function MentorBookingForm({ mentorName, mentorUsername, mentorUs
   useEffect(() => {
     const getUserFromToken = async () => {
       try {
-        const response = await fetch('/api/profile');
+        const response = await fetch('/api/auth/check');
         if (response.ok) {
           const data = await response.json();
           setCurrentUserId(data.uid);
         }
       } catch (error) {
-        console.error('Error getting user from token:', error);
+        console.error('Error checking authentication:', error);
       }
     };
     
