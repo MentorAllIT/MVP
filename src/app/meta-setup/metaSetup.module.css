@@ -181,6 +181,42 @@
   box-shadow: none;
 }
 
+/* Button Group for Previous/Continue buttons */
+.buttonGroup {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.secondaryButton {
+  background: rgba(102, 77, 162, 0.1);
+  color: #664da2;
+  border: 2px solid rgba(102, 77, 162, 0.25);
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 56px;
+  flex: 1;
+  min-width: 150px;
+}
+
+.secondaryButton:hover {
+  background: rgba(102, 77, 162, 0.15);
+  border-color: rgba(102, 77, 162, 0.35);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(102, 77, 162, 0.15);
+}
+
+.buttonGroup .button {
+  flex: 2;
+  margin-top: 0;
+  min-width: 200px;
+}
+
 .error {
   margin-top: 1rem;
   padding: 1rem 1.25rem;

@@ -394,6 +394,17 @@ export default function MenteePreferences() {
   return (
     <div className={styles.page}>
       <div className={styles.wrapper}>
+        {/* Navigation Buttons - Only Back to Dashboard */}
+        <div className={styles.topBackSection}>
+          <button
+            type="button"
+            onClick={() => router.push("/dashboard")}
+            className={styles.topBackButton}
+          >
+            ← Back to Dashboard
+          </button>
+        </div>
+
         <div className={styles.header}>
           <h1 className={styles.title}>Help us find your perfect mentor</h1>
           <p className={styles.subtitle}>
@@ -434,13 +445,22 @@ export default function MenteePreferences() {
               </SortableContext>
             </DndContext>
 
-            <button
-              type="submit"
-              disabled={submitting}
-              className={styles.button}
-            >
-              {submitting ? "Saving Preferences..." : "Save Preferences & Continue"}
-            </button>
+            <div className={styles.buttonGroup}>
+              <button
+                type="button"
+                onClick={() => router.push(`/meta-setup?uid=${uid}&role=${role}`)}
+                className={styles.secondaryButton}
+              >
+                ← Previous Page
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className={styles.button}
+              >
+                {submitting ? "Saving Preferences..." : "Finish"}
+              </button>
+            </div>
 
             {formErr && <p className={styles.error}>{formErr}</p>}
           </form>
@@ -457,7 +477,7 @@ export default function MenteePreferences() {
         </div>
 
         {/* Back to Dashboard Button */}
-        <div className={styles.backSection}>
+        {/* <div className={styles.backSection}>
           <button
             type="button"
             onClick={() => router.push("/dashboard")}
@@ -465,7 +485,7 @@ export default function MenteePreferences() {
           >
             ← Back to Dashboard
           </button>
-        </div>
+        </div> */}
       </div>
     </div>
   );

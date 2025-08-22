@@ -242,40 +242,85 @@ export default function SignUpPage() {
               <p className={styles.welcomeSubtitle}>{roleSubtitle}</p>
               
               <div className={styles.features}>
-                <div className={styles.feature}>
-                  <div className={styles.featureIcon}>
-                    {role === "mentor" ? "🎯" : "🚀"}
+                <div className={styles.featureCard}>
+                  <div className={styles.featureCardInner}>
+                    <div className={styles.featureCardFront}>
+                      <div className={styles.featureIcon}>
+                        {role === "mentor" ? "🎯" : "🚀"}
+                      </div>
+                      <span>
+                        {role === "mentor" 
+                          ? "Share your knowledge and experience" 
+                          : "Get personalized guidance and support"
+                        }
+                      </span>
+                    </div>
+                    <div className={styles.featureCardBack}>
+                      <div className={styles.featureIcon}>
+                        {role === "mentor" ? "💡" : "🌟"}
+                      </div>
+                      <span>
+                        {role === "mentor" 
+                          ? "Help others grow while building your leadership skills" 
+                          : "Accelerate your career with expert mentorship"
+                        }
+                      </span>
+                    </div>
                   </div>
-                  <span>
-                    {role === "mentor" 
-                      ? "Share your knowledge and experience" 
-                      : "Get personalized guidance and support"
-                    }
-                  </span>
                 </div>
                 
-                <div className={styles.feature}>
-                  <div className={styles.featureIcon}>
-                    {role === "mentor" ? "💬" : "📚"}
+                <div className={styles.featureCard}>
+                  <div className={styles.featureCardInner}>
+                    <div className={styles.featureCardFront}>
+                      <div className={styles.featureIcon}>
+                        {role === "mentor" ? "💬" : "📚"}
+                      </div>
+                      <span>
+                        {role === "mentor" 
+                          ? "Make a meaningful impact on mentee's professional journey" 
+                          : "Learn from industry experts and professionals"
+                        }
+                      </span>
+                    </div>
+                    <div className={styles.featureCardBack}>
+                      <div className={styles.featureIcon}>
+                        {role === "mentor" ? "🤝" : "🎓"}
+                      </div>
+                      <span>
+                        {role === "mentor" 
+                          ? "Build lasting relationships and see your mentees succeed" 
+                          : "Gain insights from real-world experience and best practices"
+                        }
+                      </span>
+                    </div>
                   </div>
-                  <span>
-                    {role === "mentor" 
-                      ? "Make a meaningful impact on mentee's professional journey" 
-                      : "Learn from industry experts and professionals"
-                    }
-                  </span>
                 </div>
                 
-                <div className={styles.feature}>
-                  <div className={styles.featureIcon}>
-                    {role === "mentor" ? "🌟" : "🎯"}
+                <div className={styles.featureCard}>
+                  <div className={styles.featureCardInner}>
+                    <div className={styles.featureCardFront}>
+                      <div className={styles.featureIcon}>
+                        {role === "mentor" ? "🌟" : "🎯"}
+                      </div>
+                      <span>
+                        {role === "mentor" 
+                          ? "Build your mentoring skills and network" 
+                          : "Achieve your goals faster with expert guidance"
+                        }
+                      </span>
+                    </div>
+                    <div className={styles.featureCardBack}>
+                      <div className={styles.featureIcon}>
+                        {role === "mentor" ? "📈" : "⚡"}
+                      </div>
+                      <span>
+                        {role === "mentor" 
+                          ? "Expand your professional network and personal brand" 
+                          : "Fast-track your success with personalized action plans"
+                        }
+                      </span>
+                    </div>
                   </div>
-                  <span>
-                    {role === "mentor" 
-                      ? "Build your mentoring skills and network" 
-                      : "Achieve your goals faster with MentorAll"
-                    }
-                  </span>
                 </div>
               </div>
             </div>

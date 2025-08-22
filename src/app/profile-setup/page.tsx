@@ -249,7 +249,7 @@ export default function ProfileSetup() {
         </div>
 
         {/* Back to Dashboard Button */}
-        <div className={styles.backSection}>
+        {/* <div className={styles.backSection}>
           <button
             type="button"
             onClick={() => router.push("/dashboard")}
@@ -257,7 +257,7 @@ export default function ProfileSetup() {
           >
             ← Back to Dashboard
           </button>
-        </div>
+        </div> */}
       </div>
     </div>
   );
