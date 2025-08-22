@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
         goal: existing.fields.Goal || "",
         challenges: existing.fields.Challenges || "",
         help: existing.fields.HelpNeeded || "",
-        resumeInfo: existing.fields.ResumeInfo ? JSON.parse(String(existing.fields.ResumeInfo)) : null,
+        resumeInfo: existing.fields['Resume Info'] ? JSON.parse(String(existing.fields['Resume Info'])) : null,
       });
     } else {
       return NextResponse.json({
@@ -181,7 +181,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Update the record with resume metadata
-        await base(table).update(recId, { ResumeInfo: JSON.stringify(resumeInfo) });
+        await base(table).update(recId, { 'Resume Info': JSON.stringify(resumeInfo) });
       }
       // If keepExisting is true, we don't need to do anything - the existing resume stays
     }

@@ -568,7 +568,7 @@
 }
 
 .removeResumeButton {
-  background: #dc3545;
+  background: #6c757d;
   color: white;
   border: none;
   border-radius: 6px;
@@ -579,16 +579,16 @@
 }
 
 .removeResumeButton:hover {
-  background: #c82333;
+  background: #5a6268;
 }
 
 .keepExistingText {
   margin: 8px 0 0 0;
-  color: #28a745;
+  color: #664da2;
   font-size: 0.875rem;
   font-weight: 500;
 }
 
 .keepExistingText strong {
-  color: #1e7e34;
+  color:#664da2;
 }

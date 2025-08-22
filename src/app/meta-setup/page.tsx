@@ -472,7 +472,7 @@ export default function MetaSetup() {
         {fieldErrs.resume && <span className={styles.fieldError}>{fieldErrs.resume}</span>}
         {existingResume && !resumeFile && (
           <p className={styles.keepExistingText}>
-            ✅ Will keep your existing resume: <strong>{existingResume.filename}</strong>
+            Existing resume: <strong>{existingResume.filename}</strong>
           </p>
         )}
       </label>
