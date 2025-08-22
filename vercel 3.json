@@ -1,8 +1,0 @@
-{
-  "crons": [
-    {
-      "path": "/api/bookings/daily-status-update",
-      "schedule": "0 23 * * *"
-    }
-  ]
-}
