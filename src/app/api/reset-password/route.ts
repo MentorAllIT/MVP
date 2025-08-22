@@ -101,8 +101,8 @@ export async function POST(request: NextRequest) {
         fields: {
           Password: hashedPassword,
           "Reset Token": '', // Clear the reset token
-          "Reset Token Expires At": null, // Clear expiry (null for date fields)
-          "Reset Token Created At": null, // Clear creation time (null for date fields)
+          "Reset Token Expires At": "", // Clear expiry (null for date fields)
+          "Reset Token Created At": "", // Clear creation time (null for date fields)
         },
       },
     ]);
