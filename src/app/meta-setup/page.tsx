@@ -162,6 +162,12 @@ export default function MetaSetup() {
   const [overrides, setOverrides] = useState<Record<string, Interval[]>>({}); // "YYYY-MM-DD" -> intervals
 
   const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [existingResume, setExistingResume] = useState<{
+    filename: string;
+    uploadDate: string;
+    fileSize: number;
+    contentType: string;
+  } | null>(null);
 
   const [fieldErrs, setFieldErrs]   = useState<FieldErrors>({});
   const [formErr, setFormErr] = useState<string | null>(null);
@@ -184,6 +190,10 @@ export default function MetaSetup() {
               challenges: metaData.challenges || "",
               help: metaData.help || ""
             }));
+            // Set existing resume info if available
+            if (metaData.resumeInfo) {
+              setExistingResume(metaData.resumeInfo);
+            }
           } else {
             setState(prev => ({
               ...prev,
@@ -312,7 +322,7 @@ export default function MetaSetup() {
       if (!state.goal.trim())              errs.goal        = "Please describe your main goal";
       if (!state.challenges.trim())        errs.challenges  = "Tell us your challenges";
       if (!state.help.trim())              errs.help        = "Explain the help you need";
-      if (!resumeFile)                     errs.resume      = "Please upload your CV/Resume";
+      if (!resumeFile && !existingResume) errs.resume      = "Please upload your CV/Resume";
     }
     return errs;
   }
@@ -368,7 +378,12 @@ export default function MetaSetup() {
       fd.append("challenges", state.challenges.trim());
       fd.append("help",       state.help.trim());
       
-      if (resumeFile) fd.append("cv", resumeFile, resumeFile.name); // attach the file blob
+      if (resumeFile) {
+        fd.append("cv", resumeFile, resumeFile.name); // attach the file blob
+      } else if (existingResume) {
+        // Keep existing resume - send a flag to indicate no new file
+        fd.append("keepExistingResume", "true");
+      }
     }
 
     const res = await fetch("/api/meta", { method: "POST", body: fd });
@@ -428,15 +443,38 @@ export default function MetaSetup() {
         {fieldErrs.help && <span className={styles.fieldError}>{fieldErrs.help}</span>}
       </label>
       <label className={styles.label}>
-        Upload your CV / Resume
+        {existingResume ? "Update your CV / Resume" : "Upload your CV / Resume"}
+        {existingResume && (
+          <div className={styles.existingResume}>
+            <p className={styles.existingResumeText}>
+              📄 <strong>{existingResume.filename}</strong>
+              <br />
+              <small>Uploaded: {new Date(existingResume.uploadDate).toLocaleDateString()}</small>
+              <br />
+              <small>Size: {(existingResume.fileSize / 1024).toFixed(1)} KB</small>
+            </p>
+            <button
+              type="button"
+              onClick={() => setExistingResume(null)}
+              className={styles.removeResumeButton}
+            >
+              Remove & Upload New
+            </button>
+          </div>
+        )}
         <input
           type="file"
           accept=".pdf,.doc,.docx"
           onChange={onFileChange}
           className={`${styles.fileInput} ${fieldErrs.resume ? styles.inputError : ""}`}
         />
-        {resumeFile && <p className={styles.fileName}>{resumeFile.name}</p>}
+        {resumeFile && <p className={styles.fileName}>New file: {resumeFile.name}</p>}
         {fieldErrs.resume && <span className={styles.fieldError}>{fieldErrs.resume}</span>}
+        {existingResume && !resumeFile && (
+          <p className={styles.keepExistingText}>
+            ✅ Will keep your existing resume: <strong>{existingResume.filename}</strong>
+          </p>
+        )}
       </label>
     </>
   );
