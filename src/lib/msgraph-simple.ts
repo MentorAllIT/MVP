@@ -111,7 +111,7 @@ export async function sendPasswordResetEmailGraph(
   resetToken: string,
   userName: string
 ): Promise<void> {
-  const resetUrl = `${process.env.APP_BASE_URL || process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+  const resetUrl = `${process.env.APP_BASE_URL || process.env.FRONTEND_URL || process.env.NEXT_PUBLIC_BASE_URL}/reset-password?token=${resetToken}`;
   
   const subject = 'Password Reset Request - MentorAll';
   const html = `
@@ -174,7 +174,7 @@ export async function sendPasswordResetSuccessEmailGraph(
   email: string,
   userName: string
 ): Promise<void> {
-  const signinUrl = `${process.env.APP_BASE_URL || process.env.FRONTEND_URL}/signin`;
+  const signinUrl = `${process.env.APP_BASE_URL || process.env.FRONTEND_URL || process.env.NEXT_PUBLIC_BASE_URL}/signin`;
   
   const subject = 'Password Successfully Reset - MentorAll';
   const html = `
