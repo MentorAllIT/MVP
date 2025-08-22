@@ -439,7 +439,7 @@ export default function MenteePreferences() {
               disabled={submitting}
               className={styles.button}
             >
-              {submitting ? "Saving Preferences..." : "Save Preferences & Continue"}
+              {submitting ? "Saving Preferences..." : "Finish"}
             </button>
 
             {formErr && <p className={styles.error}>{formErr}</p>}

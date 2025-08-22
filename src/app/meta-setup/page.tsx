@@ -889,7 +889,7 @@ export default function MetaSetup() {
               {role === "mentee" ? menteeInputs : mentorInputs}
 
               <button type="submit" disabled={submitting} className={styles.button}>
-                {submitting ? "Saving…" : "Finish"}
+                {submitting ? "Saving…" : role === "mentee" ? "Save & Continue" : "Finish"}
               </button>
 
               {formErr && <p className={styles.error}>{formErr}</p>}
