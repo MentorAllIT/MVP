@@ -30,6 +30,11 @@ function ResetPasswordForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('=== FORM SUBMISSION STARTED ===');
+    console.log('Token:', token);
+    console.log('Password length:', password.length);
+    console.log('Passwords match:', password === confirmPassword);
+    
     if (!token) {
       setMessage('Invalid reset link. Please request a new password reset.');
       setMessageType('error');
@@ -52,6 +57,7 @@ function ResetPasswordForm() {
     setMessage('');
 
     try {
+      console.log('Making API call to /api/reset-password...');
       const response = await fetch('/api/reset-password', {
         method: 'POST',
         headers: {

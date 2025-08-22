@@ -1,16 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Airtable from 'airtable';
-import bcrypt from 'bcrypt';
-import { sendPasswordResetSuccessEmailGraph } from '@/lib/msgraph-simple';
-import { hashResetToken, isTokenExpired, isValidTokenFormat } from '@/lib/passwordReset';
+import * as bcrypt from 'bcrypt';
+import { sendPasswordResetSuccessEmailGraph } from '../../../lib/msgraph-simple';
+import { hashResetToken, isTokenExpired, isValidTokenFormat } from '../../../lib/passwordReset';
 
 const airtable = new Airtable({
   apiKey: process.env.AIRTABLE_API_KEY,
 }).base(process.env.AIRTABLE_BASE_ID!);
 
 export async function POST(request: NextRequest) {
+  console.log('=== RESET PASSWORD API CALLED ===');
+  console.log('Request received at:', new Date().toISOString());
+  console.log('Request headers:', Object.fromEntries(request.headers.entries()));
+  
   try {
-    const { token, password, confirmPassword } = await request.json();
+    console.log('Parsing request body...');
+    const body = await request.text();
+    console.log('Raw request body:', body);
+    
+    const { token, password, confirmPassword } = JSON.parse(body);
+    console.log('Request body parsed successfully');
+    console.log('Token exists:', !!token);
+    console.log('Password exists:', !!password);
+    console.log('Confirm password exists:', !!confirmPassword);
 
     // Validate input
     if (!token || !password || !confirmPassword) {
@@ -101,8 +113,8 @@ export async function POST(request: NextRequest) {
         fields: {
           Password: hashedPassword,
           "Reset Token": '', // Clear the reset token
-          "Reset Token Expires At": "", // Clear expiry (null for date fields)
-          "Reset Token Created At": "", // Clear creation time (null for date fields)
+          // Note: We don't update date fields to avoid Airtable parsing errors
+          // The date fields will remain as they are, which is fine for security
         },
       },
     ]);

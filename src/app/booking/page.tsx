@@ -17,18 +17,20 @@ function BookingPageInner() {
   const mentorName = searchParams.get('mentorName');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [userLoading, setUserLoading] = useState(true);
+  const [fetchedMentorName, setFetchedMentorName] = useState<string | null>(null);
+  const [mentorLoading, setMentorLoading] = useState(false);
   
   // Get current user from JWT token
   useEffect(() => {
     const getUserFromToken = async () => {
       try {
-        const response = await fetch('/api/profile');
+        const response = await fetch('/api/auth/check');
         if (response.ok) {
           const data = await response.json();
           setCurrentUserId(data.uid);
         }
       } catch (error) {
-        console.error('Error getting user from token:', error);
+        console.error('Error checking authentication:', error);
       } finally {
         setUserLoading(false);
       }
@@ -37,26 +39,53 @@ function BookingPageInner() {
     getUserFromToken();
   }, []);
 
-  const pageTitle = mentorId && mentorName 
-    ? `Book a Session with ${decodeURIComponent(mentorName)}`
+  // Fetch mentor name if mentorId is provided but mentorName is not
+  useEffect(() => {
+    const fetchMentorName = async () => {
+      if (mentorId && !mentorName) {
+        setMentorLoading(true);
+        try {
+          const response = await fetch(`/api/users?uid=${encodeURIComponent(mentorId)}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.name) {
+              setFetchedMentorName(data.name);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching mentor name:', error);
+        } finally {
+          setMentorLoading(false);
+        }
+      }
+    };
+
+    fetchMentorName();
+  }, [mentorId, mentorName]);
+
+  // Determine the actual mentor name to use
+  const actualMentorName = mentorName ? decodeURIComponent(mentorName) : fetchedMentorName;
+
+  const pageTitle = mentorId && actualMentorName 
+    ? `Book a Session with ${actualMentorName}`
     : "Book a Meeting";
 
-  const pageSubtitle = mentorId && mentorName
+  const pageSubtitle = mentorId && actualMentorName
     ? "Schedule your mentoring session and start your journey"
     : "Schedule a mentoring session with someone from the community";
 
-  // Show loading state while fetching user
-  if (userLoading) {
+  // Show loading state while fetching user or mentor data
+  if (userLoading || (mentorId && !mentorName && mentorLoading)) {
     return (
       <div className={styles.page}>
         <header className={styles.header}>
-          <div className={styles.headerContent}>
-            <div className={styles.logoContainer}>
-              <img src="/MentorAll transparent Full logo.png" alt="MentorAll" className={styles.logo} />
-            </div>
-            <HamburgerMenu />
-          </div>
-        </header>
+        <div className={styles.headerContent}>
+          <Link href="/dashboard" className={styles.logoContainer}>
+            <img src="/MentorAll transparent Full logo.png" alt="MentorAll" className={styles.logo} />
+          </Link>
+          <HamburgerMenu />
+        </div>
+      </header>
 
         <main className={styles.main}>
           <div className={styles.container}>
@@ -74,7 +103,7 @@ function BookingPageInner() {
     <div className={styles.page}>
       <header className={styles.header}>
         <div className={styles.headerContent}>
-          <Link href="/" className={styles.logoContainer}>
+          <Link href="/dashboard" className={styles.logoContainer}>
             <img src="/MentorAll transparent Full logo.png" alt="MentorAll" className={styles.logo} />
           </Link>
           <HamburgerMenu />
@@ -99,12 +128,17 @@ function BookingPageInner() {
             backdropFilter: "blur(20px)"
           }}>
             {/* If mentorId is provided, use MentorBookingForm */}
-            {mentorId && mentorName ? (
+            {mentorId && actualMentorName ? (
               <MentorBookingForm 
-                mentorName={decodeURIComponent(mentorName)}
+                mentorName={actualMentorName}
                 mentorUsername={mentorId} // Using mentorId as username for now
                 mentorUserId={mentorId}
               />
+            ) : mentorId && !actualMentorName ? (
+              /* Show loading state if we have mentorId but name is still loading */
+              <div style={{ textAlign: "center", padding: "2rem" }}>
+                <p>Loading mentor information...</p>
+              </div>
             ) : (
               /* Default booking form for general bookings */
               <BookingForm 

@@ -145,17 +145,6 @@ export async function sendPasswordResetEmailGraph(
           If you have any questions, please contact our support team.
         </p>
         
-        <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0;">
-          <p style="color: #856404; font-size: 14px; line-height: 1.6; margin: 0; font-weight: bold;">
-            SECURITY WARNING:
-          </p>
-          <p style="color: #856404; font-size: 14px; line-height: 1.6; margin: 5px 0 0 0;">
-            DO NOT share this password reset link with anyone else. This link provides access to your account 
-            and should be kept confidential. If you suspect someone else has access to this email, 
-            please contact support immediately.
-          </p>
-        </div>
-        
         <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
         
         <p style="color: #999; font-size: 12px; text-align: center;">

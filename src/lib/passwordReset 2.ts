@@ -1,4 +1,4 @@
-import * as crypto from 'crypto';
+import crypto from 'crypto';
 
 // Generate a secure random token
 export const generateResetToken = (): string => {

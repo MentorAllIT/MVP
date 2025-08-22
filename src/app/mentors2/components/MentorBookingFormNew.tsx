@@ -21,21 +21,36 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [conflictWarning, setConflictWarning] = useState("");
   const [success, setSuccess] = useState(false);
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [useAvailabilityPicker, setUseAvailabilityPicker] = useState(true); // Default to true to show availability immediately
+  const [availabilityStatus, setAvailabilityStatus] = useState({
+    hasAvailability: true,
+    isLoading: false,
+    error: null as string | null
+  });
+  const [showManualInput, setShowManualInput] = useState(false);
 
   // Get current user from JWT token
   useEffect(() => {
     const getUserFromToken = async () => {
       try {
-        const response = await fetch('/api/profile');
+        console.log('Checking authentication...');
+        const response = await fetch('/api/auth/check');
+        console.log('Auth check response status:', response.status);
+        
         if (response.ok) {
           const data = await response.json();
+          console.log('Auth check data:', data);
           setCurrentUserId(data.uid);
+        } else {
+          console.error('Authentication check failed:', response.status);
+          const errorData = await response.json();
+          console.error('Error details:', errorData);
         }
       } catch (error) {
-        console.error('Error getting user from token:', error);
+        console.error('Error checking authentication:', error);
       }
     };
     
@@ -48,6 +63,37 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
       ...prev,
       [name]: value
     }));
+
+    // Check for conflicts when meetingTime changes
+    if (name === 'meetingTime' && value && mentorUserId) {
+      checkTimeConflict(value);
+    }
+  };
+
+  const checkTimeConflict = async (meetingTime: string) => {
+    if (!mentorUserId) return;
+    
+    try {
+      setConflictWarning("");
+      const selectedDate = new Date(meetingTime);
+      
+      // Check for conflicts within the meeting duration window (30 minutes)
+      const startTime = new Date(selectedDate.getTime() - 10 * 60 * 1000); // 10 min before (buffer)
+      const endTime = new Date(selectedDate.getTime() + 30 * 60 * 1000); // 30 min after (meeting duration)
+      
+      const response = await fetch(
+        `/api/booking-conflicts?mentorUserId=${encodeURIComponent(mentorUserId)}&startTime=${startTime.toISOString()}&endTime=${endTime.toISOString()}`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.bookedTimes.length > 0) {
+          setConflictWarning("⚠️ Warning: This time slot may conflict with an existing booking. Please choose a different time or check with the mentor.");
+        }
+      }
+    } catch (err) {
+      console.error('Error checking time conflict:', err);
+    }
   };
 
   const handleTimeSlotSelect = (selectedDateTime: string) => {
@@ -60,6 +106,16 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
       ...prev,
       meetingTime: localDateTime
     }));
+
+    // Clear any previous conflict warning since availability picker already filters booked times
+    setConflictWarning("");
+  };
+
+  const handleAvailabilityStatus = (status: { hasAvailability: boolean; isLoading: boolean; error: string | null }) => {
+    setAvailabilityStatus(status);
+    
+    // Don't automatically switch to manual input, just update the status
+    // Let the user decide when to switch to manual input via the toggle buttons
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -213,29 +269,56 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
 
   return (
     <div style={{ maxWidth: "800px", margin: "0 auto" }}>
+      {/* Debug info - remove this later
+      {process.env.NODE_ENV === 'development' && (
+        <div style={{ 
+          padding: "0.5rem", 
+          backgroundColor: "#f3f4f6", 
+          borderRadius: "4px", 
+          marginBottom: "1rem",
+          fontSize: "0.75rem",
+          color: "#6b7280"
+        }}>
+          Auth Status: {currentUserId ? `✅ Logged in as ${currentUserId}` : "❌ Not authenticated"}
+        </div>
+      )} */}
+      
       <form onSubmit={handleSubmit} className={styles.form}>
         {/* Time Selection Toggle */}
         <div style={{ marginBottom: "1.5rem" }}>
-          <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
+          <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+            {/* Show availability picker option if availability exists or is loading */}
+            {(availabilityStatus.hasAvailability || availabilityStatus.isLoading) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setUseAvailabilityPicker(true);
+                  setShowManualInput(false);
+                  setConflictWarning(""); // Clear warning when switching to availability picker
+                }}
+                style={{
+                  padding: "0.5rem 1rem",
+                  borderRadius: "6px",
+                  border: "1px solid #d1d5db",
+                  background: useAvailabilityPicker ? "#4f46e5" : "white",
+                  color: useAvailabilityPicker ? "white" : "#374151",
+                  cursor: "pointer",
+                  fontSize: "0.875rem",
+                  fontWeight: "500"
+                }}
+              >
+                📅 Choose from Available Times
+              </button>
+            )}
+            
+            {/* Always show manual input option, but make it more prominent when no availability */}
             <button
               type="button"
-              onClick={() => setUseAvailabilityPicker(true)}
-              style={{
-                padding: "0.5rem 1rem",
-                borderRadius: "6px",
-                border: "1px solid #d1d5db",
-                background: useAvailabilityPicker ? "#4f46e5" : "white",
-                color: useAvailabilityPicker ? "white" : "#374151",
-                cursor: "pointer",
-                fontSize: "0.875rem",
-                fontWeight: "500"
+              onClick={() => {
+                setUseAvailabilityPicker(false);
+                setShowManualInput(true);
+                setConflictWarning(""); // Clear warning when switching to manual input
               }}
-            >
-              📅 Choose from Available Times
-            </button>
-            <button
-              type="button"
-              onClick={() => setUseAvailabilityPicker(false)}
               style={{
                 padding: "0.5rem 1rem",
                 borderRadius: "6px",
@@ -250,6 +333,22 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
               ⏰ Manual Time Entry
             </button>
           </div>
+          
+          {/* Show helpful message when using manual input and no availability exists */}
+          {!useAvailabilityPicker && !availabilityStatus.hasAvailability && !availabilityStatus.isLoading && (
+            <div style={{ 
+              padding: "0.75rem", 
+              backgroundColor: "#f0f9ff", 
+              border: "1px solid #0ea5e9", 
+              borderRadius: "6px",
+              marginBottom: "1rem"
+            }}>
+              <p style={{ color: "#0c4a6e", fontSize: "0.875rem", margin: 0 }}>
+                💡 This mentor's availability schedule isn't set up yet, so you can request any time that works for you. 
+                They'll confirm or suggest an alternative time.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Availability Picker or Manual Input */}
@@ -260,6 +359,7 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
               onTimeSlotSelect={handleTimeSlotSelect}
               selectedDateTime={formData.meetingTime ? new Date(formData.meetingTime).toISOString() : undefined}
               shouldFetchAvailability={useAvailabilityPicker}
+              onAvailabilityStatus={handleAvailabilityStatus}
             />
           </div>
         ) : (
@@ -281,6 +381,33 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
             <div style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.25rem" }}>
               Select your preferred date and time (will be converted to AEST)
             </div>
+            {conflictWarning && (
+              <div style={{ 
+                marginTop: "0.5rem", 
+                padding: "0.75rem", 
+                backgroundColor: "#fef3c7", 
+                border: "1px solid #f59e0b", 
+                borderRadius: "6px" 
+              }}>
+                <p style={{ color: "#92400e", fontSize: "0.875rem", margin: 0 }}>
+                  {conflictWarning}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {conflictWarning && useAvailabilityPicker && (
+          <div style={{ 
+            marginBottom: "1.5rem",
+            padding: "0.75rem", 
+            backgroundColor: "#fef3c7", 
+            border: "1px solid #f59e0b", 
+            borderRadius: "6px" 
+          }}>
+            <p style={{ color: "#92400e", fontSize: "0.875rem", margin: 0 }}>
+              {conflictWarning}
+            </p>
           </div>
         )}
 
@@ -344,7 +471,7 @@ const MentorBookingForm = ({ mentorName, mentorUsername, mentorUserId }: MentorB
           <div style={{ fontSize: "0.875rem", color: "#1e40af" }}>
             <strong>How it works:</strong>
             <ul style={{ margin: "0.5rem 0", paddingLeft: "1.25rem" }}>
-              <li>{mentorName} will receive your meeting request</li>
+              <li>{mentorName} will receive your 30-minute meeting request</li>
               <li>They can confirm or suggest an alternative time</li>
               <li>You&apos;ll receive a notification with their response</li>
               <li>Once confirmed, you&apos;ll receive calendar details and meeting instructions</li>
