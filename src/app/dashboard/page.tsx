@@ -39,6 +39,8 @@ export default function Dashboard() {
 
 
   // Kick off refresh-match exactly once after auth confirms mentee
+  // Mentor matching is temporarily disabled for MVP launch
+  /*
   useEffect(() => {
     // Only after auth finished and role known
     if (loading) return;
@@ -60,10 +62,10 @@ export default function Dashboard() {
           cache: "no-store",
         });
         if (!res.ok) {
-          setMatchError("We’ll keep looking for the best matches.");
+          setMatchError("We'll keep looking for the best matches.");
         }
       } catch {
-        setMatchError("We’ll keep looking for the best matches.");
+        setMatchError("We'll keep looking for the best matches.");
       } finally {
         if (!cancelled) setMatching(false);
       }
@@ -71,6 +73,7 @@ export default function Dashboard() {
 
     return () => { cancelled = true; };
   }, [loading, userRole]);
+  */
 
   if (loading) {
     return (
@@ -164,7 +167,7 @@ export default function Dashboard() {
                     Browse available mentors and find the perfect match for your goals.
                   </p>
                   <Link href="/mentee/browse" className={styles.cardButton}>
-                    Browse Mentors
+                    Coming Soon
                   </Link>
                 </div>
 
