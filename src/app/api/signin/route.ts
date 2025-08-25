@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
       .firstPage();
 
     if (!userRec) {
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+      return NextResponse.json({ error: "Email not found. Please check your email address or sign up for an account." }, { status: 401 });
     }
 
     const { Password, Role, UserID } = userRec.fields as {
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
 
     // Password check
     if (!(await bcrypt.compare(password, Password))) {
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+      return NextResponse.json({ error: "Password is incorrect. Please check your password or use the 'Forgot Password' link." }, { status: 401 });
     }
 
     // Does a Profiles row exist for this uid?
