@@ -860,7 +860,7 @@ export default function MetaSetup() {
   return (
       <div className={styles.page}>
         <div className={styles.wrapper}>
-          {/* Back to Dashboard Button - Always Visible */}
+          {/* Navigation Buttons - Only Back to Dashboard */}
           <div className={styles.topBackSection}>
             <button
                 type="button"
@@ -888,11 +888,20 @@ export default function MetaSetup() {
             <form className={styles.form} onSubmit={handleSubmit} noValidate>
               {role === "mentee" ? menteeInputs : mentorInputs}
 
+            <div className={styles.buttonGroup}>
+              <button
+                type="button"
+                onClick={() => router.push(`/profile-setup?uid=${uid}&role=${role}`)}
+                className={styles.secondaryButton}
+              >
+                ← Previous Page
+              </button>
               <button type="submit" disabled={submitting} className={styles.button}>
                 {submitting ? "Saving…" : role === "mentee" ? "Save & Continue" : "Finish"}
               </button>
+            </div>
 
-              {formErr && <p className={styles.error}>{formErr}</p>}
+            {formErr && <p className={styles.error}>{formErr}</p>}
             </form>
           </div>
           <div className={styles.progressWrap}>
@@ -907,7 +916,7 @@ export default function MetaSetup() {
             </span>
           </div>
 
-          {/* Bottom Back to Dashboard Button */}
+          {/* Bottom Back to Dashboard Button
           <div className={styles.backSection}>
             <button
                 type="button"
@@ -916,7 +925,7 @@ export default function MetaSetup() {
             >
               ← Back to Dashboard
             </button>
-          </div>
+          </div> */}
         </div>
       </div>
   );

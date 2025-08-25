@@ -182,6 +182,61 @@
   gap: 1.5rem;
 }
 
+/* Flip Card Styles */
+.featureCard {
+  perspective: 1000px;
+  height: 120px;
+}
+
+.featureCardInner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+  cursor: pointer;
+}
+
+.featureCard:hover .featureCardInner {
+  transform: rotateY(180deg);
+}
+
+.featureCardFront,
+.featureCardBack {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 16px;
+  border: 1px solid rgba(102, 77, 162, 0.1);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.featureCardFront {
+  transform: rotateY(0deg);
+}
+
+.featureCardBack {
+  transform: rotateY(180deg);
+  background: linear-gradient(135deg, rgba(102, 77, 162, 0.1), rgba(139, 107, 177, 0.1));
+  border-color: rgba(102, 77, 162, 0.2);
+}
+
+.featureCard:hover .featureCardFront,
+.featureCard:hover .featureCardBack {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(102, 77, 162, 0.3);
+  box-shadow: 0 8px 25px rgba(102, 77, 162, 0.15);
+}
+
+/* Keep the original .feature class for backward compatibility if needed */
 .feature {
   display: flex;
   align-items: center;

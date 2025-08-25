@@ -34,6 +34,32 @@
   z-index: 2;
 }
 
+/* Top Navigation Section */
+.topBackSection {
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(102, 77, 162, 0.1);
+}
+
+.topBackButton {
+  background: rgba(102, 77, 162, 0.1);
+  color: #664da2;
+  border: 1px solid rgba(102, 77, 162, 0.25);
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.topBackButton:hover {
+  background: rgba(102, 77, 162, 0.15);
+  border-color: rgba(102, 77, 162, 0.35);
+  transform: translateY(-1px);
+}
+
 .header {
   text-align: center;
   margin-bottom: 3rem;
@@ -335,6 +361,43 @@
   opacity: 0.7;
   cursor: not-allowed;
   transform: none;
+}
+
+/* Button Group for Previous/Finish buttons */
+.buttonGroup {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.secondaryButton {
+  background: rgba(102, 77, 162, 0.1);
+  color: #664da2;
+  border: 2px solid rgba(102, 77, 162, 0.25);
+  padding: 1.25rem 2rem;
+  border-radius: 16px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex: 1;
+  min-width: 150px;
+}
+
+.secondaryButton:hover {
+  background: rgba(102, 77, 162, 0.15);
+  border-color: rgba(102, 77, 162, 0.35);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(102, 77, 162, 0.15);
+}
+
+.buttonGroup .button {
+  flex: 2;
+  margin-top: 0;
+  min-width: 200px;
 }
 
 .error {

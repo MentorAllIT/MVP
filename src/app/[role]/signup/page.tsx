@@ -242,40 +242,85 @@ export default function SignUpPage() {
               <p className={styles.welcomeSubtitle}>{roleSubtitle}</p>
               
               <div className={styles.features}>
-                <div className={styles.feature}>
-                  <div className={styles.featureIcon}>
-                    {role === "mentor" ? "🎯" : "🚀"}
+                <div className={styles.featureCard}>
+                  <div className={styles.featureCardInner}>
+                    <div className={styles.featureCardFront}>
+                      <div className={styles.featureIcon}>
+                        {role === "mentor" ? "🎯" : "🚀"}
+                      </div>
+                      <span>
+                        {role === "mentor" 
+                          ? "Your Time is Protected" 
+                          : "Get personalized guidance and support"
+                        }
+                      </span>
+                    </div>
+                    <div className={styles.featureCardBack}>
+                      <div className={styles.featureIcon}>
+                        {role === "mentor" ? "💡" : "🌟"}
+                      </div>
+                      <span>
+                        {role === "mentor" 
+                          ? "We match you with one mentee who’s been vetted for commitment, clarity, and readiness — so every minute you spend is with someone who truly values it." 
+                          : "Accelerate your career with expert mentorship"
+                        }
+                      </span>
+                    </div>
                   </div>
-                  <span>
-                    {role === "mentor" 
-                      ? "Share your knowledge and experience" 
-                      : "Get personalized guidance and support"
-                    }
-                  </span>
                 </div>
                 
-                <div className={styles.feature}>
-                  <div className={styles.featureIcon}>
-                    {role === "mentor" ? "💬" : "📚"}
+                <div className={styles.featureCard}>
+                  <div className={styles.featureCardInner}>
+                    <div className={styles.featureCardFront}>
+                      <div className={styles.featureIcon}>
+                        {role === "mentor" ? "💬" : "📚"}
+                      </div>
+                      <span>
+                        {role === "mentor" 
+                          ? "We Prep Them for You" 
+                          : "Learn from industry experts and professionals"
+                        }
+                      </span>
+                    </div>
+                    <div className={styles.featureCardBack}>
+                      <div className={styles.featureIcon}>
+                        {role === "mentor" ? "🤝" : "🎓"}
+                      </div>
+                      <span>
+                        {role === "mentor" 
+                          ? "Before you even meet, your mentee arrives with their goals, key questions, and background in hand — you skip the warm-up and dive into real impact." 
+                          : "Gain insights from real-world experience and best practices"
+                        }
+                      </span>
+                    </div>
                   </div>
-                  <span>
-                    {role === "mentor" 
-                      ? "Make a meaningful impact on mentee's professional journey" 
-                      : "Learn from industry experts and professionals"
-                    }
-                  </span>
                 </div>
                 
-                <div className={styles.feature}>
-                  <div className={styles.featureIcon}>
-                    {role === "mentor" ? "🌟" : "🎯"}
+                <div className={styles.featureCard}>
+                  <div className={styles.featureCardInner}>
+                    <div className={styles.featureCardFront}>
+                      <div className={styles.featureIcon}>
+                        {role === "mentor" ? "🌟" : "🎯"}
+                      </div>
+                      <span>
+                        {role === "mentor" 
+                          ? "Impact Without the Homework" 
+                          : "Achieve your goals faster with expert guidance"
+                        }
+                      </span>
+                    </div>
+                    <div className={styles.featureCardBack}>
+                      <div className={styles.featureIcon}>
+                        {role === "mentor" ? "📈" : "⚡"}
+                      </div>
+                      <span>
+                        {role === "mentor" 
+                          ? "In just one 45-minute session, you can help solve a problem, spark a breakthrough, or open a door — no ongoing admin, just one powerful conversation." 
+                          : "Fast-track your success with personalized action plans"
+                        }
+                      </span>
+                    </div>
                   </div>
-                  <span>
-                    {role === "mentor" 
-                      ? "Build your mentoring skills and network" 
-                      : "Achieve your goals faster with MentorAll"
-                    }
-                  </span>
                 </div>
               </div>
             </div>
