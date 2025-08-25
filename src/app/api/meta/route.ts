@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     if (!existing) {
       return NextResponse.json(
         role === "mentee"
-          ? { uid, goal: "", challenges: "", help: "" }
+          ? { uid, goal: "", challenges: "", help: "", resumeInfo: null }
           : {
               uid,
               industry: "",
@@ -51,6 +51,7 @@ export async function GET(req: NextRequest) {
         goal: existing.fields.Goal || "",
         challenges: existing.fields.Challenges || "",
         help: existing.fields.HelpNeeded || "",
+        resumeInfo: existing.fields['Resume Info'] ? JSON.parse(String(existing.fields['Resume Info'])) : null,
       });
     } else {
       return NextResponse.json({
@@ -136,36 +137,53 @@ export async function POST(req: NextRequest) {
 
     if (role === "mentee") {
       const file = fd.get("cv") as File | null;
-      if (!file) {
+      const keepExisting = fd.get("keepExistingResume") === "true";
+      
+      if (!file && !keepExisting) {
         return NextResponse.json({ error: "Missing CV file" }, { status: 400 });
       }
 
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const b64 = buffer.toString("base64");
+      if (file) {
+        // New file uploaded
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const b64 = buffer.toString("base64");
 
-      const res = await fetch(
-        `${CONTENT_URL}/${process.env.AIRTABLE_BASE_ID}/${recId}/${ATTACH_FIELD}/uploadAttachment`,
-        {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${process.env.AIRTABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            filename: file.name,
-            contentType: file.type,
-            file: b64,
-          }),
-        }
-      );
+        // Store resume metadata
+        const resumeInfo = {
+          filename: file.name,
+          uploadDate: new Date().toISOString(),
+          fileSize: file.size,
+          contentType: file.type
+        };
 
-      if (!res.ok) {
-        console.error("Airtable uploadAttachment failed:", await res.text());
-        return NextResponse.json(
-          { error: "Failed to upload CV to Airtable" },
-          { status: 502 }
+        const res = await fetch(
+          `${CONTENT_URL}/${process.env.AIRTABLE_BASE_ID}/${recId}/${ATTACH_FIELD}/uploadAttachment`,
+          {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${process.env.AIRTABLE_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              filename: file.name,
+              contentType: file.type,
+              file: b64,
+            }),
+          }
         );
+
+        if (!res.ok) {
+          console.error("Airtable uploadAttachment failed:", await res.text());
+          return NextResponse.json(
+            { error: "Failed to upload CV to Airtable" },
+            { status: 502 }
+          );
+        }
+
+        // Update the record with resume metadata
+        await base(table).update(recId, { 'Resume Info': JSON.stringify(resumeInfo) });
       }
+      // If keepExisting is true, we don't need to do anything - the existing resume stays
     }
 
     return NextResponse.json({ ok: true });

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import styles from "./browse.module.css";
 import HamburgerMenu from "../../components/HamburgerMenu";
+import SimpleLock from "../../components/SimpleLock";
+
 
 type Mentor = {
   userId: string;
@@ -104,130 +106,5 @@ export default function BrowseMentorsPage() {
     return `We found ${mentors.length} mentor${mentors.length > 1 ? "s" : ""} for you`;
   }, [loading, error, mentors.length]);
 
-  return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <Link href="/dashboard" className={styles.logoContainer}>
-            <img src="/MentorAll transparent Full logo.png" alt="MentorAll" className={styles.logo} />
-          </Link>
-          <HamburgerMenu />
-        </div>
-      </header>
-
-      <main className={styles.main}>
-        <div className={styles.container}>
-          <section className={styles.hero}>
-            <h1 className={styles.title}>Browse Mentors</h1>
-            <p className={styles.subtitle}>{subtitle}</p>
-          </section>
-
-          {loading && (
-            <div className={styles.grid}>
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className={`${styles.card} ${styles.skeleton}`} />
-              ))}
-            </div>
-          )}
-
-          {!loading && error && <div className={styles.errorBox}>{error}</div>}
-
-          {!loading && !error && mentors.length === 0 && (
-            <div className={styles.emptyBox}>
-              <div className={styles.emptyEmoji}>🔍</div>
-              <h3>No matches yet</h3>
-              <p>Complete your profile to start seeing mentors.</p>
-              <Link href="/profile" className={styles.ctaButton}>Edit Profile</Link>
-            </div>
-          )}
-
-          {!loading && !error && mentors.length > 0 && (
-            <div className={styles.grid}>
-              {mentors.map((m) => {
-                const skills = splitSkills(m.skill);
-                const updated = timeAgo(m.rankedUpdatedAt || m.metaUpdatedAt) || undefined;
-                const education = [m.fieldOfStudy, m.schoolName].filter(Boolean).join(" @ ");
-
-                return (
-                  <article className={styles.card} key={m.userId}>
-                    <div className={styles.cardTop}>
-                      <div className={styles.avatar}>
-                        {(m.name || "?").charAt(0).toUpperCase()}
-                      </div>
-                      <div className={styles.headings}>
-                        <div className={styles.titleRow}>
-                          <h3 className={styles.cardTitle}>{m.name || "Unnamed Mentor"}</h3>
-                          {typeof m.yearExp === "number" && (
-                            <span className={styles.expBadge}>{m.yearExp} yrs exp</span>
-                          )}
-                          {/* Inline Preference Score */}
-                          {m.preferenceScore !== null && m.preferenceScore !== undefined && (
-                            <span className={styles.inlineScore}>Match Score: {m.preferenceScore}%</span>
-                          )}
-                        </div>
-                        <p className={styles.cardMeta}>
-                          {m.role || "Mentor"}{m.company ? ` @ ${m.company}` : ""}
-                        </p>
-                        {updated && <span className={styles.updatedAt}>Updated {updated}</span>}
-                      </div>
-                    </div>
-
-                    {m.bio && <p className={styles.bio}>{m.bio}</p>}
-
-                    {/* Quick facts */}
-                    <div className={styles.chips}>
-                      {m.industry && <span className={styles.chip}>{m.industry}</span>}
-                      {m.location && (
-                        <span className={`${styles.chip} ${styles.locationChip} ${styles.bigChip}`}>
-                          📍 {m.location}
-                        </span>
-                      )}
-                      {education && (
-                        <span className={`${styles.chip} ${styles.bigChip}`}>{education}</span>
-                      )}
-                    </div>
-
-                    {/* Focus areas / Tags */}
-                    {m.tags && m.tags.length > 0 && (
-                      <div className={styles.tagSection}>
-                        <h4 className={styles.sectionTitle}>Focus areas</h4>
-                        <div className={styles.tagList}>
-                          {m.tags.slice(0, 12).map((t, i) => (
-                            <span className={styles.tagPill} key={i}>{t}</span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Skills */}
-                    {skills.length > 0 && (
-                      <div className={styles.skillSection}>
-                        <h4 className={styles.sectionTitle}>Skills</h4>
-                        <div className={styles.skills}>
-                          {skills.map((s, i) => (
-                            <span key={i} className={styles.skillPill}>{s}</span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className={styles.actions}>
-                      {m.linkedIn && (
-                        <a className={styles.secondaryButton} href={m.linkedIn} target="_blank" rel="noopener noreferrer">
-                          View LinkedIn
-                        </a>
-                      )}
-                      <Link className={styles.primaryButton} href={`/booking?mentorId=${m.userId}`}>
-                        Book session
-                      </Link>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </main>
-    </div>
-  );
+  return <SimpleLock />;
 }
