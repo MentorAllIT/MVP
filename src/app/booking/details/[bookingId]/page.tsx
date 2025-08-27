@@ -17,11 +17,50 @@ interface BookingDetails {
   MeetingTime: string;
   BookingStatus: string;
   Notes?: string;
+  GoogleMeetJoinUrl?: string | { url: string }; // Handle both string and Airtable URL format
 }
 
+// Helper function to extract URL from Airtable URL field
+const getMeetingUrl = (googleMeetField: any): string | null => {
+  console.log('getMeetingUrl input:', googleMeetField);
+  console.log('getMeetingUrl input type:', typeof googleMeetField);
+  
+  // Handle null or undefined
+  if (!googleMeetField) {
+    console.log('getMeetingUrl: Field is null/undefined');
+    return null;
+  }
+  
+  // Handle string directly (most common case from Airtable)
+  if (typeof googleMeetField === 'string') {
+    const trimmed = googleMeetField.trim();
+    console.log('getMeetingUrl: Field is string, trimmed:', trimmed);
+    return trimmed || null;
+  }
+  
+  // Handle Airtable URL object: { url: "actual-url" } (fallback case)
+  if (typeof googleMeetField === 'object' && googleMeetField.url) {
+    console.log('getMeetingUrl: Field has url property:', googleMeetField.url);
+    return googleMeetField.url.trim() || null;
+  }
+  
+  // Handle array of URL objects (sometimes Airtable returns arrays)
+  if (Array.isArray(googleMeetField) && googleMeetField.length > 0 && googleMeetField[0].url) {
+    console.log('getMeetingUrl: Field is array with url:', googleMeetField[0].url);
+    return googleMeetField[0].url.trim() || null;
+  }
+  
+  console.log('getMeetingUrl: No valid URL found');
+  return null;
+};
+
 export default function BookingDetailsPage() {
+  console.log('🚀 BookingDetailsPage component loaded');
+  
   const params = useParams();
   const bookingId = params.bookingId as string;
+  console.log('📝 Booking ID from params:', bookingId);
+  
   const [booking, setBooking] = useState<BookingDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -31,16 +70,30 @@ export default function BookingDetailsPage() {
   const [isRescheduling, setIsRescheduling] = useState(false);
 
   useEffect(() => {
+    console.log('🔄 useEffect triggered, bookingId:', bookingId);
+    
     const fetchBookingDetails = async () => {
       try {
+        console.log('🔍 Fetching booking details for bookingId:', bookingId);
+        
         const response = await fetch(`/api/booking?bookingId=${bookingId}`);
+        
+        console.log('📡 API Response status:', response.status);
+        console.log('📡 API Response ok:', response.ok);
+        
         if (!response.ok) {
           throw new Error('Failed to fetch booking details');
         }
+        
         const data = await response.json();
+        console.log('📋 Main API booking data received:', data);
+        console.log(' GoogleMeetJoinUrl from main API:', data.GoogleMeetJoinUrl);
+        console.log('🔗 Type:', typeof data.GoogleMeetJoinUrl);
+        console.log('🔗 Processed URL:', getMeetingUrl(data.GoogleMeetJoinUrl));
+        
         setBooking(data);
       } catch (error) {
-        console.error('Error fetching booking details:', error);
+        console.error('❌ Error fetching booking details:', error);
         setError('Failed to load booking details');
       } finally {
         setLoading(false);
@@ -295,6 +348,125 @@ export default function BookingDetailsPage() {
                     </span>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Meeting Link Section */}
+            <div style={{ marginBottom: "2rem" }}>
+              <h3 style={{ 
+                fontSize: "1.125rem", 
+                fontWeight: "600", 
+                color: "#2d1b69", 
+                marginBottom: "1rem",
+                borderBottom: "2px solid rgba(102, 77, 162, 0.1)",
+                paddingBottom: "0.5rem"
+              }}>
+                Meeting Link
+              </h3>
+              <div style={{ 
+                padding: "1.5rem", 
+                background: "linear-gradient(135deg, #f8f7fc 0%, #f0edf8 100%)", 
+                borderRadius: "15px", 
+                border: "1px solid rgba(102, 77, 162, 0.1)"
+              }}>
+                {(() => {
+                  const meetingUrl = getMeetingUrl(booking.GoogleMeetJoinUrl);
+                  console.log('🎯 Meeting URL for conditional:', meetingUrl);
+                  console.log('🎯 Boolean check:', !!meetingUrl);
+                  
+                  return meetingUrl ? (
+                    <div style={{ 
+                      display: "flex", 
+                      flexDirection: "column",
+                      gap: "1rem"
+                    }}>
+                      <div style={{ 
+                        display: "flex", 
+                        alignItems: "center", 
+                        padding: "0.75rem",
+                        backgroundColor: "white",
+                        borderRadius: "8px",
+                        border: "1px solid rgba(102, 77, 162, 0.2)"
+                      }}>
+                        <span style={{ fontWeight: "600", color: "#2d1b69", minWidth: "120px" }}>Google Meet:</span>
+                        <a 
+                          href={meetingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ 
+                            color: "#2563eb", 
+                            textDecoration: "none",
+                            wordBreak: "break-all",
+                            flex: 1
+                          }}
+                          onMouseOver={(e) => (e.target as HTMLElement).style.textDecoration = "underline"}
+                          onMouseOut={(e) => (e.target as HTMLElement).style.textDecoration = "none"}
+                        >
+                          {meetingUrl}
+                        </a>
+                      </div>
+                      <div style={{ 
+                        display: "flex", 
+                        justifyContent: "center",
+                        marginTop: "0.5rem"
+                      }}>
+                        <a 
+                          href={meetingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            padding: "0.75rem 1.5rem",
+                            background:  "linear-gradient(135deg, #2d1b69 0%, #4f2d8a 100%)",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "10px",
+                            cursor: "pointer",
+                            fontWeight: "600",
+                            textDecoration: "none",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "0.5rem",
+                            transition: "transform 0.2s ease"
+                          }}
+                          onMouseOver={(e) => (e.target as HTMLElement).style.transform = "translateY(-1px)"}
+                          onMouseOut={(e) => (e.target as HTMLElement).style.transform = "translateY(0)"}
+                        >
+                          🎥 Join Meeting
+                        </a>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ 
+                      display: "flex", 
+                      flexDirection: "column",
+                      alignItems: "center",
+                      padding: "2rem",
+                      textAlign: "center"
+                    }}>
+                      <div style={{ 
+                        fontSize: "2rem", 
+                        marginBottom: "1rem" 
+                      }}>
+                        ⏳
+                      </div>
+                      <div style={{ 
+                        fontSize: "1rem", 
+                        fontWeight: "600", 
+                        color: "#2d1b69", 
+                        marginBottom: "0.5rem" 
+                      }}>
+                        Meeting link is generating...
+                      </div>
+                      <div style={{ 
+                        fontSize: "0.875rem", 
+                        color: "#6b7280",
+                        lineHeight: "1.5"
+                      }}>
+                        You will be notified when it is generated.
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 

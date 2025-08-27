@@ -247,6 +247,7 @@ export async function GET(request: NextRequest) {
           MeetingTime: record.fields.MeetingTime,
           BookingStatus: record.fields.BookingStatus || "Pending",
           Notes: record.fields.Notes || "",
+          GoogleMeetJoinUrl: record.fields.GoogleMeetJoinUrl,
           ICSFileUrl: record.fields.ICSFileUrl || `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/booking/${record.fields.BookingID}/ics`
         };
 
