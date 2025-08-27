@@ -453,8 +453,8 @@ export default function BookingConfirmPage() {
                           alignItems: "center",
                           gap: "0.5rem"
                         }}
-                        onMouseOver={(e) => !updating && ((e.target as HTMLButtonElement).style.background = "#218838")}
-                        onMouseOut={(e) => !updating && ((e.target as HTMLButtonElement).style.background = "#28a745")}
+                        onMouseOver={(e) => !updating && ((e.target as HTMLButtonElement).style.boxShadow = "0 8px 25px rgba(45, 27, 105, 0.5)")}
+                        onMouseOut={(e) => !updating && ((e.target as HTMLButtonElement).style.boxShadow = "0 4px 15px rgba(45, 27, 105, 0.3)")}
                       >
                         {updating ? "Processing..." : "✅ Accept Meeting"}
                       </button>
@@ -477,8 +477,8 @@ export default function BookingConfirmPage() {
                           alignItems: "center",
                           gap: "0.5rem"
                         }}
-                        onMouseOver={(e) => !updating && ((e.target as HTMLButtonElement).style.background = "#d97706")}
-                        onMouseOut={(e) => !updating && ((e.target as HTMLButtonElement).style.background = "#f59e0b")}
+                        onMouseOver={(e) => !updating && ((e.target as HTMLButtonElement).style.boxShadow = "0 8px 25px rgba(45, 27, 105, 0.5)")}
+                        onMouseOut={(e) => !updating && ((e.target as HTMLButtonElement).style.boxShadow = "0 4px 15px rgba(45, 27, 105, 0.3)")}
                       >
                         📅 Reschedule Meeting
                       </button>
