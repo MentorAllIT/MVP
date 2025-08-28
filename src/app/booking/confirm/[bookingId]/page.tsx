@@ -237,7 +237,7 @@ export default function BookingConfirmPage() {
     <div className={styles.page}>
       <header className={styles.header}>
         <div className={styles.headerContent}>
-          <Link href="/" className={styles.logoContainer}>
+          <Link href="/dashboard" className={styles.logoContainer}>
             <img src="/MentorAll transparent Full logo.png" alt="MentorAll" className={styles.logo} />
           </Link>
           <HamburgerMenu />
