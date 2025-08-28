@@ -27,6 +27,7 @@ export default function BookingsListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   // Get current user from JWT token
   useEffect(() => {
@@ -36,6 +37,7 @@ export default function BookingsListPage() {
         if (response.ok) {
           const data = await response.json();
           setCurrentUserId(data.uid);
+          setUserRole(data.role);
         } else {
           setError("Please sign in to view your bookings");
         }
@@ -49,13 +51,13 @@ export default function BookingsListPage() {
   }, []);
 
   useEffect(() => {
-    if (currentUserId) {
+    if (currentUserId && userRole) {
       loadBookings();
     }
-  }, [currentUserId]);
+  }, [currentUserId, userRole]);
 
   const loadBookings = async () => {
-    if (!currentUserId) {
+    if (!currentUserId || !userRole) {
       setError("Please sign in to view your bookings");
       setLoading(false);
       return;
@@ -63,7 +65,7 @@ export default function BookingsListPage() {
 
     try {
       setLoading(true);
-      const response = await fetch(`/api/booking?userId=${currentUserId}`);
+      const response = await fetch(`/api/booking?userId=${currentUserId}&role=${userRole}`);
       const data = await response.json();
 
       console.log("Booking API response:", data);
@@ -93,8 +95,24 @@ export default function BookingsListPage() {
   };
 
   const filteredBookings = {
-    upcoming: bookings.filter(b => isUpcoming(b.meetingTime)),
-    past: bookings.filter(b => !isUpcoming(b.meetingTime))
+    upcoming: bookings.filter(b => {
+      const isUpcomingTime = isUpcoming(b.meetingTime);
+      // For mentors, only show confirmed bookings (ones they've accepted)
+      if (userRole === 'mentor') {
+        return isUpcomingTime && (b.status === 'Confirmed' || b.status === 'Rescheduled');
+      }
+      // For mentees, show all their bookings
+      return isUpcomingTime;
+    }),
+    past: bookings.filter(b => {
+      const isPastTime = !isUpcoming(b.meetingTime);
+      // For mentors, only show confirmed bookings
+      if (userRole === 'mentor') {
+        return isPastTime && (b.status === 'Confirmed' || b.status === 'Rescheduled');
+      }
+      // For mentees, show all their bookings
+      return isPastTime;
+    })
   };
 
   console.log("All bookings:", bookings);
@@ -172,15 +190,31 @@ export default function BookingsListPage() {
         <main className={styles.main}>
           <div className={styles.container}>
             <section className={styles.hero}>
-              <h1 className={styles.title}>My Bookings</h1>
-              <p className={styles.subtitle}>Manage your meeting invitations and appointments</p>
+              <h1 className={styles.title}>
+                {userRole === 'mentor' ? 'My Accepted Meetings' : 'My Bookings'}
+              </h1>
+              <p className={styles.subtitle}>
+                {userRole === 'mentor' 
+                  ? 'View and manage meetings you have confirmed' 
+                  : 'Manage your meeting invitations and appointments'
+                }
+              </p>
             </section>
             
             <div className={styles.emptyBox}>
               <div className={styles.emptyEmoji}>📅</div>
-              <h3>No Bookings Found</h3>
-              <p>You haven&apos;t created or received any bookings yet.</p>
-              {/* <Link href="/mentee/browse" className={styles.ctaButton}>Create Your First Booking</Link> */}
+              <h3>
+                {userRole === 'mentor' ? 'No Accepted Meetings' : 'No Bookings Found'}
+              </h3>
+              <p>
+                {userRole === 'mentor' 
+                  ? 'You haven\'t accepted any meeting requests yet. Check your pending requests.'
+                  : 'You haven\'t created or received any bookings yet.'
+                }
+              </p>
+              {userRole === 'mentor' && (
+                <Link href="/mentor/requests" className={styles.ctaButton}>View Pending Requests</Link>
+              )}
             </div>
           </div>
         </main>
@@ -412,14 +446,31 @@ export default function BookingsListPage() {
       <main className={styles.main}>
         <div className={styles.container}>
           <section className={styles.hero}>
-            <h1 className={styles.title}>My Bookings</h1>
-            <p className={styles.subtitle}>Manage your meeting invitations and appointments</p>
+            <h1 className={styles.title}>
+              {userRole === 'mentor' ? 'My Accepted Meetings' : 'My Bookings'}
+            </h1>
+            <p className={styles.subtitle}>
+              {userRole === 'mentor' 
+                ? 'View and manage meetings you have confirmed' 
+                : 'Manage your meeting invitations and appointments'
+              }
+            </p>
             
-            <div style={{ marginTop: "2rem" }}>
-              <Link href="/mentee/browse" className={styles.ctaButton}>
-                + Browse Mentors and Create Booking
-              </Link>
-            </div>
+            {userRole === 'mentee' && (
+              <div style={{ marginTop: "2rem" }}>
+                <Link href="/mentee/browse" className={styles.ctaButton}>
+                  + Browse Mentors and Create Booking
+                </Link>
+              </div>
+            )}
+            
+            {userRole === 'mentor' && (
+              <div style={{ marginTop: "2rem" }}>
+                <Link href="/mentor/requests" className={styles.ctaButton}>
+                  View Pending Requests
+                </Link>
+              </div>
+            )}
           </section>
 
           <section style={{ marginTop: "3rem" }}>
