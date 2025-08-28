@@ -180,7 +180,7 @@ export default function BookingsListPage() {
               <div className={styles.emptyEmoji}>📅</div>
               <h3>No Bookings Found</h3>
               <p>You haven&apos;t created or received any bookings yet.</p>
-              <Link href="/mentee/browse" className={styles.ctaButton}>Create Your First Booking</Link>
+              {/* <Link href="/mentee/browse" className={styles.ctaButton}>Create Your First Booking</Link> */}
             </div>
           </div>
         </main>
