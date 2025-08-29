@@ -21,6 +21,12 @@ interface WeeklyAvailability {
 interface MentorAvailability {
   timezone: string;
   weekly: WeeklyAvailability;
+  dateRange: {
+    start: string | null;
+    end: string | null;
+  };
+  minNoticeHours: number;
+  overrides: Record<string, TimeSlot[]>;
 }
 
 interface MentorAvailabilityProps {
@@ -44,6 +50,7 @@ const DAY_NAMES = {
 
 const MentorAvailability = ({ mentorUserId, onTimeSlotSelect, selectedDateTime, shouldFetchAvailability = true, onAvailabilityStatus }: MentorAvailabilityProps) => {
   const [availability, setAvailability] = useState<MentorAvailability | null>(null);
+  const [dailyAvailabilities, setDailyAvailabilities] = useState<Record<string, TimeSlot[]>>({});
   const [bookedTimes, setBookedTimes] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +68,7 @@ const MentorAvailability = ({ mentorUserId, onTimeSlotSelect, selectedDateTime, 
       setLoading(true);
       onAvailabilityStatus?.({ hasAvailability: false, isLoading: true, error: null });
       
+      // First, get the base availability configuration
       const response = await fetch(`/api/mentor-availability?userId=${encodeURIComponent(mentorUserId)}`);
       
       if (!response.ok) {
@@ -69,13 +77,67 @@ const MentorAvailability = ({ mentorUserId, onTimeSlotSelect, selectedDateTime, 
 
       const data = await response.json();
       setAvailability(data.availability);
-      onAvailabilityStatus?.({ hasAvailability: !!data.availability, isLoading: false, error: null });
+
+      // If we have availability, fetch date-specific data for the current week
+      if (data.availability) {
+        await fetchWeeklyAvailabilities(data.availability);
+        onAvailabilityStatus?.({ hasAvailability: true, isLoading: false, error: null });
+      } else {
+        onAvailabilityStatus?.({ hasAvailability: false, isLoading: false, error: null });
+      }
     } catch (err) {
       console.error('Error fetching mentor availability:', err);
       setError('Failed to load mentor availability');
       onAvailabilityStatus?.({ hasAvailability: false, isLoading: false, error: 'Failed to load mentor availability' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchWeeklyAvailabilities = async (baseAvailability: MentorAvailability) => {
+    try {
+      const weekDates = getWeekDates(selectedWeekStart);
+      const dateStrings = weekDates.map(date => 
+        `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`
+      );
+
+      // Fetch bulk availability for all dates in the week
+      const response = await fetch(
+        `/api/mentor-availability?userId=${encodeURIComponent(mentorUserId)}&dateRange=${dateStrings.join(',')}`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.bulkAvailability) {
+          const dailyData: Record<string, TimeSlot[]> = {};
+          
+          data.bulkAvailability.forEach((dayData: any) => {
+            dailyData[dayData.date] = dayData.slots;
+          });
+          
+          setDailyAvailabilities(dailyData);
+        }
+      } else {
+        // Fallback: use weekly schedule without overrides
+        const dailyData: Record<string, TimeSlot[]> = {};
+        weekDates.forEach((date, index) => {
+          const dateString = dateStrings[index];
+          const dayOfWeek = DAYS_OF_WEEK[date.getDay()];
+          dailyData[dateString] = baseAvailability.weekly[dayOfWeek as keyof WeeklyAvailability] || [];
+        });
+        setDailyAvailabilities(dailyData);
+      }
+    } catch (err) {
+      console.error('Error fetching weekly availabilities:', err);
+      // Fallback to weekly schedule
+      const weekDates = getWeekDates(selectedWeekStart);
+      const dailyData: Record<string, TimeSlot[]> = {};
+      weekDates.forEach((date, index) => {
+        const dateString = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+        const dayOfWeek = DAYS_OF_WEEK[date.getDay()];
+        dailyData[dateString] = baseAvailability.weekly[dayOfWeek as keyof WeeklyAvailability] || [];
+      });
+      setDailyAvailabilities(dailyData);
     }
   };
 
@@ -109,13 +171,17 @@ const MentorAvailability = ({ mentorUserId, onTimeSlotSelect, selectedDateTime, 
     return new Date(d.setDate(diff));
   }
 
-  const generateTimeSlots = (timeSlot: TimeSlot, date: Date, timezone: string): Array<{ time: string; datetime: string; isBooked?: boolean }> => {
-    const slots: Array<{ time: string; datetime: string; isBooked?: boolean }> = [];
+    const generateTimeSlots = (timeSlot: TimeSlot, date: Date, timezone: string, minNoticeHours: number = 0): Array<{ time: string; datetime: string; isBooked?: boolean; tooSoon?: boolean }> => {
+    const slots: Array<{ time: string; datetime: string; isBooked?: boolean; tooSoon?: boolean }> = [];
     const [startHour, startMinute] = timeSlot.start.split(':').map(Number);
     const [endHour, endMinute] = timeSlot.end.split(':').map(Number);
     
+    // Calculate minimum time based on notice requirement
+    const now = new Date();
+    const minAllowedTime = new Date(now.getTime() + (minNoticeHours * 60 * 60 * 1000));
+    
     // Generate 30-minute slots
-    for (let hour = startHour; hour < endHour || (hour === endHour && startMinute < endMinute); hour++) {
+    for (let hour = startHour; hour < endHour || (hour === startHour && startMinute < endMinute); hour++) {
       for (let minute = (hour === startHour ? startMinute : 0); minute < 60; minute += 30) {
         if (hour === endHour && minute >= endMinute) break;
         
@@ -130,7 +196,6 @@ const MentorAvailability = ({ mentorUserId, onTimeSlotSelect, selectedDateTime, 
         aestDateTime.setHours(hour, minute, 0, 0);
         
         // Check if this time is in the future
-        const now = new Date();
         if (aestDateTime > now) {
           const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
           
@@ -153,11 +218,15 @@ const MentorAvailability = ({ mentorUserId, onTimeSlotSelect, selectedDateTime, 
               (bookedDate <= aestDateTime && bookedEnd >= slotEnd) // Booking spans this entire slot
             );
           });
+
+          // Check if this slot meets minimum notice requirement
+          const tooSoon = aestDateTime < minAllowedTime;
           
           slots.push({
             time: timeString,
             datetime: datetimeString,
-            isBooked: isBooked
+            isBooked: isBooked,
+            tooSoon: tooSoon
           });
         }
       }
@@ -220,6 +289,12 @@ const MentorAvailability = ({ mentorUserId, onTimeSlotSelect, selectedDateTime, 
       <h3 className={styles.title}>Select a Time Slot</h3>
       <p className={styles.subtitle}>
         Choose from available times in {availability.timezone}
+        {availability.minNoticeHours > 0 && (
+          <span className={styles.noticeInfo}>
+            <br />
+            ⏰ Minimum {availability.minNoticeHours} hour{availability.minNoticeHours !== 1 ? 's' : ''} notice required
+          </span>
+        )}
       </p>
 
       {/* Week Navigation */}
@@ -247,35 +322,74 @@ const MentorAvailability = ({ mentorUserId, onTimeSlotSelect, selectedDateTime, 
       {/* Availability Grid */}
       <div className={styles.availabilityGrid}>
         {weekDates.map((date, index) => {
+          const dateString = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
           const dayKey = DAYS_OF_WEEK[date.getDay()] as keyof WeeklyAvailability;
-          const daySlots = availability.weekly[dayKey] || [];
+          
+          // Check if this day has an override
+          const hasOverride = availability.overrides && availability.overrides[dateString] !== undefined;
+          const overrideSlots = hasOverride ? availability.overrides[dateString] : null;
+          
+          // Use override slots if available, otherwise use weekly schedule
+          const daySlots = hasOverride ? (overrideSlots || []) : (availability.weekly[dayKey] || []);
+          const weeklySlots = availability.weekly[dayKey] || [];
+          
+          // Check if we have an override that blocks the day (empty override)
+          const isBlockedByOverride = hasOverride && (!overrideSlots || overrideSlots.length === 0);
           
           return (
             <div key={date.toISOString()} className={styles.dayColumn}>
               <div className={styles.dayHeader}>
-                <div className={styles.dayName}>{DAY_NAMES[dayKey]}</div>
+                <div className={styles.dayName}>
+                  {DAY_NAMES[dayKey]}
+                  {hasOverride && <span className={styles.overrideIndicator} title="Custom schedule for this date">⭐</span>}
+                </div>
                 <div className={styles.dayDate}>{date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
               </div>
               
               <div className={styles.timeSlots}>
                 {daySlots.length === 0 ? (
-                  <div className={styles.noSlots}>Not available</div>
+                  // If day is blocked by override, show weekly schedule as "too soon"
+                  isBlockedByOverride && weeklySlots.length > 0 ? (
+                    weeklySlots.flatMap(slot => 
+                      generateTimeSlots(slot, date, availability.timezone, availability.minNoticeHours)
+                    ).map(({ time, datetime }) => (
+                      <button
+                        key={datetime}
+                        type="button"
+                        disabled={true}
+                        className={`${styles.timeSlot} ${styles.tooSoon}`}
+                        title="Blocked by custom schedule"
+                      >
+                        {time}
+                        <span className={styles.tooSoonIndicator}>⏰</span>
+                      </button>
+                    ))
+                  ) : (
+                    <div className={styles.noSlots}>Not available</div>
+                  )
                 ) : (
                   daySlots.flatMap(slot => 
-                    generateTimeSlots(slot, date, availability.timezone)
-                  ).map(({ time, datetime, isBooked }) => (
+                    generateTimeSlots(slot, date, availability.timezone, availability.minNoticeHours)
+                  ).map(({ time, datetime, isBooked, tooSoon }) => (
                     <button
                       key={datetime}
                       type="button"
-                      onClick={() => !isBooked && onTimeSlotSelect(datetime)}
-                      disabled={isBooked}
+                      onClick={() => !isBooked && !tooSoon && onTimeSlotSelect(datetime)}
+                      disabled={isBooked || tooSoon}
                       className={`${styles.timeSlot} ${
                         selectedDateTime === datetime ? styles.selected : ''
-                      } ${isBooked ? styles.booked : ''}`}
-                      title={isBooked ? 'This time slot is already booked' : ''}
+                      } ${isBooked ? styles.booked : ''} ${tooSoon ? styles.tooSoon : ''}`}
+                      title={
+                        isBooked 
+                          ? 'This time slot is already booked' 
+                          : tooSoon 
+                          ? `Requires ${availability.minNoticeHours} hour${availability.minNoticeHours !== 1 ? 's' : ''} notice`
+                          : ''
+                      }
                     >
                       {time}
                       {isBooked && <span className={styles.bookedIndicator}>🚫</span>}
+                      {tooSoon && !isBooked && <span className={styles.tooSoonIndicator}>⏰</span>}
                     </button>
                   ))
                 )}
@@ -283,6 +397,28 @@ const MentorAvailability = ({ mentorUserId, onTimeSlotSelect, selectedDateTime, 
             </div>
           );
         })}
+      </div>
+
+      {/* Legend */}
+      <div className={styles.legend}>
+        <div className={styles.legendItem}>
+          <span className={styles.legendColor} style={{ backgroundColor: '#10b981' }}></span>
+          Available
+        </div>
+        <div className={styles.legendItem}>
+          <span className={styles.legendColor} style={{ backgroundColor: '#ef4444' }}></span>
+          🚫 Booked
+        </div>
+        {(availability.minNoticeHours > 0 || (availability.overrides && Object.keys(availability.overrides).length > 0)) && (
+          <div className={styles.legendItem}>
+            <span className={styles.legendColor} style={{ backgroundColor: '#f59e0b' }}></span>
+            ⏰ Too soon / Blocked
+          </div>
+        )}
+        <div className={styles.legendItem}>
+          <span className={styles.overrideIndicator}>⭐</span>
+          Custom schedule
+        </div>
       </div>
 
       {selectedDateTime && (
