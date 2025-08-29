@@ -1,5 +1,7 @@
 'use client';
 
+import HamburgerMenu from './HamburgerMenu';
+
 export default function SimpleLock() {
   return (
     <div style={{
@@ -30,6 +32,9 @@ export default function SimpleLock() {
             color: 'white',
             margin: 0
           }}>Browse Mentors</h1>
+          
+          {/* Hamburger Menu */}
+          <HamburgerMenu theme="dark" />
         </div>
       </header>
 
