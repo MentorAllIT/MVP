@@ -562,3 +562,156 @@
   border-color: rgba(102, 77, 162, 0.35);
   transform: translateY(-1px);
 }
+
+/* Step Indicators */
+.stepIndicators {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 1rem;
+}
+
+.stepIndicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  opacity: 0.6;
+  transition: all 0.3s ease;
+}
+
+.stepIndicator.active {
+  opacity: 1;
+}
+
+.stepNumber {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(102, 77, 162, 0.1);
+  color: #664da2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+  border: 2px solid rgba(102, 77, 162, 0.2);
+  transition: all 0.3s ease;
+}
+
+.stepIndicator.active .stepNumber {
+  background: linear-gradient(135deg, #664da2, #8b6bb1);
+  color: white;
+  border-color: #664da2;
+  box-shadow: 0 4px 15px rgba(102, 77, 162, 0.3);
+}
+
+.stepLabel {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-align: center;
+}
+
+.stepIndicator.active .stepLabel {
+  color: #664da2;
+}
+
+.stepConnector {
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(102, 77, 162, 0.2), rgba(102, 77, 162, 0.1));
+  border-radius: 1px;
+}
+
+/* Step-specific content */
+.fillDetailsStep,
+.rankPrioritiesStep {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.stepInstructions {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  background: rgba(102, 77, 162, 0.05);
+  border: 1px solid rgba(102, 77, 162, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stepInstructions .instructionsIcon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+}
+
+.stepInstructions .instructionsText {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #4a5568;
+}
+
+.stepInstructions .instructionsText strong {
+  color: #664da2;
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mobile responsive step indicators */
+@media (max-width: 768px) {
+  .stepIndicators {
+    gap: 0.5rem;
+    padding: 0.5rem;
+  }
+  
+  .stepNumber {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
+  
+  .stepLabel {
+    font-size: 0.8rem;
+  }
+  
+  .stepConnector {
+    width: 40px;
+  }
+  
+  .stepInstructions {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .stepInstructions .instructionsText {
+    font-size: 0.9rem;
+  }
+}
+
+/* Read-only values for Step 2 */
+.readOnlyValue {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: #475569;
+  font-size: 0.95rem;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+}
