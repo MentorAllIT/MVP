@@ -2,23 +2,12 @@
 
 import Link from "next/link";
 import styles from "./page.module.css";
+import Header from "./components/Header";
 
 export default function Home() {
   return (
       <div className={styles.page}>
-
-        <header className={styles.header}>
-          <div className={styles.headerContent}>
-            <Link href="/" className={styles.logoContainer}>
-              <img src="/MentorAll transparent Full logo.png" alt="MentorAll" className={styles.logo}/>
-            </Link>
-            <nav className={styles.nav}>
-              Already have an account?
-              {/* <Link href="/mentor/signup" className={styles.navLink}>Sign Up</Link> */}
-              <Link href="/signin" className={styles.navLink}>Sign In</Link>
-            </nav>
-          </div>
-        </header>
+        <Header showSignIn={true} />
 
         <main className={styles.main}>
           <section className={styles.hero}>

@@ -532,35 +532,312 @@
 .buttonSecondary:disabled { opacity: .6; cursor: not-allowed; }
 
 
+/* Mobile devices */
 @media (max-width: 768px) {
+  .main {
+    padding: 1rem 0.5rem;
+  }
+  
+  .container {
+    width: 100%;
+  }
+  
   .content {
-    grid-template-columns: 1fr;
-    gap: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    align-items: stretch;
+    max-width: 100%;
+    margin: 0;
   }
   
   .textSection {
-    padding-right: 0;
-    text-align: center;
+    display: none; /* Hide the three bullet points on mobile */
+  }
+  
+  .formSection {
+    width: 100%;
+    margin: 0;
+    padding: 1rem 0;
+  }
+  
+  .formCard {
+    width: 100%;
+    max-width: 100%;
+    padding: 2rem 1.5rem;
+    margin: 0;
+    border-radius: 16px;
   }
   
   .welcomeTitle {
     font-size: 2.5rem;
+    padding: 0 0.5rem;
   }
   
-  .feature:hover {
-    transform: translateY(-4px);
+  .welcomeSubtitle {
+    font-size: 1.1rem;
+    padding: 0 0.5rem;
   }
   
+  .features {
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .feature {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+  
+  .formTitle {
+    font-size: 1.75rem;
+    text-align: center;
+  }
+  
+  .formSubtitle {
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+  
+  .input {
+    padding: 0.875rem 1rem;
+    font-size: 1rem;
+    min-height: 48px;
+    width: 100%;
+  }
+  
+  .button {
+    padding: 1rem 1.5rem;
+    font-size: 1rem;
+    min-height: 48px;
+    width: 100%;
+  }
+  
+  .modal {
+    padding: 1.5rem;
+    margin: 1rem;
+  }
+  
+  .buttonSecondary {
+    padding: 0.875rem 1.25rem;
+    min-height: 44px;
+  }
+  
+  .stepIndicator {
+    margin-bottom: 1.5rem;
+  }
+  
+  .step {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
   .main {
-    padding: 2rem 1rem;
+    padding: 0.5rem 0.25rem;
   }
   
-  .headerContent {
-    padding: 0 1rem;
+  .container {
+    width: 100%;
+  }
+  
+  .content {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    align-items: stretch;
+    max-width: 100%;
+    margin: 0;
+  }
+  
+  .textSection {
+    display: none; /* Hide the three bullet points on mobile */
+  }
+  
+  .formSection {
+    width: 100%;
+    margin: 0;
+    padding: 0.5rem 0;
   }
   
   .formCard {
-    padding: 2rem;
-    margin: 0 1rem;
+    width: 100%;
+    max-width: 100%;
+    padding: 1.5rem 1rem;
+    margin: 0 0.5rem;
+    border-radius: 12px;
+  }
+  
+  .welcomeTitle {
+    font-size: 2rem;
+    padding: 0 0.25rem;
+  }
+  
+  .welcomeSubtitle {
+    font-size: 1rem;
+    padding: 0 0.25rem;
+  }
+  
+  .features {
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  
+  .feature {
+    padding: 0.875rem;
+    border-radius: 10px;
+  }
+  
+  .formTitle {
+    font-size: 1.5rem;
+    text-align: center;
+  }
+  
+  .formSubtitle {
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+  
+  .input {
+    padding: 0.75rem 0.875rem;
+    font-size: 0.95rem;
+    min-height: 44px;
+    width: 100%;
+  }
+  
+  .button {
+    padding: 0.875rem 1.25rem;
+    font-size: 0.95rem;
+    min-height: 44px;
+    width: 100%;
+  }
+  
+  .modal {
+    padding: 1.25rem;
+    margin: 0.5rem;
+  }
+  
+  .buttonSecondary {
+    padding: 0.75rem 0.875rem;
+    min-height: 40px;
+  }
+  
+  .stepIndicator {
+    margin-bottom: 1.25rem;
+  }
+  
+  .step {
+    padding: 0.625rem 0.875rem;
+    font-size: 0.85rem;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 360px) {
+  .main {
+    padding: 0.25rem 0.125rem;
+  }
+  
+  .headerContent {
+    padding: 0 0.5rem;
+  }
+  
+  .container {
+    width: 100%;
+  }
+  
+  .content {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    align-items: stretch;
+    max-width: 100%;
+    margin: 0;
+  }
+  
+  .textSection {
+    display: none; /* Hide the three bullet points on mobile */
+  }
+  
+  .formSection {
+    width: 100%;
+    margin: 0;
+    padding: 0.25rem 0;
+  }
+  
+  .welcomeTitle {
+    font-size: 1.75rem;
+    padding: 0 0.25rem;
+  }
+  
+  .welcomeSubtitle {
+    font-size: 0.95rem;
+    padding: 0;
+  }
+  
+  .features {
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .feature {
+    padding: 0.75rem;
+    border-radius: 8px;
+  }
+  
+  .formCard {
+    width: 100%;
+    max-width: 100%;
+    padding: 1.25rem 0.75rem;
+    margin: 0 0.25rem;
+    border-radius: 10px;
+  }
+  
+  .formTitle {
+    font-size: 1.375rem;
+    text-align: center;
+  }
+  
+  .formSubtitle {
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+  
+  .input {
+    padding: 0.625rem 0.75rem;
+    font-size: 0.9rem;
+    min-height: 40px;
+    width: 100%;
+  }
+  
+  .button {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    min-height: 40px;
+    width: 100%;
+  }
+  
+  .modal {
+    padding: 1rem;
+    margin: 0.25rem;
+  }
+  
+  .buttonSecondary {
+    padding: 0.625rem 0.75rem;
+    min-height: 36px;
+  }
+  
+  .stepIndicator {
+    margin-bottom: 1rem;
+  }
+  
+  .step {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
   }
 }

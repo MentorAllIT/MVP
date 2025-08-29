@@ -10,7 +10,7 @@ export default function MenteeLearningPage() {
       <header className={styles.header}>
         <div className={styles.headerContent}>
           <h1 className={styles.title}>Learning Resources</h1>
-          <HamburgerMenu />
+          <HamburgerMenu theme="dark" />
         </div>
       </header>
 

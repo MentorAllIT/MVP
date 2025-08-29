@@ -1,3 +1,6 @@
+/* Remove old header styles - now using shared Header component */
+/* Keep only page-specific styles */
+
 .page {
   min-height: 100vh;
   font-family: var(--font-geist-sans);
@@ -36,8 +39,6 @@
   box-shadow: 
     0 4px 30px rgba(102, 77, 162, 0.1),
     0 1px 0 rgba(255, 255, 255, 0.8);
-  position: relative;
-  z-index: 10;
 }
 
 .header::before {
@@ -98,6 +99,17 @@
   display: flex;
   gap: 1rem;
   align-items: center;
+  justify-content: flex-end;
+  flex-direction: row;
+  text-align: right;
+}
+
+.navText {
+  color: #5a4a7a;
+  font-size: 0.9rem;
+  margin-bottom: 0;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .navLink {
@@ -523,6 +535,32 @@
 @media (max-width: 768px) {
   .headerContent {
     padding: 0 1rem;
+    flex-direction: row;
+    gap: 1rem;
+    justify-content: space-between;
+  }
+
+  .logo {
+    height: 120px; /* Smaller logo for mobile */
+    transform: scale(1);
+    margin: -1rem 0;
+  }
+  
+  .nav {
+    gap: 0.75rem;
+    flex-direction: row;
+    align-items: center;
+  }
+  
+  .navText {
+    font-size: 0.85rem;
+    margin-bottom: 0;
+  }
+  
+  .navLink {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.9rem;
+    min-height: 44px; /* Touch-friendly button height */
   }
 
   .main {
@@ -530,25 +568,50 @@
   }
   
   .hero {
-    padding: 4rem 0;
+    padding: 3rem 0;
+  }
+  
+  .features {
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+  }
+  
+  .cta {
+    padding: 2rem 0;
+    margin-bottom: 1rem;
   }
   
   .title {
     font-size: 2.5rem;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+  }
+  
+  .description {
+    font-size: 1.1rem;
+    line-height: 1.5;
+    margin-bottom: 2rem;
+    padding: 0 0.5rem;
   }
   
   .ctaButtons {
     flex-direction: column;
     align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
   }
 
   .primary, .secondary {
-    min-width: 200px;
+    min-width: 280px;
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    min-height: 48px; /* Touch-friendly button height */
   }
   
   .roleSelectionLinks {
     margin-top: 2rem;
     padding: 1.5rem;
+    border-radius: 16px;
   }
   
   .roleSelectionTitle {
@@ -557,13 +620,16 @@
   }
   
   .roleLinks {
-    flex-direction: row;
-    gap: 1.5rem;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
   }
   
   .roleLink {
     padding: 1rem 1.5rem;
-    min-width: 160px;
+    min-width: 280px;
+    min-height: 60px; /* Touch-friendly height */
+    justify-content: center;
   }
   
   .roleLinkIcon {
@@ -579,13 +645,256 @@
   
   .featureGrid {
     grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding: 0 0.5rem;
+  }
+  
+  .feature {
+    padding: 2rem;
+    border-radius: 20px;
+  }
+  
+  .feature h3 {
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .feature p {
+    font-size: 0.95rem;
+    line-height: 1.5;
   }
   
   .sectionTitle {
     font-size: 2rem;
+    margin-bottom: 1.5rem;
   }
   
   .ctaContent h2 {
     font-size: 2rem;
+  }
+  
+  .footerContent {
+    padding: 0 1rem;
+    text-align: center;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+  .headerContent {
+    padding: 0 0.75rem;
+    flex-direction: row;
+    gap: 0.75rem;
+    justify-content: space-between;
+  }
+  
+  .nav {
+    gap: 0.5rem;
+    flex-direction: row;
+    align-items: center;
+  }
+  
+  .navText {
+    font-size: 0.8rem;
+    margin-bottom: 0;
+  }
+  
+  .navLink {
+    padding: 0.625rem 1rem;
+    font-size: 0.85rem;
+    min-height: 40px;
+  }
+  
+  .main {
+    padding: 0 0.75rem;
+  }
+  
+  .hero {
+    padding: 2rem 0;
+  }
+  
+  .features {
+    padding: 1.5rem 0;
+    margin-bottom: 1.5rem;
+  }
+  
+  .cta {
+    padding: 1.5rem 0;
+    margin-bottom: 0.75rem;
+  }
+  
+  .title {
+    font-size: 2rem;
+    padding: 0 0.5rem;
+  }
+  
+  .description {
+    font-size: 1rem;
+    padding: 0 0.25rem;
+  }
+  
+  .primary, .secondary {
+    min-width: 100%;
+    padding: 0.875rem 1.5rem;
+    font-size: 0.95rem;
+  }
+  
+  .roleSelectionLinks {
+    padding: 1.25rem;
+    margin: 1.5rem 0;
+  }
+  
+  .roleSelectionTitle {
+    font-size: 1.125rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .roleLink {
+    min-width: 100%;
+    padding: 0.875rem 1.25rem;
+    min-height: 56px;
+  }
+  
+  .roleLinkIcon {
+    width: 36px;
+    height: 36px;
+    font-size: 1.25rem;
+  }
+  
+  .roleLinkText {
+    font-size: 0.95rem;
+  }
+  
+  .featureGrid {
+    gap: 1.25rem;
+    padding: 0;
+  }
+  
+  .feature {
+    padding: 1.75rem;
+    border-radius: 18px;
+  }
+  
+  .feature h3 {
+    font-size: 1.125rem;
+    margin-bottom: 0.625rem;
+  }
+  
+  .feature p {
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  
+  .sectionTitle {
+    font-size: 1.75rem;
+    margin-bottom: 1.25rem;
+  }
+  
+  .footerContent {
+    padding: 0 0.75rem;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 360px) {
+  .headerContent {
+    padding: 0 0.5rem;
+    flex-direction: row;
+    gap: 0.5rem;
+    justify-content: space-between;
+  }
+  
+  .nav {
+    gap: 0.375rem;
+    flex-direction: row;
+    align-items: center;
+  }
+  
+  .navText {
+    font-size: 0.75rem;
+    margin-bottom: 0;
+  }
+  
+  .navLink {
+    padding: 0.5rem 0.875rem;
+    font-size: 0.8rem;
+    min-height: 36px;
+  }
+  
+  .main {
+    padding: 0 0.5rem;
+  }
+  
+  .hero {
+    padding: 1.5rem 0;
+  }
+  
+  .features {
+    padding: 1rem 0;
+    margin-bottom: 1rem;
+  }
+  
+  .cta {
+    padding: 1rem 0;
+    margin-bottom: 0.5rem;
+  }
+  
+  .title {
+    font-size: 1.75rem;
+    padding: 0 0.25rem;
+  }
+  
+  .description {
+    font-size: 0.95rem;
+    padding: 0;
+  }
+  
+  .roleSelectionLinks {
+    padding: 1rem;
+    margin: 1rem 0;
+  }
+  
+  .roleSelectionTitle {
+    font-size: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  
+  .roleLink {
+    padding: 0.75rem 1rem;
+    min-height: 52px;
+  }
+  
+  .roleLinkIcon {
+    width: 32px;
+    height: 32px;
+    font-size: 1.125rem;
+  }
+  
+  .roleLinkText {
+    font-size: 0.9rem;
+  }
+  
+  .sectionTitle {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .feature {
+    padding: 1.5rem;
+    border-radius: 16px;
+  }
+  
+  .feature h3 {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .feature p {
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
+  
+  .footerContent {
+    padding: 0 0.5rem;
   }
 }
