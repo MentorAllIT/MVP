@@ -4,8 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import styles from "./signin.module.css";
-import Header from "../components/Header";
-
 export default function SignInPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
@@ -70,7 +68,13 @@ export default function SignInPage() {
 
   return (
     <div className={styles.page}>
-      <Header showSignIn={false} />
+      <header className={styles.header}>
+        <div className={styles.headerContent}>
+          <Link href="/" className={styles.logoContainer}>
+            <img src="/MentorAll transparent Full logo.png" alt="MentorAll" className={styles.logo} />
+          </Link>
+        </div>
+      </header>
 
       {session && (
         <div className={styles.modalOverlay} role="dialog" aria-modal="true">
