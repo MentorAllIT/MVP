@@ -51,7 +51,7 @@ const preferenceFactors: PreferenceFactor[] = [
   {
     id: "seniorityLevel",
     label: "Current Seniority Level",
-    placeholder: "Select your level",
+    placeholder: "Select Your Preferred Mentor's Level",
     type: "select",
     options: ["Junior", "Mid-level", "Senior", "Manager", "Director", "Executive"],
     required: true,
@@ -168,6 +168,9 @@ export default function MenteePreferences() {
   const params = useSearchParams();
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [currentStep, setCurrentStep] = useState<1 | 2>(1); // Track current step
+  const [isReady, setIsReady] = useState(false); // Track if component is ready for submission
+  const [hasReachedStep2, setHasReachedStep2] = useState(false); // Track if user has manually reached step 2
 
   const uid = params.get("uid");
   const role = params.get("role");
@@ -196,12 +199,14 @@ export default function MenteePreferences() {
   useEffect(() => {
     const loadExistingPreferences = async () => {
       if (!uid) return;
+      console.log("🔄 Loading existing preferences for UID:", uid);
       
       try {
         // Try to fetch existing preferences data
         const res = await fetch(`/api/mentee-preferences?uid=${uid}`);
         if (res.ok) {
           const preferencesData = await res.json();
+          console.log("📥 Loaded preferences data:", preferencesData);
           if (preferencesData.preferences) {
             setPreferences(prev => ({
               ...prev,
@@ -222,11 +227,20 @@ export default function MenteePreferences() {
         console.log("No existing preferences found or error loading preferences");
       } finally {
         setLoading(false);
+        console.log("✅ Data loading complete, setting ready state");
+        
+        // Add a small delay before setting ready to prevent automatic submission
+        setTimeout(() => {
+          setIsReady(true);
+          console.log("✅ Component is now ready for interaction");
+        }, 100);
       }
     };
 
     loadExistingPreferences();
   }, [uid]);
+
+  // No longer need form prevention since we removed the form element
 
   // Removed unnecessary hamburger menu code - this page doesn't need it
 
@@ -243,6 +257,32 @@ export default function MenteePreferences() {
     if (fieldErrs[factorId]) {
       setFieldErrs(prev => ({ ...prev, [factorId]: "" }));
     }
+  };
+
+  const handleNextStep = () => {
+    console.log("🔄 Moving to next step...");
+    // Validate that all required fields are filled
+    const errors: Record<string, string> = {};
+    preferenceFactors.forEach(factor => {
+      if (factor.required && !preferences[factor.id]?.trim()) {
+        errors[factor.id] = `${factor.label} is required`;
+      }
+    });
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrs(errors);
+      return;
+    }
+
+    // Clear any existing errors and move to next step
+    setFieldErrs({});
+    setCurrentStep(2);
+    setHasReachedStep2(true);
+    console.log("✅ Now on step 2 - user manually navigated");
+  };
+
+  const handlePreviousStep = () => {
+    setCurrentStep(1);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -281,9 +321,19 @@ export default function MenteePreferences() {
     return errors;
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (submitting) return;
+  const handleManualSubmit = async () => {
+    console.log("🚨 MANUAL SUBMIT TRIGGERED! Current step:", currentStep, "Ready:", isReady, "ManuallyReachedStep2:", hasReachedStep2);
+    
+    // Only allow submission when explicitly on step 2, ready, AND user manually navigated
+    if (!isReady || currentStep !== 2 || !hasReachedStep2) {
+      console.log("❌ BLOCKING manual submission - Step:", currentStep, "Ready:", isReady, "ManuallyReachedStep2:", hasReachedStep2);
+      return;
+    }
+    
+    if (submitting) {
+      console.log("❌ Already submitting, ignoring");
+      return;
+    }
 
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
@@ -333,6 +383,15 @@ export default function MenteePreferences() {
     const value = preferences[factor.id];
     const error = fieldErrs[factor.id];
     const inputId = `input-${factor.id}`;
+
+    // In Step 2, show read-only values instead of input fields
+    if (currentStep === 2) {
+      return (
+        <div className={styles.readOnlyValue}>
+          {value || factor.placeholder || "Not specified"}
+        </div>
+      );
+    }
 
     switch (factor.type) {
       case "select":
@@ -405,75 +464,154 @@ export default function MenteePreferences() {
           </button>
         </div>
 
+        {/* Step Indicators */}
+        <div className={styles.stepIndicators}>
+          <div className={`${styles.stepIndicator} ${currentStep === 1 ? styles.active : ''}`}>
+            <div className={styles.stepNumber}>1</div>
+            <div className={styles.stepLabel}>Fill Details</div>
+          </div>
+          <div className={styles.stepConnector}></div>
+          <div className={`${styles.stepIndicator} ${currentStep === 2 ? styles.active : ''}`}>
+            <div className={styles.stepNumber}>2</div>
+            <div className={styles.stepLabel}>Rank Priorities</div>
+          </div>
+        </div>
+
         <div className={styles.header}>
-          <h1 className={styles.title}>Help us find your perfect mentor</h1>
+          <h1 className={styles.title}>
+            {currentStep === 1 ? "Tell us about yourself" : "Rank your priorities"}
+          </h1>
           <p className={styles.subtitle}>
-            Drag and drop the factors below to rank them by importance. The top factor is most important to you.
+            {currentStep === 1 
+              ? "Fill in your details so we can find mentors who match your background and needs."
+              : "Rank the factors below by importance. The top factor is most important to you."
+            }
           </p>
         </div>
 
-        <div className={styles.card}>
-          <form className={styles.form} onSubmit={handleSubmit} noValidate>
-            <div className={styles.dragInstructions}>
-              <div className={styles.instructionsIcon}>🎯</div>
-              <div className={styles.instructionsText}>
-                <strong>How to rank:</strong> Drag each factor up or down to reorder them by importance. 
-                The factor at the top (#1) is most important to you, and the bottom (#8) is least important.
-              </div>
-            </div>
+                <div className={styles.card}>
+          <div className={styles.form}>
+            {currentStep === 1 ? (
+              // Step 1: Fill in the details
+              <div className={styles.fillDetailsStep}>
+                <div className={styles.stepInstructions}>
+                  <div className={styles.instructionsIcon}>📝</div>
+                  <div className={styles.instructionsText}>
+                    <strong>Step 1:</strong> Fill in your details below. Required fields are marked with an asterisk (*).
+                  </div>
+                </div>
 
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext
-                items={orderedFactors.map(f => f.id)}
-                strategy={verticalListSortingStrategy}
-              >
                 <div className={styles.factorsList}>
                   {orderedFactors.map((factor, index) => (
-                    <SortableFactorItem
-                      key={factor.id}
-                      factor={factor}
-                      index={index}
-                      renderInput={renderInput}
-                      fieldErrs={fieldErrs}
-                    />
+                    <div key={factor.id} className={styles.factorItem}>
+                      <div className={styles.factorHeader}>
+                        <span className={styles.labelText}>
+                          {factor.label}
+                          {factor.required && <span className={styles.required}>*</span>}
+                        </span>
+                      </div>
+                      
+                      <div className={styles.factorInput}>
+                        {renderInput(factor)}
+                        {fieldErrs[factor.id] && (
+                          <span className={styles.fieldError}>{fieldErrs[factor.id]}</span>
+                        )}
+                      </div>
+                    </div>
                   ))}
                 </div>
-              </SortableContext>
-            </DndContext>
+              </div>
+            ) : (
+              // Step 2: Rank the factors
+              <div className={styles.rankPrioritiesStep}>
+                <div className={styles.dragInstructions}>
+                  <div className={styles.instructionsIcon}>🎯</div>
+                  <div className={styles.instructionsText}>
+                    <strong>Step 2:</strong> Drag each factor up or down to rank them by importance. 
+                    The factor at the top (#1) is most important to you, and the bottom (#8) is least important.
+                  </div>
+                </div>
+
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={orderedFactors.map(f => f.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className={styles.factorsList}>
+                      {orderedFactors.map((factor, index) => (
+                        <SortableFactorItem
+                          key={factor.id}
+                          factor={factor}
+                          index={index}
+                          renderInput={renderInput}
+                          fieldErrs={fieldErrs}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              </div>
+            )}
 
             <div className={styles.buttonGroup}>
-              <button
-                type="button"
-                onClick={() => router.push(`/meta-setup?uid=${uid}&role=${role}`)}
-                className={styles.secondaryButton}
-              >
-                ← Previous Page
-              </button>
-              <button
-                type="submit"
-                disabled={submitting}
-                className={styles.button}
-              >
-                {submitting ? "Saving Preferences..." : "Finish"}
-              </button>
+              {currentStep === 1 ? (
+                // Step 1 buttons
+                <>
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/meta-setup?uid=${uid}&role=${role}`)}
+                    className={styles.secondaryButton}
+                  >
+                    ← Previous Page
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNextStep}
+                    className={styles.button}
+                  >
+                    Next: Rank Priorities →
+                  </button>
+                </>
+              ) : (
+                // Step 2 buttons
+                <>
+                  <button
+                    type="button"
+                    onClick={handlePreviousStep}
+                    className={styles.secondaryButton}
+                  >
+                    ← Back to Details
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleManualSubmit}
+                    disabled={submitting}
+                    className={styles.button}
+                  >
+                    {submitting ? "Saving Preferences..." : "Finish"}
+                  </button>
+                </>
+              )}
             </div>
 
             {formErr && <p className={styles.error}>{formErr}</p>}
-          </form>
+          </div>
         </div>
 
         <div className={styles.progressWrap}>
           <div className={styles.progressTrack}>
             <div
               className={styles.progressFill}
-              style={{ width: "100%" }}
+              style={{ width: currentStep === 1 ? "50%" : "100%" }}
             />
           </div>
-          <span className={styles.progressText}>Final Step</span>
+          <span className={styles.progressText}>
+            {currentStep === 1 ? "Step 1 of 2" : "Step 2 of 2"}
+          </span>
         </div>
 
         {/* Back to Dashboard Button */}

@@ -176,7 +176,14 @@ export default function SignUpPage() {
       const data = await res.json();
 
       if (res.status === 409) {
-        setFieldErrs({ email: data.error });
+        // Enhanced error handling for duplicate emails
+        if (data.mvpRestriction) {
+          // MVP restriction - show clear limitation message
+          setFormErr(`${data.error} ${data.mvpRestriction}`);
+        } else {
+          // User already has this role - show sign in message
+          setFieldErrs({ email: data.error });
+        }
         return;
       }
       if (!res.ok) {
@@ -229,6 +236,30 @@ export default function SignUpPage() {
               >
                 Sign out
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Enhanced notification for MVP restriction scenarios */}
+      {formErr && formErr.includes("MVP version") && (
+        <div className={styles.notificationBanner}>
+          <div className={styles.notificationContent}>
+            <div className={styles.notificationIcon}>⚠️</div>
+            <div className={styles.notificationText}>
+              <h3>MVP Limitation</h3>
+              <p>For MVP version, we don't support same email for both roles. If you want another role, use another email.</p>
+              <div className={styles.notificationActions}>
+                <Link href="/signin" className={styles.notificationButton}>
+                  Sign In to Existing Account
+                </Link>
+                <button 
+                  onClick={() => setFormErr(null)} 
+                  className={styles.notificationDismiss}
+                >
+                  Dismiss
+                </button>
+              </div>
             </div>
           </div>
         </div>
