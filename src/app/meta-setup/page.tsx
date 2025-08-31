@@ -206,6 +206,51 @@ export default function MetaSetup() {
               culturalBackground: metaData.culturalBackground || "",
               availability: metaData.availability || ""
             }));
+            
+            // Load existing availability data for mentors
+            if (metaData.availabilityJson) {
+              try {
+                const availabilityData = JSON.parse(metaData.availabilityJson);
+                console.log("Loading existing availability data:", availabilityData);
+                
+                // Load weekly schedule
+                if (availabilityData.weekly) {
+                  const convertedWeekly: WeeklySchedule = emptyWeekly();
+                  
+                  // The database stores using short day names (Mon, Tue, etc.)
+                  // which matches our component format, so we can use them directly
+                  for (const [dayKey, intervals] of Object.entries(availabilityData.weekly)) {
+                    if (DAYS.includes(dayKey as DayKey) && Array.isArray(intervals)) {
+                      convertedWeekly[dayKey as DayKey] = intervals.map((interval: any) => ({
+                        start: interval.start || "",
+                        end: interval.end || ""
+                      }));
+                      console.log(`Loaded ${intervals.length} intervals for ${dayKey}:`, intervals);
+                    }
+                  }
+                  
+                  console.log("Final converted weekly schedule:", convertedWeekly);
+                  
+                  setState(prev => ({
+                    ...prev,
+                    weekly: convertedWeekly
+                  }));
+                }
+                
+                // Load minimum notice
+                if (availabilityData.minNoticeHours !== undefined) {
+                  setMinNotice(availabilityData.minNoticeHours);
+                }
+                
+                // Load overrides
+                if (availabilityData.overrides) {
+                  setOverrides(availabilityData.overrides);
+                }
+                
+              } catch (parseError) {
+                console.log("Error parsing existing availability data:", parseError);
+              }
+            }
           }
         }
       } catch (error) {
