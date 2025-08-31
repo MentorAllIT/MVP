@@ -775,7 +775,16 @@ export default function MetaSetup() {
 
                 {/* Minimum notice */}
                 <label className={styles.label}>
-                  <span className={styles.labelText}>Minimum notice</span>
+                  <span className={styles.labelText}>
+                    Minimum notice
+                    <span className={styles.tooltipContainer}>
+                      <span className={styles.tooltipTrigger}>?</span>
+                      <span className={styles.tooltip}>
+                        The minimum amount of time required before a meeting can be booked. 
+                        This helps ensure you have enough time to prepare and prevents last-minute bookings.
+                      </span>
+                    </span>
+                  </span>
                   <select
                       className={`${styles.input} ${styles.select}`}
                       value={minNotice}
