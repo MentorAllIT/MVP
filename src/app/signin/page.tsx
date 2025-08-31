@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import styles from "./signin.module.css";
-
 export default function SignInPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);

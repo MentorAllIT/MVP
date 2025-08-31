@@ -9,6 +9,7 @@ import HamburgerMenu from "../components/HamburgerMenu";
 export default function Dashboard() {
   const router = useRouter();
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [matching, setMatching] = useState(false);
   const [matchError, setMatchError] = useState<string | null>(null);
@@ -20,7 +21,10 @@ export default function Dashboard() {
         const res = await fetch("/api/auth/check");
         if (res.ok) {
           const data = await res.json();
+          console.log("Dashboard received auth data:", data);
           setUserRole(data.role);
+          setUserName(data.name);
+          console.log("Set userName to:", data.name);
         } else {
           // Redirect to signin if not authenticated
           router.push("/signin");
@@ -116,7 +120,7 @@ export default function Dashboard() {
         <div className={styles.container}>
           <div className={styles.welcomeSection}>
             <h2 className={styles.welcomeTitle}>
-              Welcome to your {userRole === "mentor" ? "Mentor" : "Mentee"} Dashboard!
+              Hi {userName || "there"}, welcome to your {userRole === "mentor" ? "Mentor" : "Mentee"} Dashboard!
             </h2>
             <p className={styles.welcomeSubtitle}>
               {userRole === "mentor" 

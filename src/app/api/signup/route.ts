@@ -60,7 +60,26 @@ export async function POST(req: NextRequest) {
       .select({ filterByFormula: `{Email}='${safeEmail}'`, maxRecords: 1 })
       .firstPage();
     if (existing.length) {
-      return NextResponse.json({ error: "Email already in use" }, { status: 409 });
+      const existingUser = existing[0];
+      const existingRole = existingUser.fields.Role;
+      
+      // Check if user is trying to register for the same role
+      if (existingRole === role) {
+        return NextResponse.json({ 
+          error: `This email is already registered as a ${role}. Please sign in instead.`,
+          existingRole: role,
+          canHaveBothRoles: false
+        }, { status: 409 });
+      } else {
+        // User is trying to register for a different role - MVP restriction
+        return NextResponse.json({ 
+          error: `This email is already registered as a ${existingRole}.`,
+          existingRole: existingRole,
+          requestedRole: role,
+          canHaveBothRoles: false,
+          mvpRestriction: `For MVP version, we don't support same email for both roles. If you want another role, use another email.`
+        }, { status: 409 });
+      }
     }
 
     // Verify email

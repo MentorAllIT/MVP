@@ -8,9 +8,10 @@ import styles from "./HamburgerMenu.module.css";
 interface HamburgerMenuProps {
   className?: string;
   showBackToDashboard?: boolean;
+  theme?: 'light' | 'dark';
 }
 
-export default function HamburgerMenu({ className, showBackToDashboard = true }: HamburgerMenuProps) {
+export default function HamburgerMenu({ className, showBackToDashboard = true, theme = 'light' }: HamburgerMenuProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
 
@@ -46,6 +47,7 @@ export default function HamburgerMenu({ className, showBackToDashboard = true }:
       {/* Hamburger Menu Button */}
       <button 
         className={styles.hamburgerButton}
+        data-theme={theme}
         onClick={() => setIsMenuOpen(!isMenuOpen)}
         aria-label="Toggle navigation menu"
         aria-expanded={isMenuOpen}
