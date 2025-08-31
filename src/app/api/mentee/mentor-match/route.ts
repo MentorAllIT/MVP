@@ -11,6 +11,7 @@ const {
   AIRTABLE_PROFILES_TABLE,
   AIRTABLE_MENTOR_META_TABLE,
   AIRTABLE_MENTEE_PREFERENCES_TABLE,
+  AIRTABLE_MENTEE_META_TABLE,
   JWT_SECRET,
 } = process.env;
 
@@ -21,6 +22,7 @@ const ready =
   AIRTABLE_PROFILES_TABLE &&
   AIRTABLE_MENTOR_META_TABLE &&
   AIRTABLE_MENTEE_PREFERENCES_TABLE &&
+  AIRTABLE_MENTEE_META_TABLE &&
   JWT_SECRET;
 
 let base: any = null;
@@ -557,16 +559,34 @@ function calculateAvailabilityMatch(menteeAvailability: string, mentorAvailabili
   return 0.0; // No match - mentor's availability doesn't fit mentee's requirements
 }
 
+// Tag overlap scoring function
+function calculateTagOverlap(menteeTags: string[], mentorTags: string[]): number {
+  if (menteeTags.length === 0 || mentorTags.length === 0) return 0;
+
+  const uniqueMenteeTags = new Set(menteeTags);
+  const uniqueMentorTags = new Set(mentorTags);
+
+  const overlappingTags = Array.from(uniqueMenteeTags).filter(tag => uniqueMentorTags.has(tag));
+
+  const overlapPercentage = overlappingTags.length / uniqueMenteeTags.size;
+  return Math.min(overlapPercentage, 1.0);
+}
+
 export async function GET(req: NextRequest) {
   try {
-    if (!ready) return NextResponse.json({ error: "Backend not configured" }, { status: 503 });
+    if (!ready) {
+      return NextResponse.json({ error: "Airtable not configured" }, { status: 503 });
+    }
 
-    // Auth
     const token = req.cookies.get("session")?.value;
-    if (!token) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    let uid = "";
+    if (!token) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    let uid: string;
     try {
-      uid = (jwt.verify(token, JWT_SECRET!) as any).uid;
+      const decoded = jwt.verify(token, JWT_SECRET!) as any;
+      uid = decoded.uid;
     } catch {
       return NextResponse.json({ error: "Invalid session" }, { status: 401 });
     }
@@ -587,6 +607,22 @@ export async function GET(req: NextRequest) {
 
     const menteePrefs = prefRows[0].fields;
     console.log("📥 Mentee preferences:", menteePrefs);
+
+    // 1.5. Fetch mentee tags from MenteeMeta table
+    const menteeMetaRows = await firstPage(AIRTABLE_MENTEE_META_TABLE!, {
+      filterByFormula: `{UserID}='${esc(uid)}'`,
+      fields: ["UserID", "Tags"],
+      maxRecords: 1
+    });
+
+    let menteeTags: string[] = [];
+    if (menteeMetaRows.length > 0 && menteeMetaRows[0].fields.Tags) {
+      const rawTags = menteeMetaRows[0].fields.Tags;
+      if (rawTags.value) {
+        menteeTags = rawTags.value.split(',').map((tag: string) => tag.trim());
+      }
+    }
+    console.log("🏷️ Mentee tags:", menteeTags);
 
     // 2. Fetch all mentors (real-time)
     const mentorRows = await firstPage(AIRTABLE_MENTOR_META_TABLE!, {
@@ -621,7 +657,8 @@ export async function GET(req: NextRequest) {
         PreviousRoles: mentorRow.fields?.PreviousRoles,
         MentoringStyle: mentorRow.fields?.MentoringStyle,
         CulturalBackground: mentorRow.fields?.CulturalBackground,
-        Availability: mentorRow.fields?.Availability
+        Availability: mentorRow.fields?.Availability,
+        Tags: mentorRow.fields?.Tags
       });
 
       const mentorMeta = {
@@ -656,6 +693,7 @@ export async function GET(req: NextRequest) {
         Industry: mentorMeta.Industry,
         Role: mentorMeta.Role,
         YearExp: mentorMeta.YearExp,
+        Tags: mentorMeta.Tags,
         // Add preference fields debugging for ALL mentors
         CurrentRole: mentorMeta.CurrentRole,
         SeniorityLevel: mentorMeta.SeniorityLevel,
@@ -669,105 +707,69 @@ export async function GET(req: NextRequest) {
       console.log(`🎯 About to call calculatePreferenceScore for ${mentorId}`);
       const scoreResult = calculatePreferenceScore(menteePrefs, mentorMeta);
       console.log(`🎯 calculatePreferenceScore returned for ${mentorId}:`, scoreResult);
-      
-      console.log(`📊 Score result for ${mentorId}:`, scoreResult);
-      
-      // Special debugging for the mentor we're interested in
-      if (mentorId === 'jKd3VERP8O') {
-        console.log(`🎯 SPECIAL DEBUG for jKd3VERP8O:`);
-        console.log(`   Raw mentorRow.fields:`, mentorRow.fields);
-        console.log(`   Mentee Industry: "${menteePrefs.CurrentIndustry}"`);
-        console.log(`   Mentor Industry: "${mentorMeta.Industry}"`);
-        console.log(`   Industry Match: ${menteePrefs.CurrentIndustry?.toLowerCase() === mentorMeta.Industry?.toLowerCase()}`);
-        console.log(`   Mentee Experience: ${menteePrefs.YearsExperience}`);
-        console.log(`   Mentor Experience: ${mentorMeta.YearExp}`);
-        console.log(`   Experience Match: ${Math.abs((menteePrefs.YearsExperience || 0) - (mentorMeta.YearExp || 0)) <= 2}`);
-        console.log(`   Mentor CurrentRole: "${mentorMeta.CurrentRole}"`);
-        console.log(`   Mentor SeniorityLevel: "${mentorMeta.SeniorityLevel}"`);
-        console.log(`   Mentor PreviousRoles: "${mentorMeta.PreviousRoles}"`);
-        console.log(`   Mentor MentoringStyle: "${mentorMeta.MentoringStyle}"`);
-        console.log(`   Mentor CulturalBackground: "${mentorMeta.CulturalBackground}"`);
-        console.log(`   Mentor Availability: "${mentorMeta.Availability}"`);
-      }
-      
-      if (scoreResult.score > 0) {
-        mentorScores.push({
-          mentorId,
-          score: scoreResult.score,
-          preferenceScore: scoreResult.preferenceScore,
-          breakdown: scoreResult.breakdown,
-          mentorMeta
-        });
+
+      // Calculate tag score (30% weight)
+      let tagScore = 0;
+      let tagBreakdown = "";
+      if (menteeTags.length > 0 && mentorMeta.Tags) {
+        const mentorTags = normalizeTags(mentorMeta.Tags);
+        if (mentorTags.length > 0) {
+          const tagOverlap = calculateTagOverlap(menteeTags, mentorTags);
+          tagScore = tagOverlap * 30; // 30% weight
+          tagBreakdown = `Tag Overlap: ${(tagOverlap * 100).toFixed(1)}%`;
+          console.log(`🏷️ Tag scoring for ${mentorId}: mentee tags [${menteeTags.join(', ')}] vs mentor tags [${mentorTags.join(', ')}] = ${(tagOverlap * 100).toFixed(1)}% overlap = ${tagScore.toFixed(1)} points`);
+        }
       }
 
-      // CRITICAL DEBUG: Always show when we finish processing jKd3VERP8O
-      if (mentorId === 'jKd3VERP8O') {
-        console.log(`\n🎯🎯🎯 FINISHED PROCESSING jKd3VERP8O 🎯🎯🎯`);
-        console.log(`🎯 Final score:`, scoreResult);
-        console.log(`🎯 mentorMeta used:`, JSON.stringify(mentorMeta, null, 2));
-      }
+      // Calculate final score: 30% tags + 70% preferences
+      const finalScore = Math.round(tagScore + (scoreResult.preferenceScore * 0.7));
+      const finalBreakdown = `${tagBreakdown ? tagBreakdown + ' | ' : ''}Preferences: ${scoreResult.breakdown}`;
+
+      console.log(`🚀🚀🚀 FINAL CALCULATION 🚀🚀🚀`);
+      console.log(`🚀 tagScore: ${tagScore}`);
+      console.log(`🚀 preferenceScore: ${scoreResult.preferenceScore}`);
+      console.log(`🚀 finalScore: ${finalScore}`);
+      console.log(`🚀 returning: { score: ${finalScore}, preferenceScore: ${scoreResult.preferenceScore}, tagScore: ${tagScore}, breakdown: '${finalBreakdown}' }`);
+
+      mentorScores.push({
+        mentorId,
+        score: finalScore,
+        preferenceScore: scoreResult.preferenceScore,
+        tagScore: tagScore,
+        breakdown: finalBreakdown
+      });
+
+      console.log(`📊 Score result for ${mentorId}:`, {
+        score: finalScore,
+        preferenceScore: scoreResult.preferenceScore,
+        tagScore: tagScore,
+        breakdown: finalBreakdown
+      });
     }
 
-    // 4. Sort by score (highest first)
+    // Sort by score (highest first)
     mentorScores.sort((a, b) => b.score - a.score);
-    
+
     console.log(`🔄 Calculated ${mentorScores.length} mentor scores`);
-    console.log("🏆 Top 5 scores:", mentorScores.slice(0, 5).map(m => ({ 
-      mentorId: m.mentorId, 
-      score: m.score, 
-      breakdown: m.breakdown 
-    })));
+    console.log(`🏆 Top 5 scores:`, mentorScores.slice(0, 5));
 
-    // 5. Get top mentors (those with highest score)
-    if (mentorScores.length === 0) {
-      console.log("❌ No mentors with scores > 0");
-      return NextResponse.json({ mentors: [] });
-    }
+    // Return top mentors
+    const topMentors = mentorScores.slice(0, 1); // Return top 1 for now
+    console.log(`🏆 Returning ${topMentors.length} mentors with highest score ${topMentors[0]?.score}`);
 
-    const highestScore = mentorScores[0].score;
-    const topMentors = mentorScores.filter(m => m.score === highestScore);
-    
-    console.log(`🏆 Returning ${topMentors.length} mentors with highest score ${highestScore}`);
-
-    // 6. Fetch additional mentor data for top mentors
-    const topMentorIds = topMentors.map(m => m.mentorId);
-    
-    const [userRows, profileRows] = await Promise.all([
-      fetchByUserIds(AIRTABLE_USERS_TABLE!, topMentorIds, ["UserID", "Name"]),
-      fetchByUserIds(AIRTABLE_PROFILES_TABLE!, topMentorIds, ["UserID", "Bio", "LinkedIn"])
-    ]);
-
-    const byId = (rows: any[], pick: (f: any) => any) =>
-      Object.fromEntries(
-        rows.map((r) => r.fields).filter((f) => f?.UserID).map((f) => [f.UserID, pick(f)])
-      );
-
-    const users = byId(userRows, (f) => ({ name: clean(f.Name) ?? null }));
-    const profiles = byId(profileRows, (f) => ({
-      bio: clean(f.Bio) ?? null,
-      linkedIn: f.LinkedIn ?? null,
-    }));
-
-    // 7. Build final mentor objects
+    // Transform to match expected format
     const mentors = topMentors.map(scoreData => {
-      const id = scoreData.mentorId;
-      const meta = scoreData.mentorMeta;
-      
+      const meta = mentorRows.find(r => r.fields?.UserID === scoreData.mentorId)?.fields;
+      if (!meta) return null;
+
       return {
-        userId: id,
-        rankedUpdatedAt: meta.UpdatedAt ?? null,
-        name: users[id]?.name ?? null,
-        bio: profiles[id]?.bio ?? null,
-        linkedIn: profiles[id]?.linkedIn ?? null,
-        // Fresh calculated scores
-        score: scoreData.score,
-        preferenceScore: scoreData.preferenceScore,
-        tagScore: 0, // No tag scoring in current algorithm
-        breakdown: scoreData.breakdown,
-        // Meta data
+        userId: scoreData.mentorId,
+        name: null, // Will be populated by frontend
+        bio: null,  // Will be populated by frontend
+        linkedIn: null, // Will be populated by frontend
         industry: clean(meta.Industry) ?? null,
-        yearExp: typeof meta.YearExp === "number" ? meta.YearExp : null,
-        skill: meta.Skill ?? null,
+        yearExp: meta.YearExp ?? null,
+        skill: clean(meta.Skill) ?? null,
         location: clean(meta.Location) ?? null,
         role: clean(meta.Role) ?? null,
         company: clean(meta.Company) ?? null,
@@ -782,9 +784,14 @@ export async function GET(req: NextRequest) {
         mentoringStyle: clean(meta.MentoringStyle) ?? null,
         culturalBackground: clean(meta.CulturalBackground) ?? null,
         availability: clean(meta.Availability) ?? null,
+        // Enhanced scoring data
+        score: scoreData.score,
+        preferenceScore: scoreData.preferenceScore,
+        tagScore: scoreData.tagScore,
+        breakdown: scoreData.breakdown
       };
-    });
-
+    }).filter(Boolean);
+    
     console.log(`✅ Returning ${mentors.length} fresh mentor matches`);
     return NextResponse.json({ mentors });
 
