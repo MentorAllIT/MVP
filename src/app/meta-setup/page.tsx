@@ -802,7 +802,7 @@ export default function MetaSetup() {
                 <div className={styles.label}>
                   <span className={styles.labelText}>Date-specific overrides</span>
                   <span className={styles.hint}>
-                Add/close slots for particular dates. An empty list means “closed”.
+                Add/close slots for particular dates. An empty list means unavailable.
               </span>
 
                   {/* Add a date row */}
@@ -857,7 +857,7 @@ export default function MetaSetup() {
                             </div>
                           </div>
 
-                          {list.length === 0 && <span className={styles.unavailable}>Closed</span>}
+                          {list.length === 0 && <span className={styles.unavailable}>Unavailable</span>}
 
                           {list.map((iv, idx) => (
                               <div key={idx} className={styles.interval}>
