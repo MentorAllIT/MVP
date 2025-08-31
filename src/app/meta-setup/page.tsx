@@ -657,7 +657,14 @@ export default function MetaSetup() {
         <fieldset className={styles.label} style={{border: 0, padding: 0}}>
           <legend className={styles.labelText}>Weekly availability</legend>
           <span className={styles.hint}>Set when you’re typically available for meetings.</span>
-
+          {/* Info tab about meeting requests */}
+          <div className={styles.infoTab}>
+            <span className={styles.icon}>ℹ️</span>
+            <span>
+              <strong>Note:</strong> Setting your availability doesn't mean you have to accept every meeting request. 
+              You still have the choice to accept or decline meeting requests based on your schedule and preferences.
+            </span>
+          </div>
           <div className={styles.availabilityTable}>
             {DAYS.map((d) => {
               const list = state.weekly[d];

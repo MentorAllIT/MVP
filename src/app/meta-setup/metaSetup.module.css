@@ -628,3 +628,23 @@
 .keepExistingText strong {
   color:#664da2;
 }
+
+.infoTab {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin: 0.75rem 0;
+  font-size: 0.85rem;
+  color: #1e40af;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.infoTab .icon {
+  color: #3b82f6;
+  font-weight: bold;
+  margin-top: 0.1rem;
+  flex-shrink: 0;
+}
