@@ -564,7 +564,7 @@
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.75);
   box-shadow: 0 2px 12px rgba(102, 77, 162, 0.08);
-  overflow: hidden;
+  overflow: visible;
 }
 .advToggle {
   width: 100%;
@@ -627,4 +627,80 @@
 
 .keepExistingText strong {
   color:#664da2;
+}
+
+.infoTab {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin: 0.75rem 0;
+  font-size: 0.85rem;
+  color: #1e40af;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.infoTab .icon {
+  color: #3b82f6;
+  font-weight: bold;
+  margin-top: 0.1rem;
+  flex-shrink: 0;
+}
+
+.tooltipContainer {
+  position: relative;
+  display: inline-block;
+  margin-left: 0.25rem;
+}
+
+.tooltipTrigger {
+  color: #6b7280;
+  cursor: help;
+  font-size: 0.875rem;
+  padding: 0.125rem;
+  border-radius: 50%;
+  transition: color 0.2s ease;
+}
+
+.tooltipTrigger:hover {
+  color: #4f46e5;
+}
+
+.tooltip {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1f2937;
+  color: white;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  max-width: 250px;
+  white-space: normal;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  z-index: 1000;
+  margin-top: 0.25rem;
+}
+
+.tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-bottom-color: #1f2937;
+}
+
+.tooltipContainer:hover .tooltip {
+  opacity: 1;
+  visibility: visible;
 }

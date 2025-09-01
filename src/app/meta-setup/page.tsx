@@ -206,6 +206,51 @@ export default function MetaSetup() {
               culturalBackground: metaData.culturalBackground || "",
               availability: metaData.availability || ""
             }));
+            
+            // Load existing availability data for mentors
+            if (metaData.availabilityJson) {
+              try {
+                const availabilityData = JSON.parse(metaData.availabilityJson);
+                console.log("Loading existing availability data:", availabilityData);
+                
+                // Load weekly schedule
+                if (availabilityData.weekly) {
+                  const convertedWeekly: WeeklySchedule = emptyWeekly();
+                  
+                  // The database stores using short day names (Mon, Tue, etc.)
+                  // which matches our component format, so we can use them directly
+                  for (const [dayKey, intervals] of Object.entries(availabilityData.weekly)) {
+                    if (DAYS.includes(dayKey as DayKey) && Array.isArray(intervals)) {
+                      convertedWeekly[dayKey as DayKey] = intervals.map((interval: any) => ({
+                        start: interval.start || "",
+                        end: interval.end || ""
+                      }));
+                      console.log(`Loaded ${intervals.length} intervals for ${dayKey}:`, intervals);
+                    }
+                  }
+                  
+                  console.log("Final converted weekly schedule:", convertedWeekly);
+                  
+                  setState(prev => ({
+                    ...prev,
+                    weekly: convertedWeekly
+                  }));
+                }
+                
+                // Load minimum notice
+                if (availabilityData.minNoticeHours !== undefined) {
+                  setMinNotice(availabilityData.minNoticeHours);
+                }
+                
+                // Load overrides
+                if (availabilityData.overrides) {
+                  setOverrides(availabilityData.overrides);
+                }
+                
+              } catch (parseError) {
+                console.log("Error parsing existing availability data:", parseError);
+              }
+            }
           }
         }
       } catch (error) {
@@ -612,7 +657,14 @@ export default function MetaSetup() {
         <fieldset className={styles.label} style={{border: 0, padding: 0}}>
           <legend className={styles.labelText}>Weekly availability</legend>
           <span className={styles.hint}>Set when you’re typically available for meetings.</span>
-
+          {/* Info tab about meeting requests */}
+          <div className={styles.infoTab}>
+            <span className={styles.icon}>ℹ️</span>
+            <span>
+              <strong>Note:</strong> Setting your availability doesn't mean you have to accept every meeting request. 
+              You still have the choice to accept or decline meeting requests based on your schedule and preferences.
+            </span>
+          </div>
           <div className={styles.availabilityTable}>
             {DAYS.map((d) => {
               const list = state.weekly[d];
@@ -723,7 +775,16 @@ export default function MetaSetup() {
 
                 {/* Minimum notice */}
                 <label className={styles.label}>
-                  <span className={styles.labelText}>Minimum notice</span>
+                  <span className={styles.labelText}>
+                    Minimum notice
+                    <span className={styles.tooltipContainer}>
+                      <span className={styles.tooltipTrigger}>?</span>
+                      <span className={styles.tooltip}>
+                        The minimum amount of time required before a meeting can be booked. 
+                        This helps ensure you have enough time to prepare and prevents last-minute bookings.
+                      </span>
+                    </span>
+                  </span>
                   <select
                       className={`${styles.input} ${styles.select}`}
                       value={minNotice}
@@ -741,7 +802,7 @@ export default function MetaSetup() {
                 <div className={styles.label}>
                   <span className={styles.labelText}>Date-specific overrides</span>
                   <span className={styles.hint}>
-                Add/close slots for particular dates. An empty list means “closed”.
+                Add/close slots for particular dates. An empty list means unavailable.
               </span>
 
                   {/* Add a date row */}
@@ -796,7 +857,7 @@ export default function MetaSetup() {
                             </div>
                           </div>
 
-                          {list.length === 0 && <span className={styles.unavailable}>Closed</span>}
+                          {list.length === 0 && <span className={styles.unavailable}>Unavailable</span>}
 
                           {list.map((iv, idx) => (
                               <div key={idx} className={styles.interval}>
