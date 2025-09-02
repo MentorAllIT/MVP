@@ -1,6 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import HamburgerMenu from "../../components/HamburgerMenu";
 import styles from "./impact.module.css";
 
 export default function MentorImpactPage() {
@@ -8,6 +10,15 @@ export default function MentorImpactPage() {
 
   return (
     <div className={styles.page}>
+      <header className={styles.header}>
+        <div className={styles.headerContent}>
+          <Link href="/dashboard" className={styles.logoContainer}>
+            <img src="/MentorAll transparent Full logo.png" alt="MentorAll" className={styles.logo} />
+          </Link>
+          <HamburgerMenu />
+        </div>
+      </header>
+
       <div className={styles.container}>
         <div className={styles.card}>
           <div className={styles.iconContainer}>
