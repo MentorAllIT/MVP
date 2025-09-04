@@ -704,3 +704,57 @@
   opacity: 1;
   visibility: visible;
 }
+
+/* Mobile layout hardening */
+@media (max-width: 520px), (pointer: coarse) {
+  .availabilityTable {
+    grid-template-columns: 40px 1fr;
+    column-gap: 0.5rem;
+  }
+
+  .dayActions {
+    grid-column: 2 / -1;
+    justify-content: flex-start;
+    margin: 0.25rem 0 0;
+  }
+
+  .timeGroup {
+    display: flex;
+    width: 100%;
+    gap: 0.35rem;
+    flex-wrap: nowrap;
+    max-width: 100%;
+  }
+
+  .select,
+  .selectAmPm {
+    min-width: 0;
+    width: 100%;
+    flex: 1 1 0;
+    padding: 0.6rem 0.75rem;
+    font-size: 16px;
+    line-height: 1.2;
+    height: 44px;
+  }
+  .timeGroup .select { flex-basis: 33%; }
+  .timeGroup .selectAmPm { flex-basis: 34%; }
+
+  .colon { display: none; }
+
+  .interval { gap: 0.35rem; }
+  .iconButton {
+    width: 36px; height: 44px;
+    border-radius: 8px;
+  }
+
+  .card { padding: 1.25rem; }
+}
+
+
+.input:focus-visible,
+.select:focus-visible,
+.selectAmPm:focus-visible,
+.iconButton:focus-visible {
+  outline: 2px solid #664da2;
+  outline-offset: 2px;
+}
