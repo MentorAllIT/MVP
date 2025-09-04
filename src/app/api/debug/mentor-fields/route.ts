@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     const allFields = Object.keys(firstRecord.fields);
     
     // Get sample data for each field
-    const fieldSamples = {};
+    const fieldSamples: { [key: string]: any } = {};
     for (const fieldName of allFields) {
       fieldSamples[fieldName] = firstRecord.fields[fieldName];
     }
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
       "Availability"
     ];
 
-    const fieldStatus = {};
+    const fieldStatus: { [key: string]: any } = {};
     for (const expectedField of expectedFields) {
       fieldStatus[expectedField] = {
         exists: allFields.includes(expectedField),

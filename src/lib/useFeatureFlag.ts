@@ -44,5 +44,5 @@ export function useFeatureFlag(flagName: string, defaultValue: boolean = false) 
 
 // Specific hook for locked mode
 export function useLockedMode() {
-  return useFeatureFlag('LOCKED_MODE', true); // Default to locked
+  return useFeatureFlag('LOCKED_MODE', false); // Default to unlocked
 }

@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
     const allFields = Object.keys(mentorRecord.fields);
     
     // Get detailed info for each field
-    const fieldDetails = {};
+    const fieldDetails: { [key: string]: any } = {};
     for (const fieldName of allFields) {
       const value = mentorRecord.fields[fieldName];
       fieldDetails[fieldName] = {
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
       "Availability"
     ];
 
-    const expectedFieldStatus = {};
+    const expectedFieldStatus: { [key: string]: any } = {};
     for (const expectedField of expectedFields) {
       expectedFieldStatus[expectedField] = {
         exists: allFields.includes(expectedField),

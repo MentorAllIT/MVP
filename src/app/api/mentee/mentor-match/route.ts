@@ -120,12 +120,8 @@ function calculatePreferenceScore(
 ): { score: number; preferenceScore: number; breakdown: string } {
   
   // CRITICAL DEBUG: Always show when this function is called
-  console.log(`\n🚀🚀🚀 calculatePreferenceScore CALLED 🚀🚀🚀`);
-  console.log(`🚀 menteePrefs:`, JSON.stringify(menteePrefs, null, 2));
-  console.log(`🚀 mentorMeta:`, JSON.stringify(mentorMeta, null, 2));
   
   try {
-    console.log("🔍 Real-time scoring for:", { menteePrefs, mentorMeta });
     
     // Pure preference-based scoring with priority-based weighting
     let preferenceScore = 0;
@@ -141,60 +137,51 @@ function calculatePreferenceScore(
       if (menteePrefs.CurrentIndustry && mentorMeta.Industry) {
         const industryMatch = calculateIndustryMatch(menteePrefs.CurrentIndustry, mentorMeta.Industry);
         factorScores['currentIndustry'] = industryMatch;
-        console.log(`🏭 Industry match: "${menteePrefs.CurrentIndustry}" vs "${mentorMeta.Industry}" = ${industryMatch}`);
       }
 
       // Role match - FIXED: compare with CurrentRole field
       if (menteePrefs.CurrentRole && mentorMeta.CurrentRole) {
         const roleMatch = calculateRoleMatch(menteePrefs.CurrentRole, mentorMeta.CurrentRole);
         factorScores['currentRole'] = roleMatch;
-        console.log(`👔 Role match: "${menteePrefs.CurrentRole}" vs "${mentorMeta.CurrentRole}" = ${roleMatch}`);
       }
 
       // Seniority match - FIXED: compare with SeniorityLevel field
       if (menteePrefs.SeniorityLevel && mentorMeta.SeniorityLevel) {
         const seniorityMatch = calculateSeniorityMatch(menteePrefs.SeniorityLevel, mentorMeta.SeniorityLevel);
         factorScores['seniorityLevel'] = seniorityMatch;
-        console.log(`📊 Seniority match: "${menteePrefs.SeniorityLevel}" vs "${mentorMeta.SeniorityLevel}" = ${seniorityMatch}`);
       }
 
       // Years of experience match
       if (menteePrefs.YearsExperience && mentorMeta.YearExp) {
         const expMatch = calculateExperienceMatch(menteePrefs.YearsExperience, mentorMeta.YearExp);
         factorScores['yearsExperience'] = expMatch;
-        console.log(`⏰ Experience match: ${menteePrefs.YearsExperience} vs ${mentorMeta.YearExp} = ${expMatch}`);
       }
 
-      // Mentoring style match - SKIPPED for now (user has another idea)
-      // if (menteePrefs.MentoringStyle && mentorMeta.MentoringStyle) {
-      //   const styleMatch = calculateMentoringStyleMatch(menteePrefs.MentoringStyle, mentorMeta.MentoringStyle);
-      //   factorScores['mentoringStyle'] = styleMatch;
-      //   console.log(`🎯 Mentoring style match: "${menteePrefs.MentoringStyle}" vs "${mentorMeta.MentoringStyle}" = ${styleMatch}`);
-      // }
+      // Mentoring style match - UPDATED: use RequiredMentoringStyles for scoring
+      if (menteePrefs.RequiredMentoringStyles && (mentorMeta.MentoringStyle || mentorMeta.RequiredMentoringStyles)) {
+        const mentorStyles = mentorMeta.RequiredMentoringStyles || mentorMeta.MentoringStyle;
+        const styleMatch = calculateMentoringStyleMatch(menteePrefs.RequiredMentoringStyles, mentorStyles);
+        factorScores['mentoringStyle'] = styleMatch;
+      }
 
       // Previous roles match - FIXED: compare with PreviousRoles field
       if (menteePrefs.PreviousRoles && mentorMeta.PreviousRoles) {
         const previousRolesMatch = calculatePreviousRolesMatch(menteePrefs.PreviousRoles, mentorMeta.PreviousRoles);
         factorScores['previousRoles'] = previousRolesMatch;
-        console.log(`🔄 Previous roles match: "${menteePrefs.PreviousRoles}" vs "${mentorMeta.PreviousRoles}" = ${previousRolesMatch}`);
       }
 
       // Cultural background match - FIXED: compare with CulturalBackground field
       if (menteePrefs.CultureBackground && mentorMeta.CulturalBackground) {
         const culturalMatch = calculateCulturalMatch(menteePrefs.CultureBackground, mentorMeta.CulturalBackground);
         factorScores['culturalBackground'] = culturalMatch;
-        console.log(`🌍 Cultural match: "${menteePrefs.CultureBackground}" vs "${mentorMeta.CulturalBackground}" = ${culturalMatch}`);
       }
 
       // Availability match - FIXED: compare with Availability field
       if (menteePrefs.Availability && mentorMeta.Availability) {
         const availabilityMatch = calculateAvailabilityMatch(menteePrefs.Availability, mentorMeta.Availability);
         factorScores['availability'] = availabilityMatch;
-        console.log(`📅 Availability match: "${menteePrefs.Availability}" vs "${mentorMeta.Availability}" = ${availabilityMatch}`);
       }
 
-      console.log("📊 Factor scores:", factorScores);
-      console.log("🎯 Factor order:", factorOrder);
 
       // Apply priority-based weighting
       if (factorOrder.length > 0) {
@@ -203,7 +190,6 @@ function calculatePreferenceScore(
           const weight = 0.35;
           const score = factorScores[factorOrder[0]] * weight;
           preferenceScore += score;
-          console.log(`🥇 Top priority "${factorOrder[0]}": ${factorScores[factorOrder[0]]} × ${weight} = +${score.toFixed(3)}`);
         }
 
         // Second priority (25% weight)
@@ -211,7 +197,6 @@ function calculatePreferenceScore(
           const weight = 0.25;
           const score = factorScores[factorOrder[1]] * weight;
           preferenceScore += score;
-          console.log(`🥈 Second priority "${factorOrder[1]}": ${factorScores[factorOrder[1]]} × ${weight} = +${score.toFixed(3)}`);
         }
 
         // Third priority (10% weight)
@@ -219,7 +204,6 @@ function calculatePreferenceScore(
           const weight = 0.10;
           const score = factorScores[factorOrder[2]] * weight;
           preferenceScore += score;
-          console.log(`🥉 Third priority "${factorOrder[2]}": ${factorScores[factorOrder[2]]} × ${weight} = +${score.toFixed(3)}`);
         }
 
         // Remaining factors (30% weight distributed equally among available factors)
@@ -229,7 +213,6 @@ function calculatePreferenceScore(
           for (const factor of remainingFactors) {
             const score = factorScores[factor] * remainingWeight;
             preferenceScore += score;
-            console.log(`📋 Remaining factor "${factor}": ${factorScores[factor]} × ${remainingWeight.toFixed(3)} = +${score.toFixed(3)}`);
           }
         } else {
           // If no remaining factors available, redistribute weight to available factors
@@ -239,24 +222,20 @@ function calculatePreferenceScore(
             for (const factor of availableFactors) {
               const score = factorScores[factor] * redistributedWeight;
               preferenceScore += score;
-              console.log(`🔄 Redistributed weight "${factor}": ${factorScores[factor]} × ${redistributedWeight.toFixed(3)} = +${score.toFixed(3)}`);
             }
           }
         }
       } else {
         // CRITICAL: If mentee has no FactorOrder, this should rarely happen
         // But if it does, we should still try to apply some logical weighting
-        console.log(`⚠️ No FactorOrder found for mentee, applying fallback weighting`);
         const availableFactors = Object.keys(factorScores).filter(factor => factorScores[factor] !== undefined);
         if (availableFactors.length > 0) {
           // Apply a simple fallback: industry gets 40%, role gets 30%, others get equal remaining
           if (factorScores['currentIndustry'] !== undefined) {
             preferenceScore += factorScores['currentIndustry'] * 0.40;
-            console.log(`🔄 Fallback industry: ${factorScores['currentIndustry']} × 0.40 = +${(factorScores['currentIndustry'] * 0.40).toFixed(3)}`);
           }
           if (factorScores['currentRole'] !== undefined) {
             preferenceScore += factorScores['currentRole'] * 0.30;
-            console.log(`🔄 Fallback role: ${factorScores['currentRole']} × 0.30 = +${(factorScores['currentRole'] * 0.30).toFixed(3)}`);
           }
           
           const otherFactors = availableFactors.filter(factor => !['currentIndustry', 'currentRole'].includes(factor));
@@ -265,27 +244,15 @@ function calculatePreferenceScore(
             for (const factor of otherFactors) {
               const score = factorScores[factor] * otherWeight;
               preferenceScore += score;
-              console.log(`🔄 Fallback other "${factor}": ${factorScores[factor]} × ${otherWeight.toFixed(3)} = +${score.toFixed(3)}`);
             }
           }
         }
       }
 
-      console.log(`🎯 Final preference score: ${preferenceScore.toFixed(3)}`);
     }
 
     // Final score is 100% preference-based
     const finalScore = preferenceScore;
-    
-    // CRITICAL DEBUG: Always show the final calculation
-    console.log(`🚀🚀🚀 FINAL CALCULATION 🚀🚀🚀`);
-    console.log(`🚀 preferenceScore:`, preferenceScore);
-    console.log(`🚀 finalScore:`, finalScore);
-    console.log(`🚀 returning:`, {
-      score: Math.round(100 * finalScore),
-      preferenceScore: Math.round(100 * preferenceScore),
-      breakdown: `Preference Score: ${Math.round(100 * preferenceScore)}%`
-    });
     
     return {
       score: Math.round(100 * finalScore),
@@ -293,7 +260,6 @@ function calculatePreferenceScore(
       breakdown: `Preference Score: ${Math.round(100 * preferenceScore)}%`
     };
   } catch (error) {
-    console.log("❌ Error in calculatePreferenceScore:", error);
     return {
       score: 0,
       preferenceScore: 0,
@@ -312,13 +278,11 @@ function calculateIndustryMatch(menteeIndustry: string, mentorIndustry: string):
   
   // 1. Exact match (highest score)
   if (mentee === mentor) {
-    console.log(`   🎯 Exact industry match: "${menteeIndustry}" = "${mentorIndustry}"`);
     return 1.0;
   }
   
   // 2. Check if mentor industry is contained within mentee industry (perfect match)
   if (mentee.includes(mentor) || mentor.includes(mentee)) {
-    console.log(`   🎯 Perfect industry match: "${menteeIndustry}" contains "${mentorIndustry}"`);
     return 1.0;
   }
   
@@ -326,8 +290,6 @@ function calculateIndustryMatch(menteeIndustry: string, mentorIndustry: string):
   const menteeKeywords = extractIndustryKeywords(mentee);
   const mentorKeywords = extractIndustryKeywords(mentor);
   
-  console.log(`   🔍 Mentee keywords: [${menteeKeywords.join(', ')}]`);
-  console.log(`   🔍 Mentor keywords: [${mentorKeywords.join(', ')}]`);
   
   // 3. Calculate keyword overlap
   const overlappingKeywords = menteeKeywords.filter(keyword => 
@@ -336,11 +298,9 @@ function calculateIndustryMatch(menteeIndustry: string, mentorIndustry: string):
     )
   );
   
-  console.log(`   🔗 Overlapping keywords: [${overlappingKeywords.join(', ')}]`);
   
   // 4. Calculate match score based on overlap
   if (overlappingKeywords.length === 0) {
-    console.log(`   ❌ No keyword overlap`);
     return 0;
   }
   
@@ -348,7 +308,6 @@ function calculateIndustryMatch(menteeIndustry: string, mentorIndustry: string):
   const matchPercentage = overlappingKeywords.length / menteeKeywords.length;
   const score = Math.min(matchPercentage, 1.0);
   
-  console.log(`   ✅ Industry match score: ${score.toFixed(3)} (${overlappingKeywords.length}/${menteeKeywords.length} keywords)`);
   return score;
 }
 
@@ -473,25 +432,55 @@ function calculateExperienceMatch(menteeExp: number, mentorExp: number): number 
   return 0.1;
 }
 
-function calculateMentoringStyleMatch(menteeStyle: string, mentorStyle: string): number {
-  // Enhanced matching for mentoring styles
-  if (!menteeStyle || !mentorStyle) return 0;
-  
-  const mentee = menteeStyle.toLowerCase().trim();
-  const mentor = mentorStyle.toLowerCase().trim();
-  
-  // Exact match
-  if (mentee === mentor) return 1.0;
-  
-  // Check if one contains the other (perfect match)
-  if (mentee.includes(mentor) || mentor.includes(mentee)) return 1.0;
-  
-  // Similar styles get partial credit
-  if (mentee.includes('coach') && mentor.includes('coach')) return 1.0;
-  if (mentee.includes('task') && mentor.includes('task')) return 1.0;
-  if (mentee.includes('mentor') && mentor.includes('mentor')) return 1.0;
-  
-  return 0.5; // Default score for other similar styles
+// Update the mentoring style matching function
+function calculateMentoringStyleMatch(menteeStyles: string | string[], mentorStyle: string | string[]): number {
+  if (!menteeStyles || !mentorStyle) return 0;
+
+  // Handle "I don't mind" case for mentees
+  if (menteeStyles === 'dont_mind' || (Array.isArray(menteeStyles) && menteeStyles.includes('dont_mind'))) {
+    return 1.0; // Full score for all mentors
+  }
+
+  // Handle "I don't mind" case for mentors
+  if (mentorStyle === 'dont_mind' || (Array.isArray(mentorStyle) && mentorStyle.includes('dont_mind'))) {
+    return 1.0; // Full score for mentees
+  }
+
+  // Extract required styles from mentee preferences
+  let requiredStyles: string[] = [];
+  if (typeof menteeStyles === 'string') {
+    // RequiredMentoringStyles is already in the correct format (comma-separated)
+    requiredStyles = menteeStyles.split(',').map(s => s.trim()).filter(s => s);
+  } else if (Array.isArray(menteeStyles)) {
+    requiredStyles = menteeStyles;
+  }
+
+  // If no required styles, return 0
+  if (requiredStyles.length === 0) return 0;
+
+  // Convert mentor styles to array
+  let mentorStyleArray: string[] = [];
+  if (typeof mentorStyle === 'string') {
+    mentorStyleArray = mentorStyle.split(',').map((s: string) => s.trim()).filter(s => s);
+  } else if (Array.isArray(mentorStyle)) {
+    mentorStyleArray = mentorStyle;
+  }
+
+  // If no mentor styles, return 0
+  if (mentorStyleArray.length === 0) return 0;
+
+  // Calculate overlap percentage for required styles only
+  const overlappingStyles = requiredStyles.filter((style: string) =>
+    mentorStyleArray.some((mentorStyle: string) =>
+      style.toLowerCase().includes(mentorStyle.toLowerCase()) ||
+      mentorStyle.toLowerCase().includes(style.toLowerCase())
+    )
+  );
+
+  if (overlappingStyles.length === 0) return 0;
+
+  // Return percentage of required styles that match
+  return overlappingStyles.length / requiredStyles.length;
 }
 
 function calculatePreviousRolesMatch(menteeRoles: string, mentorRoles: string): number {
@@ -591,22 +580,19 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Invalid session" }, { status: 401 });
     }
 
-    console.log(`🚀 Real-time mentor matching for mentee: ${uid}`);
 
     // 1. Fetch mentee preferences (real-time)
     const prefRows = await firstPage(AIRTABLE_MENTEE_PREFERENCES_TABLE!, {
       filterByFormula: `{UserID}='${esc(uid)}'`,
-      fields: ["UserID", "CurrentIndustry", "CurrentRole", "SeniorityLevel", "PreviousRoles", "MentoringStyle", "YearsExperience", "CultureBackground", "Availability", "FactorOrder"],
+      fields: ["UserID", "CurrentIndustry", "CurrentRole", "SeniorityLevel", "PreviousRoles", "MentoringStyle", "RequiredMentoringStyles", "YearsExperience", "CultureBackground", "Availability", "FactorOrder"],
       maxRecords: 1
     });
 
     if (!prefRows.length) {
-      console.log("❌ No mentee preferences found");
       return NextResponse.json({ mentors: [] });
     }
 
     const menteePrefs = prefRows[0].fields;
-    console.log("📥 Mentee preferences:", menteePrefs);
 
     // 1.5. Fetch mentee tags from MenteeMeta table
     const menteeMetaRows = await firstPage(AIRTABLE_MENTEE_META_TABLE!, {
@@ -622,19 +608,29 @@ export async function GET(req: NextRequest) {
         menteeTags = rawTags.value.split(',').map((tag: string) => tag.trim());
       }
     }
-    console.log("🏷️ Mentee tags:", menteeTags);
 
     // 2. Fetch all mentors (real-time)
     const mentorRows = await firstPage(AIRTABLE_MENTOR_META_TABLE!, {
       fields: ["UserID", "Industry", "YearExp", "Skill", "Location", "Role", "Company", "SchoolName", "FieldOfStudy", "Tags", "UpdatedAt", "CurrentRole", "SeniorityLevel", "PreviousRoles", "MentoringStyle", "CulturalBackground", "Availability"]
     });
 
-    console.log(`📥 Found ${mentorRows.length} total mentors`);
+    // 2.5. Fetch mentor names from Users table
+    const mentorIds = mentorRows.map(row => row.fields?.UserID).filter(Boolean);
+    const userRows = await firstPage(AIRTABLE_USERS_TABLE!, {
+      filterByFormula: `OR(${mentorIds.map(id => `{UserID}='${esc(id)}'`).join(',')})`,
+      fields: ["UserID", "Name"]
+    });
+
+    // 2.6. Fetch mentor profiles from Profiles table
+    const profileRows = await firstPage(AIRTABLE_PROFILES_TABLE!, {
+      filterByFormula: `OR(${mentorIds.map(id => `{UserID}='${esc(id)}'`).join(',')})`,
+      fields: ["UserID", "Bio", "LinkedIn"]
+    });
+
 
     // 3. Calculate fresh scores for each mentor (real-time)
     const mentorScores = [];
     
-    console.log(`\n🚀 STARTING SCORING LOOP for ${mentorRows.length} mentors`);
     
     for (const mentorRow of mentorRows) {
       const mentorId = mentorRow.fields?.UserID;
@@ -642,24 +638,7 @@ export async function GET(req: NextRequest) {
 
       // CRITICAL DEBUG: Always show when we start processing jKd3VERP8O
       if (mentorId === 'jKd3VERP8O') {
-        console.log(`\n🎯🎯🎯 PROCESSING jKd3VERP8O - START 🎯🎯🎯`);
-        console.log(`🎯 Raw mentorRow:`, JSON.stringify(mentorRow, null, 2));
-        console.log(`🎯 mentorRow.fields:`, JSON.stringify(mentorRow.fields, null, 2));
       }
-
-      // Debug: Show raw data for all mentors
-      console.log(`\n📥 Raw data for mentor ${mentorId}:`, {
-        UserID: mentorRow.fields?.UserID,
-        Industry: mentorRow.fields?.Industry,
-        YearExp: mentorRow.fields?.YearExp,
-        CurrentRole: mentorRow.fields?.CurrentRole,
-        SeniorityLevel: mentorRow.fields?.SeniorityLevel,
-        PreviousRoles: mentorRow.fields?.PreviousRoles,
-        MentoringStyle: mentorRow.fields?.MentoringStyle,
-        CulturalBackground: mentorRow.fields?.CulturalBackground,
-        Availability: mentorRow.fields?.Availability,
-        Tags: mentorRow.fields?.Tags
-      });
 
       const mentorMeta = {
         Industry: mentorRow.fields?.Industry,
@@ -683,30 +662,11 @@ export async function GET(req: NextRequest) {
 
       // CRITICAL DEBUG: Show mentorMeta for jKd3VERP8O after it's declared
       if (mentorId === 'jKd3VERP8O') {
-        console.log(`🎯 About to call calculatePreferenceScore with:`, {
-          menteePrefs: menteePrefs,
-          mentorMeta: mentorMeta
-        });
       }
 
-      console.log(`\n🔍 Scoring mentor ${mentorId}:`, {
-        Industry: mentorMeta.Industry,
-        Role: mentorMeta.Role,
-        YearExp: mentorMeta.YearExp,
-        Tags: mentorMeta.Tags,
-        // Add preference fields debugging for ALL mentors
-        CurrentRole: mentorMeta.CurrentRole,
-        SeniorityLevel: mentorMeta.SeniorityLevel,
-        PreviousRoles: mentorMeta.PreviousRoles,
-        MentoringStyle: mentorMeta.MentoringStyle,
-        CulturalBackground: mentorMeta.CulturalBackground,
-        Availability: mentorMeta.Availability
-      });
 
       // Calculate fresh score
-      console.log(`🎯 About to call calculatePreferenceScore for ${mentorId}`);
       const scoreResult = calculatePreferenceScore(menteePrefs, mentorMeta);
-      console.log(`🎯 calculatePreferenceScore returned for ${mentorId}:`, scoreResult);
 
       // Calculate tag score (30% weight)
       let tagScore = 0;
@@ -717,7 +677,6 @@ export async function GET(req: NextRequest) {
           const tagOverlap = calculateTagOverlap(menteeTags, mentorTags);
           tagScore = tagOverlap * 30; // 30% weight
           tagBreakdown = `Tag Overlap: ${(tagOverlap * 100).toFixed(1)}%`;
-          console.log(`🏷️ Tag scoring for ${mentorId}: mentee tags [${menteeTags.join(', ')}] vs mentor tags [${mentorTags.join(', ')}] = ${(tagOverlap * 100).toFixed(1)}% overlap = ${tagScore.toFixed(1)} points`);
         }
       }
 
@@ -725,21 +684,9 @@ export async function GET(req: NextRequest) {
       const finalScore = Math.round(tagScore + (scoreResult.preferenceScore * 0.7));
       const finalBreakdown = `${tagBreakdown ? tagBreakdown + ' | ' : ''}Preferences: ${scoreResult.breakdown}`;
 
-      console.log(`🚀🚀🚀 FINAL CALCULATION 🚀🚀🚀`);
-      console.log(`🚀 tagScore: ${tagScore}`);
-      console.log(`🚀 preferenceScore: ${scoreResult.preferenceScore}`);
-      console.log(`🚀 finalScore: ${finalScore}`);
-      console.log(`🚀 returning: { score: ${finalScore}, preferenceScore: ${scoreResult.preferenceScore}, tagScore: ${tagScore}, breakdown: '${finalBreakdown}' }`);
 
       mentorScores.push({
         mentorId,
-        score: finalScore,
-        preferenceScore: scoreResult.preferenceScore,
-        tagScore: tagScore,
-        breakdown: finalBreakdown
-      });
-
-      console.log(`📊 Score result for ${mentorId}:`, {
         score: finalScore,
         preferenceScore: scoreResult.preferenceScore,
         tagScore: tagScore,
@@ -750,23 +697,24 @@ export async function GET(req: NextRequest) {
     // Sort by score (highest first)
     mentorScores.sort((a, b) => b.score - a.score);
 
-    console.log(`🔄 Calculated ${mentorScores.length} mentor scores`);
-    console.log(`🏆 Top 5 scores:`, mentorScores.slice(0, 5));
 
     // Return top mentors
     const topMentors = mentorScores.slice(0, 1); // Return top 1 for now
-    console.log(`🏆 Returning ${topMentors.length} mentors with highest score ${topMentors[0]?.score}`);
 
     // Transform to match expected format
     const mentors = topMentors.map(scoreData => {
       const meta = mentorRows.find(r => r.fields?.UserID === scoreData.mentorId)?.fields;
       if (!meta) return null;
 
+      // Find user data
+      const userData = userRows.find(r => r.fields?.UserID === scoreData.mentorId)?.fields;
+      const profileData = profileRows.find(r => r.fields?.UserID === scoreData.mentorId)?.fields;
+
       return {
         userId: scoreData.mentorId,
-        name: null, // Will be populated by frontend
-        bio: null,  // Will be populated by frontend
-        linkedIn: null, // Will be populated by frontend
+        name: clean(userData?.Name) ?? null,
+        bio: clean(profileData?.Bio) ?? null,
+        linkedIn: clean(profileData?.LinkedIn) ?? null,
         industry: clean(meta.Industry) ?? null,
         yearExp: meta.YearExp ?? null,
         skill: clean(meta.Skill) ?? null,
@@ -792,7 +740,6 @@ export async function GET(req: NextRequest) {
       };
     }).filter(Boolean);
     
-    console.log(`✅ Returning ${mentors.length} fresh mentor matches`);
     return NextResponse.json({ mentors });
 
   } catch (e: any) {

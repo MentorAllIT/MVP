@@ -245,7 +245,6 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const menteeId = searchParams.get('menteeId') || 'UDk1QK6HZ1'; // Default to the mentee we've been testing
 
-    console.log(`🔍 Getting complete breakdown for mentee: ${menteeId}`);
 
     // 1. Fetch mentee preferences
     const base = new Airtable({ apiKey: AIRTABLE_API_KEY }).base(AIRTABLE_BASE_ID!);
@@ -260,14 +259,12 @@ export async function GET(req: NextRequest) {
     }
 
     const menteePrefs = prefRows[0].fields;
-    console.log("📥 Mentee preferences:", menteePrefs);
 
     // 2. Fetch all mentors
     const mentorRows = await base(AIRTABLE_MENTOR_META_TABLE!).select({
       fields: ["UserID", "Industry", "YearExp", "Skill", "Location", "Role", "Company", "SchoolName", "FieldOfStudy", "Tags", "UpdatedAt", "CurrentRole", "SeniorityLevel", "PreviousRoles", "MentoringStyle", "CulturalBackground", "Availability"]
     }).firstPage();
 
-    console.log(`📥 Found ${mentorRows.length} total mentors`);
 
     // 3. Calculate scores for each mentor with detailed breakdown
     const mentorBreakdowns = [];
@@ -302,7 +299,9 @@ export async function GET(req: NextRequest) {
 
       // Industry match (35% weight)
       if (menteePrefs.CurrentIndustry && mentorMeta.Industry) {
-        const industryMatch = calculateIndustryMatch(menteePrefs.CurrentIndustry, mentorMeta.Industry);
+        const menteeIndustry = String(menteePrefs.CurrentIndustry);
+        const mentorIndustry = String(mentorMeta.Industry);
+        const industryMatch = calculateIndustryMatch(menteeIndustry, mentorIndustry);
         factorScores['currentIndustry'] = industryMatch;
         const industryScore = industryMatch * 0.35;
         totalScore += industryScore;
@@ -311,7 +310,9 @@ export async function GET(req: NextRequest) {
 
       // Role match (25% weight)
       if (menteePrefs.CurrentRole && mentorMeta.CurrentRole) {
-        const roleMatch = calculateRoleMatch(menteePrefs.CurrentRole, mentorMeta.CurrentRole);
+        const menteeRole = String(menteePrefs.CurrentRole);
+        const mentorRole = String(mentorMeta.CurrentRole);
+        const roleMatch = calculateRoleMatch(menteeRole, mentorRole);
         factorScores['currentRole'] = roleMatch;
         const roleScore = roleMatch * 0.25;
         totalScore += roleScore;
@@ -320,7 +321,9 @@ export async function GET(req: NextRequest) {
 
       // Seniority match (10% weight)
       if (menteePrefs.SeniorityLevel && mentorMeta.SeniorityLevel) {
-        const seniorityMatch = calculateSeniorityMatch(menteePrefs.SeniorityLevel, mentorMeta.SeniorityLevel);
+        const menteeSeniority = String(menteePrefs.SeniorityLevel);
+        const mentorSeniority = String(mentorMeta.SeniorityLevel);
+        const seniorityMatch = calculateSeniorityMatch(menteeSeniority, mentorSeniority);
         factorScores['seniorityLevel'] = seniorityMatch;
         const seniorityScore = seniorityMatch * 0.10;
         totalScore += seniorityScore;
@@ -329,7 +332,9 @@ export async function GET(req: NextRequest) {
 
       // Previous roles match (7.5% weight)
       if (menteePrefs.PreviousRoles && mentorMeta.PreviousRoles) {
-        const previousRolesMatch = calculatePreviousRolesMatch(menteePrefs.PreviousRoles, mentorMeta.PreviousRoles);
+        const menteePrevRoles = String(menteePrefs.PreviousRoles);
+        const mentorPrevRoles = String(mentorMeta.PreviousRoles);
+        const previousRolesMatch = calculatePreviousRolesMatch(menteePrevRoles, mentorPrevRoles);
         factorScores['previousRoles'] = previousRolesMatch;
         const previousRolesScore = previousRolesMatch * 0.075;
         totalScore += previousRolesScore;
@@ -338,16 +343,22 @@ export async function GET(req: NextRequest) {
 
       // Experience match (7.5% weight)
       if (menteePrefs.YearsExperience && mentorMeta.YearExp) {
-        const expMatch = calculateExperienceMatch(menteePrefs.YearsExperience, mentorMeta.YearExp);
-        factorScores['yearsExperience'] = expMatch;
-        const expScore = expMatch * 0.075;
-        totalScore += expScore;
-        breakdown += `Experience: ${(expMatch * 100).toFixed(0)}% (${expScore.toFixed(3)}) | `;
+        const menteeExp = Number(menteePrefs.YearsExperience);
+        const mentorExp = Number(mentorMeta.YearExp);
+        if (!isNaN(menteeExp) && !isNaN(mentorExp)) {
+          const expMatch = calculateExperienceMatch(menteeExp, mentorExp);
+          factorScores['yearsExperience'] = expMatch;
+          const expScore = expMatch * 0.075;
+          totalScore += expScore;
+          breakdown += `Experience: ${(expMatch * 100).toFixed(0)}% (${expScore.toFixed(3)}) | `;
+        }
       }
 
       // Cultural match (7.5% weight)
       if (menteePrefs.CultureBackground && mentorMeta.CulturalBackground) {
-        const culturalMatch = calculateCulturalMatch(menteePrefs.CultureBackground, mentorMeta.CulturalBackground);
+        const menteeCulture = String(menteePrefs.CultureBackground);
+        const mentorCulture = String(mentorMeta.CulturalBackground);
+        const culturalMatch = calculateCulturalMatch(menteeCulture, mentorCulture);
         factorScores['culturalBackground'] = culturalMatch;
         const culturalScore = culturalMatch * 0.075;
         totalScore += culturalScore;
@@ -356,7 +367,9 @@ export async function GET(req: NextRequest) {
 
       // Availability match (7.5% weight)
       if (menteePrefs.Availability && mentorMeta.Availability) {
-        const availabilityMatch = calculateAvailabilityMatch(menteePrefs.Availability, mentorMeta.Availability);
+        const menteeAvailability = String(menteePrefs.Availability);
+        const mentorAvailability = String(mentorMeta.Availability);
+        const availabilityMatch = calculateAvailabilityMatch(menteeAvailability, mentorAvailability);
         factorScores['availability'] = availabilityMatch;
         const availabilityScore = availabilityMatch * 0.075;
         totalScore += availabilityScore;

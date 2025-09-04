@@ -89,7 +89,7 @@ function ProfileContent() {
       <header className={styles.header}>
         <div className={styles.headerContent}>
           <h1 className={styles.title}>Profile</h1>
-          <HamburgerMenu theme="dark" />
+          <HamburgerMenu theme="light" />
         </div>
       </header>
       

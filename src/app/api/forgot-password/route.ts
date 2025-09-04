@@ -39,7 +39,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('=== FORGOT PASSWORD DEBUG ===');
     console.log('Email received:', email);
     console.log('Airtable API Key exists:', !!process.env.AIRTABLE_API_KEY);
     console.log('Airtable Base ID exists:', !!process.env.AIRTABLE_BASE_ID);

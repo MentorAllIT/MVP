@@ -171,7 +171,7 @@ export default function Dashboard() {
                     Browse available mentors and find the perfect match for your goals.
                   </p>
                   <Link href="/mentee/browse" className={styles.cardButton}>
-                    Coming Soon
+                    Browse Mentors
                   </Link>
                 </div>
 

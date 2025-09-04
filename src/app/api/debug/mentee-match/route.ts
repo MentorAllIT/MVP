@@ -38,7 +38,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "menteeId parameter required" }, { status: 400 });
     }
 
-    console.log(`🔍 Debugging mentee match for: ${menteeId}`);
 
     // 1. Get mentee preferences
     const [prefRec] = await base(AIRTABLE_MENTEE_PREFERENCES_TABLE!).select({
@@ -51,7 +50,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Mentee preferences not found" }, { status: 404 });
     }
 
-    console.log("📥 Mentee preferences:", prefRec.fields);
 
     // 2. Get current match rankings
     const matchRows = await base(AIRTABLE_MATCH_RANKING_TABLE!).select({
@@ -60,19 +58,18 @@ export async function GET(request: NextRequest) {
       sort: [{ field: "Score", direction: "desc" }]
     }).all();
 
-    console.log("📥 Current match rankings:", matchRows.map((r: any) => ({
+    const currentMatches = matchRows.map((r: any) => ({
       mentorId: r.fields?.MentorID,
       score: r.fields?.Score,
       preferenceScore: r.fields?.PreferenceScore,
       breakdown: r.fields?.Breakdown
-    })));
+    }));
 
     // 3. Get all mentors to recalculate scores
     const allMentors = await base(AIRTABLE_MENTOR_META_TABLE!).select({
       fields: ["UserID", "Industry", "Role", "YearExp"]
     }).all();
 
-    console.log(`📥 Found ${allMentors.length} total mentors`);
 
     // 4. Recalculate scores for all mentors
     const recalculatedScores = [];
@@ -145,14 +142,13 @@ export async function GET(request: NextRequest) {
     // Sort by score descending
     recalculatedScores.sort((a, b) => b.score - a.score);
 
-    console.log("🔄 Recalculated scores (top 10):", recalculatedScores.slice(0, 10));
 
     // 5. Check specific mentors mentioned in the issue
     const specificMentors = ["jKd3VERP8O", "xLUZEWvLXI"];
     const specificMentorData = [];
     
     for (const mentorId of specificMentors) {
-      const mentor = allMentors.find(m => m.fields?.UserID === mentorId);
+      const mentor = allMentors.find((m: any) => m.fields?.UserID === mentorId);
       if (mentor) {
         const mentorMeta = {
           Industry: mentor.fields?.Industry,
@@ -161,10 +157,10 @@ export async function GET(request: NextRequest) {
         };
         
         // Find in recalculated scores
-        const recalculatedScore = recalculatedScores.find(s => s.mentorId === mentorId);
+        const recalculatedScore = recalculatedScores.find((s: any) => s.mentorId === mentorId);
         
         // Find in current match rankings
-        const currentRanking = matchRows.find(r => r.fields?.MentorID === mentorId);
+        const currentRanking = matchRows.find((r: any) => r.fields?.MentorID === mentorId);
         
         specificMentorData.push({
           mentorId,
@@ -185,7 +181,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       menteeId,
       menteePreferences: prefRec.fields,
-      currentMatchRankings: matchRows.map(r => ({
+      currentMatchRankings: matchRows.map((r: any) => ({
         mentorId: r.fields?.MentorID,
         score: r.fields?.Score,
         preferenceScore: r.fields?.PreferenceScore,

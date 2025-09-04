@@ -22,8 +22,18 @@ export async function GET(req: NextRequest) {
 
     const table = role === "mentee" ? MENTEE_TABLE : MENTOR_TABLE;
 
+    // Select different fields based on role
+    const menteeFields = ['UserID', 'Goal', 'Challenges', 'HelpNeeded', 'Resume Info'];
+    const mentorFields = ['UserID', 'Industry', 'YearExp', 'CurrentRole', 'SeniorityLevel', 'PreviousRoles', 'MentoringStyle', 'RequiredMentoringStyles', 'CulturalBackground', 'Availability', 'AvailabilityJSON'];
+    
+    const fieldsToSelect = role === "mentee" ? menteeFields : mentorFields;
+    
     const [existing] = await base(table)
-      .select({ filterByFormula: `{UserID} = '${esc(uid)}'`, maxRecords: 1 })
+      .select({ 
+        filterByFormula: `{UserID} = '${esc(uid)}'`, 
+        maxRecords: 1,
+        fields: fieldsToSelect
+      })
       .firstPage();
 
     if (!existing) {
@@ -38,11 +48,17 @@ export async function GET(req: NextRequest) {
               seniorityLevel: "",
               previousRoles: "",
               mentoringStyle: "",
+              requiredMentoringStyles: "",
+              niceToHaveStyles: "",
               culturalBackground: "",
               availability: "",
               availabilityJson: "",
             }
       );
+    }
+
+    // Debug: Log what fields are actually available (only for mentors)
+    if (role === "mentor") {
     }
 
     if (role === "mentee") {
@@ -54,6 +70,39 @@ export async function GET(req: NextRequest) {
         resumeInfo: existing.fields['Resume Info'] ? JSON.parse(String(existing.fields['Resume Info'])) : null,
       });
     } else {
+      // Handle mentoring style fields for mentors
+      let mentoringStyle = "";
+      let requiredMentoringStyles = "";
+
+      // Note: MentoringStyle field is not used for mentors - we use RequiredMentoringStyles instead
+
+      // Handle RequiredMentoringStyles field (Multiple select)
+      if (Array.isArray(existing.fields.RequiredMentoringStyles)) {
+        // Check if it's the "I don't mind" option
+        if (existing.fields.RequiredMentoringStyles.includes("I don't mind any mentoring style")) {
+          mentoringStyle = "dont_mind";
+          requiredMentoringStyles = "";
+        } else {
+          // Map the first style to mentoringStyle and all styles to requiredMentoringStyles
+          const reverseStyleMap: Record<string, string> = {
+            'Coaching': 'coaching',
+            'Role Modelling': 'roleModelling',
+            'Facilitative': 'facilitative', 
+            'Technical': 'technical',
+            'Holistic': 'holistic'
+          };
+          const mappedStyles = existing.fields.RequiredMentoringStyles
+            .map(style => reverseStyleMap[style] || style);
+          
+          // Set the first style as the main mentoring style
+          mentoringStyle = mappedStyles[0] || "";
+          requiredMentoringStyles = mappedStyles.join(', ');
+        }
+      }
+
+      console.log("  - mentoringStyle:", mentoringStyle);
+      console.log("  - requiredMentoringStyles:", requiredMentoringStyles);
+
       return NextResponse.json({
         uid: existing.fields.UserID || uid,
         industry: existing.fields.Industry || "",
@@ -61,7 +110,8 @@ export async function GET(req: NextRequest) {
         currentRole: existing.fields.CurrentRole || "",
         seniorityLevel: existing.fields.SeniorityLevel || "",
         previousRoles: existing.fields.PreviousRoles || "",
-        mentoringStyle: existing.fields.MentoringStyle || "",
+        mentoringStyle: mentoringStyle,
+        requiredMentoringStyles: requiredMentoringStyles,
         culturalBackground: existing.fields.CulturalBackground || "",
         availability: existing.fields.Availability || "",
         availabilityJson: existing.fields.AvailabilityJSON || "",
@@ -79,7 +129,11 @@ export async function POST(req: NextRequest) {
     const fd   = await req.formData();
     const uid  = fd.get("uid")   as string | null;
     const role = fd.get("role")  as string | null;
-    console.log(fd)
+    
+    // Debug: Log all FormData entries
+    for (const [key, value] of fd.entries()) {
+      console.log(`  ${key}: ${value}`);
+    }
 
     if (!uid || !role) {
       return NextResponse.json({ error: "Missing uid/role" }, { status: 400 });
@@ -99,7 +153,30 @@ export async function POST(req: NextRequest) {
       fields.CurrentRole        = fd.get("currentRole") as string;
       fields.SeniorityLevel     = fd.get("seniorityLevel") as string;
       fields.PreviousRoles      = fd.get("previousRoles") as string;
-      fields.MentoringStyle     = fd.get("mentoringStyle") as string;
+      const mentoringStyleValue = fd.get("mentoringStyle") as string;
+      
+      // Handle mentoring style for mentors - use RequiredMentoringStyles field
+      if (mentoringStyleValue && mentoringStyleValue.trim()) {
+        if (mentoringStyleValue === 'dont_mind') {
+          // Use the actual Airtable option in RequiredMentoringStyles field
+          fields.RequiredMentoringStyles = ["I don't mind any mentoring style"];
+        } else {
+          // Convert single style to array for RequiredMentoringStyles field
+          const styleMap: Record<string, string> = {
+            'coaching': 'Coaching',
+            'roleModelling': 'Role Modelling', 
+            'facilitative': 'Facilitative',
+            'technical': 'Technical',
+            'holistic': 'Holistic'
+          };
+          const normalizedStyle = styleMap[mentoringStyleValue] || mentoringStyleValue;
+          fields.RequiredMentoringStyles = [normalizedStyle]; // Send as array for Multiple select
+        }
+      } else {
+      }
+      // Note: Mentoring style is already handled above using RequiredMentoringStyles field
+      
+      // Note: Mentors don't have NiceToHaveStyles field - only RequiredMentoringStyles
       fields.CulturalBackground = fd.get("culturalBackground") as string;
       fields.Availability       = fd.get("availability") as string;
 
@@ -125,14 +202,30 @@ export async function POST(req: NextRequest) {
         maxRecords: 1,
       })
       .firstPage();
-
-    let recId: string;
+    
     if (existing) {
-      recId = existing.id;
-      await base(table).update(recId, fields);
-    } else {
-      const created = await base(table).create([{ fields }]);
-      recId = created[0].id;
+    }
+
+    
+    let recId: string;
+    try {
+      if (existing) {
+        recId = existing.id;
+        await base(table).update(recId, fields);
+      } else {
+        const created = await base(table).create([{ fields }]);
+        recId = created[0].id;
+      }
+    } catch (airtableError) {
+      console.error("❌ Airtable error:", airtableError);
+      return NextResponse.json(
+        { 
+          error: "Failed to save to database", 
+          details: airtableError instanceof Error ? airtableError.message : "Unknown error",
+          fields: fields
+        }, 
+        { status: 500 }
+      );
     }
 
     if (role === "mentee") {

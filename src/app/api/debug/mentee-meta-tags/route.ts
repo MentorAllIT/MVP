@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     const allFields = Object.keys(menteeRecord.fields);
     
     // Get detailed info for each field
-    const fieldDetails = {};
+    const fieldDetails: { [key: string]: any } = {};
     for (const fieldName of allFields) {
       const value = menteeRecord.fields[fieldName];
       fieldDetails[fieldName] = {
