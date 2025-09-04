@@ -10,7 +10,8 @@ const {
   AIRTABLE_USERS_TABLE,
   AIRTABLE_PROFILES_TABLE,
   AIRTABLE_MENTOR_META_TABLE,
-  AIRTABLE_MATCH_RANKING_TABLE,
+  AIRTABLE_MENTEE_PREFERENCES_TABLE,
+  AIRTABLE_MENTEE_META_TABLE,
   JWT_SECRET,
 } = process.env;
 
@@ -20,7 +21,8 @@ const ready =
   AIRTABLE_USERS_TABLE &&
   AIRTABLE_PROFILES_TABLE &&
   AIRTABLE_MENTOR_META_TABLE &&
-  AIRTABLE_MATCH_RANKING_TABLE &&
+  AIRTABLE_MENTEE_PREFERENCES_TABLE &&
+  AIRTABLE_MENTEE_META_TABLE &&
   JWT_SECRET;
 
 let base: any = null;
@@ -111,124 +113,642 @@ function normalizeTags(raw: any): string[] {
   return Array.from(new Set(labels)).slice(0, 30);
 }
 
+// Real-time preference scoring function (FULL ALGORITHM - same as refresh-match)
+function calculatePreferenceScore(
+  menteePrefs: any,
+  mentorMeta: any
+): { score: number; preferenceScore: number; breakdown: string } {
+  
+  // CRITICAL DEBUG: Always show when this function is called
+  
+  try {
+    
+    // Pure preference-based scoring with priority-based weighting
+    let preferenceScore = 0;
+
+    if (menteePrefs && mentorMeta) {
+      // Get the factor order to determine priorities
+      const factorOrder = menteePrefs.FactorOrder ? menteePrefs.FactorOrder.split(',') : [];
+      
+      // Calculate scores for each factor
+      const factorScores: { [key: string]: number } = {};
+      
+      // Industry match
+      if (menteePrefs.CurrentIndustry && mentorMeta.Industry) {
+        const industryMatch = calculateIndustryMatch(menteePrefs.CurrentIndustry, mentorMeta.Industry);
+        factorScores['currentIndustry'] = industryMatch;
+      }
+
+      // Role match - FIXED: compare with CurrentRole field
+      if (menteePrefs.CurrentRole && mentorMeta.CurrentRole) {
+        const roleMatch = calculateRoleMatch(menteePrefs.CurrentRole, mentorMeta.CurrentRole);
+        factorScores['currentRole'] = roleMatch;
+      }
+
+      // Seniority match - FIXED: compare with SeniorityLevel field
+      if (menteePrefs.SeniorityLevel && mentorMeta.SeniorityLevel) {
+        const seniorityMatch = calculateSeniorityMatch(menteePrefs.SeniorityLevel, mentorMeta.SeniorityLevel);
+        factorScores['seniorityLevel'] = seniorityMatch;
+      }
+
+      // Years of experience match
+      if (menteePrefs.YearsExperience && mentorMeta.YearExp) {
+        const expMatch = calculateExperienceMatch(menteePrefs.YearsExperience, mentorMeta.YearExp);
+        factorScores['yearsExperience'] = expMatch;
+      }
+
+      // Mentoring style match - UPDATED: use RequiredMentoringStyles for scoring
+      if (menteePrefs.RequiredMentoringStyles && (mentorMeta.MentoringStyle || mentorMeta.RequiredMentoringStyles)) {
+        const mentorStyles = mentorMeta.RequiredMentoringStyles || mentorMeta.MentoringStyle;
+        const styleMatch = calculateMentoringStyleMatch(menteePrefs.RequiredMentoringStyles, mentorStyles);
+        factorScores['mentoringStyle'] = styleMatch;
+      }
+
+      // Previous roles match - FIXED: compare with PreviousRoles field
+      if (menteePrefs.PreviousRoles && mentorMeta.PreviousRoles) {
+        const previousRolesMatch = calculatePreviousRolesMatch(menteePrefs.PreviousRoles, mentorMeta.PreviousRoles);
+        factorScores['previousRoles'] = previousRolesMatch;
+      }
+
+      // Cultural background match - FIXED: compare with CulturalBackground field
+      if (menteePrefs.CultureBackground && mentorMeta.CulturalBackground) {
+        const culturalMatch = calculateCulturalMatch(menteePrefs.CultureBackground, mentorMeta.CulturalBackground);
+        factorScores['culturalBackground'] = culturalMatch;
+      }
+
+      // Availability match - FIXED: compare with Availability field
+      if (menteePrefs.Availability && mentorMeta.Availability) {
+        const availabilityMatch = calculateAvailabilityMatch(menteePrefs.Availability, mentorMeta.Availability);
+        factorScores['availability'] = availabilityMatch;
+      }
+
+
+      // Apply priority-based weighting
+      if (factorOrder.length > 0) {
+        // Top priority (35% weight)
+        if (factorOrder[0] && factorScores[factorOrder[0]] !== undefined) {
+          const weight = 0.35;
+          const score = factorScores[factorOrder[0]] * weight;
+          preferenceScore += score;
+        }
+
+        // Second priority (25% weight)
+        if (factorOrder[1] && factorScores[factorOrder[1]] !== undefined) {
+          const weight = 0.25;
+          const score = factorScores[factorOrder[1]] * weight;
+          preferenceScore += score;
+        }
+
+        // Third priority (10% weight)
+        if (factorOrder[2] && factorScores[factorOrder[2]] !== undefined) {
+          const weight = 0.10;
+          const score = factorScores[factorOrder[2]] * weight;
+          preferenceScore += score;
+        }
+
+        // Remaining factors (30% weight distributed equally among available factors)
+        const remainingFactors = factorOrder.slice(3).filter((factor: string) => factorScores[factor] !== undefined);
+        if (remainingFactors.length > 0) {
+          const remainingWeight = 0.30 / remainingFactors.length;
+          for (const factor of remainingFactors) {
+            const score = factorScores[factor] * remainingWeight;
+            preferenceScore += score;
+          }
+        } else {
+          // If no remaining factors available, redistribute weight to available factors
+          const availableFactors = Object.keys(factorScores).filter(factor => factorScores[factor] !== undefined);
+          if (availableFactors.length > 0) {
+            const redistributedWeight = 0.30 / availableFactors.length;
+            for (const factor of availableFactors) {
+              const score = factorScores[factor] * redistributedWeight;
+              preferenceScore += score;
+            }
+          }
+        }
+      } else {
+        // CRITICAL: If mentee has no FactorOrder, this should rarely happen
+        // But if it does, we should still try to apply some logical weighting
+        const availableFactors = Object.keys(factorScores).filter(factor => factorScores[factor] !== undefined);
+        if (availableFactors.length > 0) {
+          // Apply a simple fallback: industry gets 40%, role gets 30%, others get equal remaining
+          if (factorScores['currentIndustry'] !== undefined) {
+            preferenceScore += factorScores['currentIndustry'] * 0.40;
+          }
+          if (factorScores['currentRole'] !== undefined) {
+            preferenceScore += factorScores['currentRole'] * 0.30;
+          }
+          
+          const otherFactors = availableFactors.filter(factor => !['currentIndustry', 'currentRole'].includes(factor));
+          if (otherFactors.length > 0) {
+            const otherWeight = 0.30 / otherFactors.length;
+            for (const factor of otherFactors) {
+              const score = factorScores[factor] * otherWeight;
+              preferenceScore += score;
+            }
+          }
+        }
+      }
+
+    }
+
+    // Final score is 100% preference-based
+    const finalScore = preferenceScore;
+    
+    return {
+      score: Math.round(100 * finalScore),
+      preferenceScore: Math.round(100 * preferenceScore),
+      breakdown: `Preference Score: ${Math.round(100 * preferenceScore)}%`
+    };
+  } catch (error) {
+    return {
+      score: 0,
+      preferenceScore: 0,
+      breakdown: `Error: ${error}`
+    };
+  }
+}
+
+// Smart industry matching function
+function calculateIndustryMatch(menteeIndustry: string, mentorIndustry: string): number {
+  if (!menteeIndustry || !mentorIndustry) return 0;
+  
+  // Normalize strings
+  const mentee = menteeIndustry.toLowerCase().trim();
+  const mentor = mentorIndustry.toLowerCase().trim();
+  
+  // 1. Exact match (highest score)
+  if (mentee === mentor) {
+    return 1.0;
+  }
+  
+  // 2. Check if mentor industry is contained within mentee industry (perfect match)
+  if (mentee.includes(mentor) || mentor.includes(mentee)) {
+    return 1.0;
+  }
+  
+  // 3. Extract keywords from both industries
+  const menteeKeywords = extractIndustryKeywords(mentee);
+  const mentorKeywords = extractIndustryKeywords(mentor);
+  
+  
+  // 3. Calculate keyword overlap
+  const overlappingKeywords = menteeKeywords.filter(keyword => 
+    mentorKeywords.some(mentorKeyword => 
+      keyword.includes(mentorKeyword) || mentorKeyword.includes(keyword)
+    )
+  );
+  
+  
+  // 4. Calculate match score based on overlap
+  if (overlappingKeywords.length === 0) {
+    return 0;
+  }
+  
+  // Score based on percentage of mentee keywords that match
+  const matchPercentage = overlappingKeywords.length / menteeKeywords.length;
+  const score = Math.min(matchPercentage, 1.0);
+  
+  return score;
+}
+
+// Extract meaningful keywords from industry strings
+function extractIndustryKeywords(industry: string): string[] {
+  // Remove common filler words and punctuation
+  const fillerWords = ['and', 'or', 'the', 'a', 'an', 'of', 'in', 'with', 'for', 'to', 'by'];
+  const punctuation = /[,;()]/g;
+  
+  // Clean and split
+  let cleaned = industry
+    .replace(punctuation, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  
+  // Split into words and filter
+  const words = cleaned.split(' ')
+    .map(word => word.trim())
+    .filter(word => 
+      word.length > 2 && 
+      !fillerWords.includes(word) &&
+      !/^\d+$/.test(word) // Remove pure numbers
+    );
+  
+  // Add some semantic variations
+  const semanticKeywords = [];
+  for (const word of words) {
+    semanticKeywords.push(word);
+    
+    // Add related terms
+    if (word.includes('account')) semanticKeywords.push('accounting', 'audit');
+    if (word.includes('financ')) semanticKeywords.push('finance', 'banking', 'investment');
+    if (word.includes('tech')) semanticKeywords.push('technology', 'software', 'it');
+    if (word.includes('consult')) semanticKeywords.push('consulting', 'advisory');
+    if (word.includes('startup')) semanticKeywords.push('startup', 'entrepreneur');
+    if (word.includes('health')) semanticKeywords.push('healthcare', 'medical');
+    if (word.includes('educat')) semanticKeywords.push('education', 'academic');
+  }
+  
+  // Remove duplicates and return
+  return [...new Set(semanticKeywords)];
+}
+
+// Helper functions (same as refresh-match)
+function calculateRoleMatch(menteeRole: string, mentorRole: string): number {
+  // Clear and exact role matching with typo tolerance and position variations
+  if (!menteeRole || !mentorRole) return 0;
+  
+  const mentee = menteeRole.toLowerCase().trim();
+  const mentor = mentorRole.toLowerCase().trim();
+  
+  // Exact match
+  if (mentee === mentor) return 1.0;
+  
+  // Check if one contains the other (perfect match)
+  if (mentee.includes(mentor) || mentor.includes(mentee)) return 1.0;
+  
+  // Position variations and synonyms
+  const roleVariations = {
+    'swe': ['software engineer', 'full stack developer', 'developer', 'programmer'],
+    'full stack developer': ['swe', 'software engineer', 'developer', 'programmer'],
+    'software engineer': ['swe', 'full stack developer', 'developer', 'programmer'],
+    'internal auditor': ['auditor', 'senior internal auditor', 'assurance associate'],
+    'auditor': ['internal auditor', 'external auditor', 'senior auditor', 'assurance associate'],
+    'accountant': ['graduate accountant', 'senior accountant', 'financial accountant'],
+    'finance': ['financial analyst', 'finance manager', 'financial advisor']
+  };
+  
+  // Check for role variations
+  for (const [key, variations] of Object.entries(roleVariations)) {
+    if (mentee.includes(key) || variations.some(v => mentee.includes(v))) {
+      if (mentor.includes(key) || variations.some(v => mentor.includes(v))) {
+        return 1.0; // Perfect match through variations
+      }
+    }
+  }
+  
+  // Check for key role matches
+  if (mentee.includes('auditor') && mentor.includes('auditor')) return 1.0;
+  if (mentee.includes('accountant') && mentor.includes('accountant')) return 1.0;
+  if (mentee.includes('finance') && mentor.includes('finance')) return 1.0;
+  if (mentee.includes('internal') && mentor.includes('internal')) return 1.0;
+  if (mentee.includes('senior') && mentor.includes('senior')) return 1.0;
+  
+  return 0.0; // No match - roles are too different
+}
+
+function calculateSeniorityMatch(menteeSeniority: string, mentorSeniority: string): number {
+  const seniorityLevels = {
+    'Junior': 1,
+    'Mid-level': 2,
+    'Senior': 3,
+    'Manager': 4,
+    'Director': 5,
+    'Executive': 6
+  };
+
+  const menteeLevel = seniorityLevels[menteeSeniority as keyof typeof seniorityLevels] || 1;
+  const mentorLevel = seniorityLevels[mentorSeniority as keyof typeof seniorityLevels] || 1;
+
+  // Mentor's hierarchy >= mentee's required hierarchy → 1.0
+  if (mentorLevel >= menteeLevel) return 1.0;
+  
+  // If mentor is one level below → 0.6
+  if (mentorLevel === menteeLevel - 1) return 0.6;
+  
+  // Otherwise → 0
+  return 0;
+}
+
+function calculateExperienceMatch(menteeExp: number, mentorExp: number): number {
+  // Experience matching: mentor should have >= required experience
+  if (!menteeExp || !mentorExp) return 0;
+  
+  // 1. mentor's experiences ≥ required experiences year → 1.0
+  if (mentorExp >= menteeExp) return 1.0;
+  
+  // 2. If mentor_years = required−1 → 0.7
+  if (mentorExp === menteeExp - 1) return 0.7;
+  
+  // 3. otherwise → 0.1
+  return 0.1;
+}
+
+// Update the mentoring style matching function
+function calculateMentoringStyleMatch(menteeStyles: string | string[], mentorStyle: string | string[]): number {
+  if (!menteeStyles || !mentorStyle) return 0;
+
+  // Handle "I don't mind" case for mentees
+  if (menteeStyles === 'dont_mind' || (Array.isArray(menteeStyles) && menteeStyles.includes('dont_mind'))) {
+    return 1.0; // Full score for all mentors
+  }
+
+  // Handle "I don't mind" case for mentors
+  if (mentorStyle === 'dont_mind' || (Array.isArray(mentorStyle) && mentorStyle.includes('dont_mind'))) {
+    return 1.0; // Full score for mentees
+  }
+
+  // Extract required styles from mentee preferences
+  let requiredStyles: string[] = [];
+  if (typeof menteeStyles === 'string') {
+    // RequiredMentoringStyles is already in the correct format (comma-separated)
+    requiredStyles = menteeStyles.split(',').map(s => s.trim()).filter(s => s);
+  } else if (Array.isArray(menteeStyles)) {
+    requiredStyles = menteeStyles;
+  }
+
+  // If no required styles, return 0
+  if (requiredStyles.length === 0) return 0;
+
+  // Convert mentor styles to array
+  let mentorStyleArray: string[] = [];
+  if (typeof mentorStyle === 'string') {
+    mentorStyleArray = mentorStyle.split(',').map((s: string) => s.trim()).filter(s => s);
+  } else if (Array.isArray(mentorStyle)) {
+    mentorStyleArray = mentorStyle;
+  }
+
+  // If no mentor styles, return 0
+  if (mentorStyleArray.length === 0) return 0;
+
+  // Calculate overlap percentage for required styles only
+  const overlappingStyles = requiredStyles.filter((style: string) =>
+    mentorStyleArray.some((mentorStyle: string) =>
+      style.toLowerCase().includes(mentorStyle.toLowerCase()) ||
+      mentorStyle.toLowerCase().includes(style.toLowerCase())
+    )
+  );
+
+  if (overlappingStyles.length === 0) return 0;
+
+  // Return percentage of required styles that match
+  return overlappingStyles.length / requiredStyles.length;
+}
+
+function calculatePreviousRolesMatch(menteeRoles: string, mentorRoles: string): number {
+  // Previous roles: mentee's roles must contain mentor's roles
+  if (!menteeRoles || !mentorRoles) return 0;
+  
+  const mentee = menteeRoles.toLowerCase().trim();
+  const mentor = mentorRoles.toLowerCase().trim();
+  
+  // Exact match
+  if (mentee === mentor) return 1.0;
+  
+  // Check if mentee's roles contain mentor's roles (perfect match)
+  if (mentee.includes(mentor) || mentor.includes(mentee)) return 1.0;
+  
+  // Check for key role matches
+  if (mentee.includes('auditor') && mentor.includes('auditor')) return 1.0;
+  if (mentee.includes('accountant') && mentor.includes('accountant')) return 1.0;
+  if (mentee.includes('finance') && mentor.includes('finance')) return 1.0;
+  if (mentee.includes('big 4') && mentor.includes('big 4')) return 1.0;
+  
+  return 0.0; // No match - mentor's roles don't fit mentee's requirements
+}
+
+function calculateCulturalMatch(menteeCulture: string, mentorCulture: string): number {
+  // Cultural matching: mentor's culture should fall inside mentee's culture range
+  if (!menteeCulture || !mentorCulture) return 0;
+  
+  const mentee = menteeCulture.toLowerCase().trim();
+  const mentor = mentorCulture.toLowerCase().trim();
+  
+  // Exact match
+  if (mentee === mentor) return 1.0;
+  
+  // Check if mentee's culture contains mentor's culture (perfect match)
+  if (mentee.includes(mentor) || mentor.includes(mentee)) return 1.0;
+  
+  // Check for language matches
+  if (mentee.includes('chinese') && mentor.includes('chinese')) return 1.0;
+  if (mentee.includes('english') && mentor.includes('english')) return 1.0;
+  if (mentee.includes('international') && mentor.includes('international')) return 1.0;
+  
+  return 0.0; // No match - mentor's culture doesn't fit mentee's requirements
+}
+
+function calculateAvailabilityMatch(menteeAvailability: string, mentorAvailability: string): number {
+  // Availability matching: mentee's must contain mentor's
+  if (!menteeAvailability || !mentorAvailability) return 0;
+  
+  const mentee = menteeAvailability.toLowerCase().trim();
+  const mentor = mentorAvailability.toLowerCase().trim();
+  
+  // Exact match
+  if (mentee === mentor) return 1.0;
+  
+  // Check if mentee's availability contains mentor's availability (perfect match)
+  if (mentee.includes(mentor) || mentor.includes(mentee)) return 1.0;
+  
+  // Check for frequency matches
+  if (mentee.includes('weekly') && mentor.includes('weekly')) return 1.0;
+  if (mentee.includes('weekday') && mentor.includes('weekday')) return 1.0;
+  if (mentee.includes('after hours') && mentor.includes('after hours')) return 1.0;
+  if (mentee.includes('during the week') && mentor.includes('during the week')) return 1.0;
+  
+  return 0.0; // No match - mentor's availability doesn't fit mentee's requirements
+}
+
+// Tag overlap scoring function
+function calculateTagOverlap(menteeTags: string[], mentorTags: string[]): number {
+  if (menteeTags.length === 0 || mentorTags.length === 0) return 0;
+
+  const uniqueMenteeTags = new Set(menteeTags);
+  const uniqueMentorTags = new Set(mentorTags);
+
+  const overlappingTags = Array.from(uniqueMenteeTags).filter(tag => uniqueMentorTags.has(tag));
+
+  const overlapPercentage = overlappingTags.length / uniqueMenteeTags.size;
+  return Math.min(overlapPercentage, 1.0);
+}
+
 export async function GET(req: NextRequest) {
   try {
-    if (!ready) return NextResponse.json({ error: "Backend not configured" }, { status: 503 });
+    if (!ready) {
+      return NextResponse.json({ error: "Airtable not configured" }, { status: 503 });
+    }
 
-    // Auth
     const token = req.cookies.get("session")?.value;
-    if (!token) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    let uid = "";
+    if (!token) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    let uid: string;
     try {
-      uid = (jwt.verify(token, JWT_SECRET!) as any).uid;
+      const decoded = jwt.verify(token, JWT_SECRET!) as any;
+      uid = decoded.uid;
     } catch {
       return NextResponse.json({ error: "Invalid session" }, { status: 401 });
     }
 
-    // Mentee matches with enhanced scoring - get all mentors sorted by score
-    // Use all() instead of firstPage() to ensure we get all records
-    const matchRows: any[] = await base(AIRTABLE_MATCH_RANKING_TABLE!)
-      .select({
-        filterByFormula: `{MenteeID}='${esc(uid)}'`,
-        fields: ["MenteeID", "MentorID", "UpdatedAt", "Score", "PreferenceScore", "TagScore", "Breakdown"],
-        sort: [{ field: "Score", direction: "desc" }],
-      })
-      .all();
-    
-    console.log(`🔍 Found ${matchRows.length} mentor matches for mentee ${uid}`);
-    console.log("Raw match rows:", matchRows.map(r => ({
-      mentorId: r.fields?.MentorID,
-      score: r.fields?.Score,
-      preferenceScore: r.fields?.PreferenceScore
-    })));
 
-    const mentorIds = Array.from(
-      new Set(matchRows.map((r: any) => r.fields?.MentorID).filter(Boolean) as string[])
-    );
-    if (!mentorIds.length) return NextResponse.json({ mentors: [] });
+    // 1. Fetch mentee preferences (real-time)
+    const prefRows = await firstPage(AIRTABLE_MENTEE_PREFERENCES_TABLE!, {
+      filterByFormula: `{UserID}='${esc(uid)}'`,
+      fields: ["UserID", "CurrentIndustry", "CurrentRole", "SeniorityLevel", "PreviousRoles", "MentoringStyle", "RequiredMentoringStyles", "YearsExperience", "CultureBackground", "Availability", "FactorOrder"],
+      maxRecords: 1
+    });
 
-    // Joins
-    const [userRows, profileRows, metaRows] = await Promise.all([
-      fetchByUserIds(AIRTABLE_USERS_TABLE!, mentorIds, ["UserID", "Name"]),
-      fetchByUserIds(AIRTABLE_PROFILES_TABLE!, mentorIds, ["UserID", "Bio", "LinkedIn"]),
-      fetchByUserIds(AIRTABLE_MENTOR_META_TABLE!, mentorIds, [
-        "UserID",
-        "Industry",
-        "YearExp",
-        "Skill",
-        "Location",
-        "Role",
-        "Company",
-        "SchoolName",
-        "FieldOfStudy",
-        "Tags",
-        "UpdatedAt",
-      ]),
-    ]);
-
-    const byId = (rows: any[], pick: (f: any) => any) =>
-      Object.fromEntries(
-        rows.map((r) => r.fields).filter((f) => f?.UserID).map((f) => [f.UserID, pick(f)])
-      );
-
-    const users = byId(userRows, (f) => ({ name: clean(f.Name) ?? null }));
-    const profiles = byId(profileRows, (f) => ({
-      bio: clean(f.Bio) ?? null,
-      linkedIn: f.LinkedIn ?? null,
-    }));
-    const meta = byId(metaRows, (f) => ({
-      industry: clean(f.Industry) ?? null,
-      yearExp: typeof f.YearExp === "number" ? f.YearExp : null,
-      skill: f.Skill ?? null, // UI splits it
-      location: clean(f.Location) ?? null,
-      role: clean(f.Role) ?? null,
-      company: clean(f.Company) ?? null,
-      schoolName: clean(f.SchoolName) ?? null,
-      fieldOfStudy: clean(f.FieldOfStudy) ?? null,
-      tags: normalizeTags(f.Tags),
-      metaUpdatedAt: f.UpdatedAt ?? null,
-    }));
-
-    // Merge with enhanced scoring - already sorted by score from Airtable
-    const mentors = matchRows
-      .map((r: any) => {
-        const id = r.fields?.MentorID as string;
-        return {
-          userId: id,
-          rankedUpdatedAt: r.fields?.UpdatedAt ?? null,
-          name: users[id]?.name ?? null,
-          bio: profiles[id]?.bio ?? null,
-          linkedIn: profiles[id]?.linkedIn ?? null,
-          // Enhanced scoring data
-          score: r.fields?.Score ?? null,
-          preferenceScore: r.fields?.PreferenceScore ?? null,
-          tagScore: r.fields?.TagScore ?? null,
-          breakdown: r.fields?.Breakdown ?? null,
-          ...(meta[id] ?? {}),
-        };
-      });
-    
-    console.log("Enhanced mentor matches:", mentors);
-    
-    // Return all mentors that share the highest score
-    if (mentors.length > 0) {
-      const highestScore = mentors[0].score;
-      console.log(`🔍 Highest score found: ${highestScore}`);
-      console.log(`🔍 All mentor scores:`, mentors.map(m => ({ userId: m.userId, score: m.score, name: m.name })));
-      
-      const topMentors = mentors.filter(mentor => mentor.score === highestScore);
-      console.log(`🏆 Returning ${topMentors.length} mentors with highest score ${highestScore}:`, topMentors.map(m => ({ userId: m.userId, score: m.score, name: m.name })));
-      return NextResponse.json({ mentors: topMentors });
+    if (!prefRows.length) {
+      return NextResponse.json({ mentors: [] });
     }
+
+    const menteePrefs = prefRows[0].fields;
+
+    // 1.5. Fetch mentee tags from MenteeMeta table
+    const menteeMetaRows = await firstPage(AIRTABLE_MENTEE_META_TABLE!, {
+      filterByFormula: `{UserID}='${esc(uid)}'`,
+      fields: ["UserID", "Tags"],
+      maxRecords: 1
+    });
+
+    let menteeTags: string[] = [];
+    if (menteeMetaRows.length > 0 && menteeMetaRows[0].fields.Tags) {
+      const rawTags = menteeMetaRows[0].fields.Tags;
+      if (rawTags.value) {
+        menteeTags = rawTags.value.split(',').map((tag: string) => tag.trim());
+      }
+    }
+
+    // 2. Fetch all mentors (real-time)
+    const mentorRows = await firstPage(AIRTABLE_MENTOR_META_TABLE!, {
+      fields: ["UserID", "Industry", "YearExp", "Skill", "Location", "Role", "Company", "SchoolName", "FieldOfStudy", "Tags", "UpdatedAt", "CurrentRole", "SeniorityLevel", "PreviousRoles", "MentoringStyle", "CulturalBackground", "Availability"]
+    });
+
+    // 2.5. Fetch mentor names from Users table
+    const mentorIds = mentorRows.map(row => row.fields?.UserID).filter(Boolean);
+    const userRows = await firstPage(AIRTABLE_USERS_TABLE!, {
+      filterByFormula: `OR(${mentorIds.map(id => `{UserID}='${esc(id)}'`).join(',')})`,
+      fields: ["UserID", "Name"]
+    });
+
+    // 2.6. Fetch mentor profiles from Profiles table
+    const profileRows = await firstPage(AIRTABLE_PROFILES_TABLE!, {
+      filterByFormula: `OR(${mentorIds.map(id => `{UserID}='${esc(id)}'`).join(',')})`,
+      fields: ["UserID", "Bio", "LinkedIn"]
+    });
+
+
+    // 3. Calculate fresh scores for each mentor (real-time)
+    const mentorScores = [];
     
-    console.log("❌ No mentors found");
-    return NextResponse.json({ mentors: [] });
+    
+    for (const mentorRow of mentorRows) {
+      const mentorId = mentorRow.fields?.UserID;
+      if (!mentorId) continue;
+
+      // CRITICAL DEBUG: Always show when we start processing jKd3VERP8O
+      if (mentorId === 'jKd3VERP8O') {
+      }
+
+      const mentorMeta = {
+        Industry: mentorRow.fields?.Industry,
+        Role: mentorRow.fields?.Role,
+        YearExp: mentorRow.fields?.YearExp,
+        Skill: mentorRow.fields?.Skill,
+        Location: mentorRow.fields?.Location,
+        Company: mentorRow.fields?.Company,
+        SchoolName: mentorRow.fields?.SchoolName,
+        FieldOfStudy: mentorRow.fields?.FieldOfStudy,
+        Tags: mentorRow.fields?.Tags,
+        UpdatedAt: mentorRow.fields?.UpdatedAt,
+        // New fields for proper preference matching
+        CurrentRole: mentorRow.fields?.CurrentRole,
+        SeniorityLevel: mentorRow.fields?.SeniorityLevel,
+        PreviousRoles: mentorRow.fields?.PreviousRoles,
+        MentoringStyle: mentorRow.fields?.MentoringStyle,
+        CulturalBackground: mentorRow.fields?.CulturalBackground,
+        Availability: mentorRow.fields?.Availability
+      };
+
+      // CRITICAL DEBUG: Show mentorMeta for jKd3VERP8O after it's declared
+      if (mentorId === 'jKd3VERP8O') {
+      }
+
+
+      // Calculate fresh score
+      const scoreResult = calculatePreferenceScore(menteePrefs, mentorMeta);
+
+      // Calculate tag score (30% weight)
+      let tagScore = 0;
+      let tagBreakdown = "";
+      if (menteeTags.length > 0 && mentorMeta.Tags) {
+        const mentorTags = normalizeTags(mentorMeta.Tags);
+        if (mentorTags.length > 0) {
+          const tagOverlap = calculateTagOverlap(menteeTags, mentorTags);
+          tagScore = tagOverlap * 30; // 30% weight
+          tagBreakdown = `Tag Overlap: ${(tagOverlap * 100).toFixed(1)}%`;
+        }
+      }
+
+      // Calculate final score: 30% tags + 70% preferences
+      const finalScore = Math.round(tagScore + (scoreResult.preferenceScore * 0.7));
+      const finalBreakdown = `${tagBreakdown ? tagBreakdown + ' | ' : ''}Preferences: ${scoreResult.breakdown}`;
+
+
+      mentorScores.push({
+        mentorId,
+        score: finalScore,
+        preferenceScore: scoreResult.preferenceScore,
+        tagScore: tagScore,
+        breakdown: finalBreakdown
+      });
+    }
+
+    // Sort by score (highest first)
+    mentorScores.sort((a, b) => b.score - a.score);
+
+
+    // Return top mentors
+    const topMentors = mentorScores.slice(0, 1); // Return top 1 for now
+
+    // Transform to match expected format
+    const mentors = topMentors.map(scoreData => {
+      const meta = mentorRows.find(r => r.fields?.UserID === scoreData.mentorId)?.fields;
+      if (!meta) return null;
+
+      // Find user data
+      const userData = userRows.find(r => r.fields?.UserID === scoreData.mentorId)?.fields;
+      const profileData = profileRows.find(r => r.fields?.UserID === scoreData.mentorId)?.fields;
+
+      return {
+        userId: scoreData.mentorId,
+        name: clean(userData?.Name) ?? null,
+        bio: clean(profileData?.Bio) ?? null,
+        linkedIn: clean(profileData?.LinkedIn) ?? null,
+        industry: clean(meta.Industry) ?? null,
+        yearExp: meta.YearExp ?? null,
+        skill: clean(meta.Skill) ?? null,
+        location: clean(meta.Location) ?? null,
+        role: clean(meta.Role) ?? null,
+        company: clean(meta.Company) ?? null,
+        schoolName: clean(meta.SchoolName) ?? null,
+        fieldOfStudy: clean(meta.FieldOfStudy) ?? null,
+        tags: normalizeTags(meta.Tags),
+        metaUpdatedAt: meta.UpdatedAt ?? null,
+        // New preference matching fields
+        currentRole: clean(meta.CurrentRole) ?? null,
+        seniorityLevel: clean(meta.SeniorityLevel) ?? null,
+        previousRoles: clean(meta.PreviousRoles) ?? null,
+        mentoringStyle: clean(meta.MentoringStyle) ?? null,
+        culturalBackground: clean(meta.CulturalBackground) ?? null,
+        availability: clean(meta.Availability) ?? null,
+        // Enhanced scoring data
+        score: scoreData.score,
+        preferenceScore: scoreData.preferenceScore,
+        tagScore: scoreData.tagScore,
+        breakdown: scoreData.breakdown
+      };
+    }).filter(Boolean);
+    
+    return NextResponse.json({ mentors });
+
   } catch (e: any) {
     const status = e?.statusCode || e?.status || 500;
     const msg =
       e?.code === "ETIMEDOUT"
         ? "Airtable timed out. Please retry."
         : e?.message || "Server error";
+    console.error("❌ Mentor match error:", e);
     return NextResponse.json({ error: msg }, { status });
   }
 }

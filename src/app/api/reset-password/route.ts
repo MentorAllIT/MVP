@@ -46,7 +46,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('=== TOKEN DEBUG ===');
     console.log('Received token:', JSON.stringify(token));
     console.log('Token length:', token?.length);
     console.log('Token type:', typeof token);

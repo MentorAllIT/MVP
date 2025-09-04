@@ -55,11 +55,9 @@ const getMeetingUrl = (googleMeetField: any): string | null => {
 };
 
 export default function BookingDetailsPage() {
-  console.log('🚀 BookingDetailsPage component loaded');
   
   const params = useParams();
   const bookingId = params.bookingId as string;
-  console.log('📝 Booking ID from params:', bookingId);
   
   const [booking, setBooking] = useState<BookingDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -70,26 +68,19 @@ export default function BookingDetailsPage() {
   const [isRescheduling, setIsRescheduling] = useState(false);
 
   useEffect(() => {
-    console.log('🔄 useEffect triggered, bookingId:', bookingId);
     
     const fetchBookingDetails = async () => {
       try {
-        console.log('🔍 Fetching booking details for bookingId:', bookingId);
         
         const response = await fetch(`/api/booking?bookingId=${bookingId}`);
         
-        console.log('📡 API Response status:', response.status);
-        console.log('📡 API Response ok:', response.ok);
         
         if (!response.ok) {
           throw new Error('Failed to fetch booking details');
         }
         
         const data = await response.json();
-        console.log('📋 Main API booking data received:', data);
         console.log(' GoogleMeetJoinUrl from main API:', data.GoogleMeetJoinUrl);
-        console.log('🔗 Type:', typeof data.GoogleMeetJoinUrl);
-        console.log('🔗 Processed URL:', getMeetingUrl(data.GoogleMeetJoinUrl));
         
         setBooking(data);
       } catch (error) {
@@ -372,8 +363,6 @@ export default function BookingDetailsPage() {
               }}>
                 {(() => {
                   const meetingUrl = getMeetingUrl(booking.GoogleMeetJoinUrl);
-                  console.log('🎯 Meeting URL for conditional:', meetingUrl);
-                  console.log('🎯 Boolean check:', !!meetingUrl);
                   
                   return meetingUrl ? (
                     <div style={{ 

@@ -10,7 +10,7 @@ export default function MenteeConnectionsPage() {
       <header className={styles.header}>
         <div className={styles.headerContent}>
           <h1 className={styles.title}>My Connections</h1>
-          <HamburgerMenu theme="dark" />
+          <HamburgerMenu theme="light" />
         </div>
       </header>
 

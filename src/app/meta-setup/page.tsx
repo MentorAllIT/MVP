@@ -7,6 +7,58 @@ import styles from "./metaSetup.module.css";
 // Helpers
 type FieldErrors = Record<string, string>;
 
+// Mentoring style definitions with explanations
+const mentoringStyles = [
+  {
+    id: "coaching",
+    label: "Coaching",
+    description: "Helps with specific skills with clear structure (e.g. resumes, interviews, technical skills, communication).",
+    value: "Tangible progress and clear steps."
+  },
+  {
+    id: "roleModelling",
+    label: "Role Modelling",
+    description: "Mentees learn by seeing how a professional operates (e.g. how to behave in meetings, how to lead a project).",
+    value: "Exposure to 'what good looks like' in real workplaces."
+  },
+  {
+    id: "facilitative",
+    label: "Facilitative",
+    description: "Mentor guides through questions and reflection, helping them figure out their path (e.g. 'Should I go into data vs consulting?').",
+    value: "Builds critical thinking & decision-making confidence."
+  },
+  {
+    id: "technical",
+    label: "Technical",
+    description: "Hands-on guidance in a specific industry skill (coding, data analysis, design, finance modeling).",
+    value: "Gives them a competitive edge for job readiness."
+  },
+  {
+    id: "holistic",
+    label: "Holistic",
+    description: "Addresses both career + personal challenges (imposter syndrome, stress, work-life balance).",
+    value: "Supports well-being while transitioning into adult/professional life."
+  }
+];
+
+// Nice-to-have options (including "None")
+const niceToHaveOptions = [
+  {
+    id: "none",
+    label: "None",
+    description: "No additional mentoring styles needed",
+    value: "No additional preferences"
+  }
+];
+
+interface MentoringStylePreferences {
+  required: string[];
+  niceToHave: string[];
+  dontMind: boolean;
+}
+
+type MentoringStyleState = MentoringStylePreferences | string;
+
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 type DayKey = (typeof DAYS)[number];
 
@@ -56,6 +108,33 @@ function to24(parts: TimeParts): string {
   if (period === "AM") h = h % 12; // 12 AM = 0
   else if (period === "PM") h = (h % 12) + 12; // 12 PM = 12
   return `${String(h).padStart(2, "0")}:${String(Number(minute)).padStart(2, "0")}`;
+}
+
+// Mentoring Style Tooltip Component
+function MentoringStyleTooltip({ style }: { style: { id: string; label: string; description: string; value: string } }) {
+  const [isVisible, setIsVisible] = useState(false);
+
+  return (
+    <div className={styles.tooltipContainer}>
+      <button
+        type="button"
+        className={styles.tooltipTrigger}
+        onMouseEnter={() => setIsVisible(true)}
+        onMouseLeave={() => setIsVisible(false)}
+        onClick={() => setIsVisible(!isVisible)}
+        aria-label={`Learn more about ${style.label}`}
+      >
+        i
+      </button>
+      {isVisible && (
+        <div className={styles.tooltip}>
+          <div className={styles.tooltipTitle}>{style.label}</div>
+          <div className={styles.tooltipDescription}>{style.description}</div>
+          <div className={styles.tooltipValue}>Value: {style.value}</div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 const HOUR_OPTS = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
@@ -139,13 +218,30 @@ export default function MetaSetup() {
     return <p style={{ padding: "2rem" }}>Missing information. Please sign in again.</p>;
   }
 
-  const [state, setState] = useState({
+  const [state, setState] = useState<{
+    industry: string;
+    years: string;
+    currentRole: string;
+    seniorityLevel: string;
+    previousRoles: string;
+    mentoringStyle: MentoringStyleState;
+    culturalBackground: string;
+    availability: string;
+    goal: string;
+    challenges: string;
+    help: string;
+    weekly: WeeklySchedule;
+  }>({
     industry:   "",
     years:      "",
     currentRole: "",
     seniorityLevel: "",
     previousRoles: "",
-    mentoringStyle: "",
+    mentoringStyle: role === "mentor" ? {
+      required: [],
+      niceToHave: [],
+      dontMind: false
+    } : "",
     culturalBackground: "",
     availability: "",
     goal:       "",
@@ -202,7 +298,11 @@ export default function MetaSetup() {
               currentRole: metaData.currentRole || "",
               seniorityLevel: metaData.seniorityLevel || "",
               previousRoles: metaData.previousRoles || "",
-              mentoringStyle: metaData.mentoringStyle || "",
+              mentoringStyle: role === "mentor" ? {
+                required: metaData.requiredMentoringStyles ? metaData.requiredMentoringStyles.split(',').map((s: string) => s.trim()).filter((s: string) => s) : [],
+                niceToHave: [], // Not used for mentors
+                dontMind: metaData.mentoringStyle === 'dont_mind'
+              } : metaData.mentoringStyle || "",
               culturalBackground: metaData.culturalBackground || "",
               availability: metaData.availability || ""
             }));
@@ -282,6 +382,28 @@ export default function MetaSetup() {
     setResumeFile(e.target.files?.[0] || null);
   };
 
+  // Mentoring style change handler - simplified for mentors (no nice-to-have)
+  const handleMentoringStyleChange = (category: 'required', styleId: string, checked: boolean) => {
+    setState(prev => {
+      const currentMentoringStyle = prev.mentoringStyle as MentoringStylePreferences;
+      const newMentoringStyle = { ...currentMentoringStyle };
+      
+      if (checked) {
+        // Add to required if under max limit (2 for mentors)
+        if (newMentoringStyle.required.length < 2) {
+          newMentoringStyle.required = [...(newMentoringStyle.required || []), styleId];
+        }
+      } else {
+        // Remove from required if above min limit (1 for mentors)
+        if (newMentoringStyle.required.length > 1) {
+          newMentoringStyle.required = newMentoringStyle.required.filter((id: string) => id !== styleId);
+        }
+      }
+      
+      return { ...prev, mentoringStyle: newMentoringStyle };
+    });
+  };
+
   const addInterval = (day: DayKey) =>
     setState((s) => {
       const next = structuredClone(s.weekly);
@@ -317,7 +439,23 @@ export default function MetaSetup() {
                                            errs.years     = "Years must be ≥ 0";
       if (!state.currentRole.trim())       errs.currentRole = "Current role is required";
       if (!state.seniorityLevel.trim())    errs.seniorityLevel = "Seniority level is required";
-      if (!state.mentoringStyle.trim())    errs.mentoringStyle = "Mentoring style is required";
+      
+      // Validate mentoring styles for mentors
+      if (role === "mentor") {
+        const mentoringStyle = state.mentoringStyle as MentoringStylePreferences;
+        if (mentoringStyle.dontMind) {
+          // "I don't mind" is valid
+        } else if (mentoringStyle.required.length === 0) {
+          errs.mentoringStyle = "Please select at least 1 required mentoring style or choose 'I don't mind'";
+        } else if (mentoringStyle.required.length > 2) {
+          errs.mentoringStyle = "Please select no more than 2 required mentoring styles";
+        }
+      } else {
+        if (typeof state.mentoringStyle === 'string' && !state.mentoringStyle.trim()) {
+          errs.mentoringStyle = "Mentoring style is required";
+        }
+      }
+      
       if (!state.availability.trim())      errs.availability = "Availability is required";
 
       // At least one interval somewhere
@@ -402,7 +540,20 @@ export default function MetaSetup() {
       fd.append("currentRole", state.currentRole.trim());
       fd.append("seniorityLevel", state.seniorityLevel.trim());
       fd.append("previousRoles", state.previousRoles.trim());
-      fd.append("mentoringStyle", state.mentoringStyle.trim());
+      // Handle mentoring style for mentors vs mentees
+      if (role === "mentor") {
+        const mentoringStyle = state.mentoringStyle as MentoringStylePreferences;
+        if (mentoringStyle.dontMind) {
+          fd.append("mentoringStyle", "dont_mind");
+        } else {
+          // Send the first required style as the main mentoring style
+          fd.append("mentoringStyle", mentoringStyle.required[0] || "");
+        }
+        // Send the structured data (only required styles for mentors)
+        fd.append("requiredMentoringStyles", mentoringStyle.required.join(', '));
+      } else {
+        fd.append("mentoringStyle", (state.mentoringStyle as string).trim());
+      }
       fd.append("culturalBackground", state.culturalBackground.trim());
       fd.append("availability", state.availability.trim());
       fd.append(
@@ -606,19 +757,98 @@ export default function MetaSetup() {
         </label>
 
         <label className={styles.label}>
-          <span className={styles.labelText}>Mentoring Style</span>
-          <select
-              name="mentoringStyle"
-              value={state.mentoringStyle}
-              onChange={onChange}
-              className={`${styles.input} ${fieldErrs.mentoringStyle ? styles.inputError : ""}`}
-          >
-            <option value="">Select your style</option>
-            <option value="Direct">Direct - Give specific advice and solutions</option>
-            <option value="High-level">High-level - Provide strategic guidance</option>
-            <option value="Task-assigned">Task-assigned - Assign homework and review</option>
-            <option value="Coaching">Coaching - Ask questions to help mentee discover answers</option>
-          </select>
+          <span className={styles.labelText}>Mentoring Styles You're Comfortable With</span>
+          <span className={styles.hint}>(Select your top 2 most comfortable mentoring styles)</span>
+          
+          {role === "mentor" ? (
+            // Simplified multi-select for mentors - just top 2 styles
+            <div className={styles.mentoringStyleContainer}>
+              {/* "I don't mind" option */}
+              <div className={styles.mentoringStyleSection}>
+                <label className={styles.styleCheckbox}>
+                  <input
+                    type="checkbox"
+                    checked={(state.mentoringStyle as MentoringStylePreferences).dontMind}
+                    onChange={(e) => {
+                      setState(prev => ({
+                        ...prev,
+                        mentoringStyle: {
+                          required: [],
+                          niceToHave: [],
+                          dontMind: e.target.checked
+                        }
+                      }));
+                    }}
+                  />
+                  <div className={styles.styleInfo}>
+                    <span className={styles.styleLabel}>I don't mind any mentoring style</span>
+                    <span className={styles.styleDescription}>I'm comfortable with any mentoring approach</span>
+                  </div>
+                </label>
+              </div>
+              
+              <div className={styles.orDivider} role="separator" aria-label="or">
+                <span>or</span>
+              </div>
+
+              {/* Top 2 styles section */}
+              <div className={styles.mentoringStyleSection}>
+                <h4 className={styles.sectionTitle}>
+                  Your Top 2 Most Comfortable Styles
+                  {(state.mentoringStyle as MentoringStylePreferences).required.length < 2 && (
+                    <span className={styles.selectionCount}>
+                      - {2 - (state.mentoringStyle as MentoringStylePreferences).required.length} more can be selected
+                    </span>
+                  )}
+                  {(state.mentoringStyle as MentoringStylePreferences).required.length >= 2 && (
+                    <span className={styles.selectionCount}>
+                      - Maximum reached
+                    </span>
+                  )}
+                </h4>
+                <p className={styles.sectionDescription}>
+                  Select up to 2 mentoring styles that you're most comfortable providing. At least one must be selected.
+                </p>
+                <div className={styles.styleGrid}>
+                  {mentoringStyles.map((style) => (
+                    <label key={style.id} className={styles.styleLabel}>
+                      <input
+                        type="checkbox"
+                        checked={(state.mentoringStyle as MentoringStylePreferences).required.includes(style.id)}
+                        onChange={(e) => handleMentoringStyleChange('required', style.id, e.target.checked)}
+                        disabled={!(state.mentoringStyle as MentoringStylePreferences).required.includes(style.id) && 
+                                 (state.mentoringStyle as MentoringStylePreferences).required.length >= 2}
+                        title={(state.mentoringStyle as MentoringStylePreferences).required.includes(style.id) && 
+                               (state.mentoringStyle as MentoringStylePreferences).required.length === 1 ? 
+                               "Cannot remove - at least one style must remain" : ""}
+                      />
+                      <span className={styles.styleText}>{style.label}</span>
+                      <MentoringStyleTooltip style={style} />
+                      {(state.mentoringStyle as MentoringStylePreferences).required.includes(style.id) && 
+                       (state.mentoringStyle as MentoringStylePreferences).required.length === 1 && (
+                        <span className={styles.requiredIndicator}>*</span>
+                      )}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            // Single select for mentees (existing behavior)
+            <select
+                name="mentoringStyle"
+                value={state.mentoringStyle as string}
+                onChange={onChange}
+                className={`${styles.input} ${fieldErrs.mentoringStyle ? styles.inputError : ""}`}
+            >
+              <option value="">Select your style</option>
+              <option value="Direct">Direct - Give specific advice and solutions</option>
+              <option value="High-level">High-level - Provide strategic guidance</option>
+              <option value="Task-assigned">Task-assigned - Assign homework and review</option>
+              <option value="Coaching">Coaching - Ask questions to help mentee discover answers</option>
+            </select>
+          )}
+          
           {fieldErrs.mentoringStyle && (
               <span className={styles.fieldError}>{fieldErrs.mentoringStyle}</span>
           )}
@@ -928,7 +1158,7 @@ export default function MetaSetup() {
                 onClick={() => router.push("/dashboard")}
                 className={styles.topBackButton}
             >
-              ← Back to Dashboard
+              Back to Dashboard
             </button>
           </div>
 
@@ -945,7 +1175,7 @@ export default function MetaSetup() {
             </p>
           </div>
 
-          <div className={styles.card}>
+          <div className={`${styles.card} ${styles.hasTooltips}`}>
             <form className={styles.form} onSubmit={handleSubmit} noValidate>
               {role === "mentee" ? menteeInputs : mentorInputs}
 
@@ -955,7 +1185,7 @@ export default function MetaSetup() {
                 onClick={() => router.push(`/profile-setup?uid=${uid}&role=${role}`)}
                 className={styles.secondaryButton}
               >
-                ← Previous Page
+                Previous Page
               </button>
               <button type="submit" disabled={submitting} className={styles.button}>
                 {submitting ? "Saving…" : role === "mentee" ? "Save & Continue" : "Finish"}
@@ -984,7 +1214,7 @@ export default function MetaSetup() {
                 onClick={() => router.push("/dashboard")}
                 className={styles.backButton}
             >
-              ← Back to Dashboard
+              Back to Dashboard
             </button>
           </div> */}
         </div>
