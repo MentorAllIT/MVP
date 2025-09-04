@@ -115,14 +115,13 @@
 }
 
 .title {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: #2d1b69;
-  margin-bottom: 0.5rem;
-  background: linear-gradient(135deg, #2d1b69 0%, #664da2 100%);
+  font-size: 3rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #664da2, #8b6bb1, #a67fd4);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  margin: 0 0 .75rem 0;
 }
 
 .subtitle {
