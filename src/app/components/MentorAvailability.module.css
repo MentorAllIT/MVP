@@ -19,6 +19,12 @@
   font-size: 0.875rem;
 }
 
+.noticeInfo {
+  color: #f59e0b;
+  font-weight: 500;
+  font-size: 0.8rem;
+}
+
 .weekNavigation {
   display: flex;
   justify-content: space-between;
@@ -80,6 +86,16 @@
 .dayName {
   font-weight: 600;
   font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.overrideIndicator {
+  font-size: 0.75rem;
+  color: #fbbf24;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
 }
 
 .dayDate {
@@ -144,9 +160,29 @@
   transform: none;
 }
 
+.timeSlot.tooSoon {
+  background: #fef3c7;
+  border-color: #fbbf24;
+  color: #92400e;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.timeSlot.tooSoon:hover {
+  background: #fef3c7;
+  border-color: #fbbf24;
+  transform: none;
+}
+
 .bookedIndicator {
   font-size: 0.75rem;
   margin-left: 0.25rem;
+}
+
+.tooSoonIndicator {
+  font-size: 0.75rem;
+  margin-left: 0.25rem;
+  color: #f59e0b;
 }
 
 .selectedTime {
@@ -195,6 +231,32 @@
   margin-bottom: 0.5rem;
 }
 
+.legend {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.legendColor {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .availabilityGrid {
@@ -213,6 +275,16 @@
   
   .navButton {
     width: 100%;
+  }
+
+  .legend {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  .legendItem {
+    justify-content: center;
   }
 }
 
