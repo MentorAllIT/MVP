@@ -778,6 +778,8 @@
 .tooltipContainer {
   position: relative;
   display: inline-block;
+  vertical-align: middle;
+  isolation: isolate;
 }
 
 .tooltipTrigger {
@@ -804,7 +806,7 @@
 .tooltip {
   position: absolute;
   bottom: 100%;
-  left: 50%;
+  left: calc(100% + 8px); 
   transform: translateX(-50%);
   background: #2d1b69;
   color: white;
@@ -815,8 +817,15 @@
   white-space: nowrap;
   z-index: 1000;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  max-width: 300px;
+  max-width: min(320px, calc(100vw - 32px));
   white-space: normal;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .2s ease, visibility .2s ease;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  box-sizing: border-box;
+  inline-size: max-content;
 }
 
 .tooltip::after {
@@ -850,6 +859,26 @@
 .tooltipContainer:hover .tooltip {
   opacity: 1;
   visibility: visible;
+}
+
+.hasTooltips { overflow: visible; }
+
+.orDivider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+  color: #6b7280;            /* muted */
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+.orDivider::before,
+.orDivider::after {
+  content: "";
+  height: 1px;
+  background: var(--border, #e5e7eb);
+  flex: 1;
 }
 
 /* Mobile layout hardening */
@@ -895,6 +924,21 @@
   }
 
   .card { padding: 1.25rem; }
+
+  .tooltip {
+    bottom: 100%;
+    left: 50%;
+    transform: translate(-50%, 0);
+    width: 150px;
+  }
+  .tooltip::after {
+    right: auto;
+    left: 50%;
+    bottom: 100%;
+    transform: translateX(-50%);
+    border-right-color: transparent;
+    border-bottom-color: #2d1b69;
+  }
 }
 
 

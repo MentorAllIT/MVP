@@ -786,6 +786,10 @@ export default function MetaSetup() {
                   </div>
                 </label>
               </div>
+              
+              <div className={styles.orDivider} role="separator" aria-label="or">
+                <span>or</span>
+              </div>
 
               {/* Top 2 styles section */}
               <div className={styles.mentoringStyleSection}>
@@ -1171,7 +1175,7 @@ export default function MetaSetup() {
             </p>
           </div>
 
-          <div className={styles.card}>
+          <div className={`${styles.card} ${styles.hasTooltips}`}>
             <form className={styles.form} onSubmit={handleSubmit} noValidate>
               {role === "mentee" ? menteeInputs : mentorInputs}
 
