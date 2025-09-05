@@ -7,15 +7,23 @@ import { z } from "zod";
 import zxcvbn from "zxcvbn";
 import styles from "./signup.module.css";
 
-// Step validations
-const step1Schema = z.object({
-  name: z.string().trim().min(1, { message: "Name is required" }),
-  email: z.string().trim().email({ message: "Enter a valid e-mail address" }),
-  code: z
-    .string()
-    .trim()
-    .regex(/^[A-Za-z0-9]{6}$/, { message: "Enter a 6-character code" }),
-});
+// =========================================
+// NOTE: Approval-code flow: commented out for future use
+// // Step validations
+// const step1Schema = z.object({
+//   name: z.string().trim().min(1, { message: "Name is required" }),
+//   email: z.string().trim().email({ message: "Enter a valid e-mail address" }),
+//   code: z
+//     .string()
+//     .trim()
+//     .regex(/^[A-Za-z0-9]{6}$/, { message: "Enter a 6-character code" }),
+// });
+
+// NOTE: Approval-code flow: simple email and name validation for direct sign-up 
+// (remove this for approval code flow)
+const nameSchema = z.string().trim().min(1, { message: "Name is required" });
+const emailSchema = z.string().trim().email({ message: "Enter a valid e-mail address" });
+// =========================================
 
 const step2Schema = z.object({
   password: z.string().min(8, { message: "Password must be at least 8 characters" }),
@@ -34,17 +42,24 @@ export default function SignUpPage() {
   const formRef = useRef<HTMLFormElement>(null);
 
   const [submitting, setSubmitting] = useState(false);
+
+  // =========================================
+  // NOTE: Approval-code flow: change verified to false
   const [verifying, setVerifying]   = useState(false);
-  const [verified, setVerified]     = useState(false);
+  const [verified, setVerified] = useState(true); // change to false when using approval code
+  // =========================================
 
   const [success, setSuccess]     = useState(false);
   const [formErr, setFormErr]     = useState<string | null>(null);
   const [fieldErrs, setFieldErrs] = useState<FieldErrors>({});
 
+  // =========================================
+  // NOTE: Approval-code flow: commented out for future
   // Lock values after verify (disabled inputs don't submit)
-  const [lockedName, setLockedName]   = useState<string | null>(null);
-  const [lockedEmail, setLockedEmail] = useState<string | null>(null);
-  const [approvedCode, setApprovedCode] = useState<string>("");
+  // const [lockedName, setLockedName]   = useState<string | null>(null);
+  // const [lockedEmail, setLockedEmail] = useState<string | null>(null);
+  // const [approvedCode, setApprovedCode] = useState<string>("");
+  // =========================================
 
   // Session modal state - check already signed in
   const [session, setSession] = useState<{ email: string } | null>(null);
@@ -69,56 +84,59 @@ export default function SignUpPage() {
     router.refresh();
   }
 
-  async function handleVerify() {
-    if (verifying || submitting) return;
-    setFieldErrs({});
-    setFormErr(null);
+  // =========================================
+  // NOTE: Approval-code flow: commented out for future
+  // async function handleVerify() {
+  //   if (verifying || submitting) return;
+  //   setFieldErrs({});
+  //   setFormErr(null);
 
-    const form = formRef.current;
-    if (!form) return;
+  //   const form = formRef.current;
+  //   if (!form) return;
 
-    const raw = Object.fromEntries(new FormData(form).entries()) as Record<string, string>;
-    const parsed = step1Schema.safeParse(raw);
-    if (!parsed.success) {
-      const errs: FieldErrors = {};
-      parsed.error.issues.forEach((i) => {
-        const f = i.path[0] as keyof FieldErrors;
-        errs[f] = i.message;
-      });
-      setFieldErrs(errs);
-      return;
-    }
+  //   const raw = Object.fromEntries(new FormData(form).entries()) as Record<string, string>;
+  //   const parsed = step1Schema.safeParse(raw);
+  //   if (!parsed.success) {
+  //     const errs: FieldErrors = {};
+  //     parsed.error.issues.forEach((i) => {
+  //       const f = i.path[0] as keyof FieldErrors;
+  //       errs[f] = i.message;
+  //     });
+  //     setFieldErrs(errs);
+  //     return;
+  //   }
 
-    const name  = raw.name.trim();
-    const email = raw.email.trim().toLowerCase();
-    const code  = raw.code.trim().toUpperCase();
+  //   const name  = raw.name.trim();
+  //   const email = raw.email.trim().toLowerCase();
+  //   const code  = raw.code.trim().toUpperCase();
 
-    setVerifying(true);
-    try {
-      const res = await fetch("/api/verify-code", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, code }),
-      });
-      const data = await res.json();
+  //   setVerifying(true);
+  //   try {
+  //     const res = await fetch("/api/verify-code", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ email, code }),
+  //     });
+  //     const data = await res.json();
 
-      if (!res.ok) {
-        setFieldErrs({ code: data.error ?? "Invalid code for this e-mail." });
-        return;
-      }
+  //     if (!res.ok) {
+  //       setFieldErrs({ code: data.error ?? "Invalid code for this e-mail." });
+  //       return;
+  //     }
 
-      // Success: freeze name/email, hide code, show password
-      setVerified(true);
-      setLockedName(name);
-      setLockedEmail(email);
-      setApprovedCode(code);
-    } catch (err) {
-      console.error(err);
-      setFormErr("Network error – check your connection.");
-    } finally {
-      setVerifying(false);
-    }
-  }
+  //     // Success: freeze name/email, hide code, show password
+  //     setVerified(true);
+  //     setLockedName(name);
+  //     setLockedEmail(email);
+  //     setApprovedCode(code);
+  //   } catch (err) {
+  //     console.error(err);
+  //     setFormErr("Network error – check your connection.");
+  //   } finally {
+  //     setVerifying(false);
+  //   }
+  // }
+  // =========================================
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -127,13 +145,36 @@ export default function SignUpPage() {
     setFieldErrs({});
     setFormErr(null);
 
-    if (!verified) {
-      setFormErr("Please verify your e-mail with the 6-character code first.");
-      return;
-    }
+    // =========================================
+    // NOTE: Approval-code flow: commented out for future
+    // if (!verified) {
+    //   setFormErr("Please verify your e-mail with the 6-character code first.");
+    //   return;
+    // }
+    // =========================================
 
     const form = formRef.current!;
     const raw = Object.fromEntries(new FormData(form).entries()) as Record<string, string>;
+
+        // =========================================
+    // NOTE: Approval-code flow: validate email & name (since we no longer run step1Schema)
+    // (remove this for approval code flow)
+    const nameResult = nameSchema.safeParse(raw.name ?? "");
+    if (!nameResult.success) {
+    setFieldErrs({ name: nameResult.error.issues[0]?.message || "Name is required" });
+    return;
+    }
+
+    const emailResult = emailSchema.safeParse(raw.email ?? "");
+    if (!emailResult.success) {
+    setFieldErrs({ email: emailResult.error.issues[0]?.message || "Enter a valid e-mail address" });
+    return;
+    }
+
+    const email = (raw.email || "").trim().toLowerCase();
+    const password = raw.password || "";
+    const name = (raw.name || "").trim();
+    // =========================================
 
     // validate password
     const parsed = step2Schema.safeParse({ password: raw.password ?? "" });
@@ -165,11 +206,21 @@ export default function SignUpPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: lockedName,
-          email: lockedEmail,
-          password: raw.password,
+          // =========================================
+          // NOTE: Approval-code flow: commented out for future
+          // name: lockedName,
+          // email: lockedEmail,
+          // password: raw.password,
+          // role,
+          // code: approvedCode,
+
+          // (remove this for approval code flow)
+          name: name,
+          email,
+          password,
           role,
-          code: approvedCode,
+          code: "ABCDEF"
+          // =========================================
         }),
       });
 
@@ -368,7 +419,11 @@ export default function SignUpPage() {
                       <input
                         name="name"
                         className={`${styles.input} ${fieldErrs.name ? styles.inputError : ""}`}
-                        disabled={submitting || verified}
+                        // ================================
+                        // NOTE: Approval-code flow: commented out for future
+                        // disabled={submitting || verified}
+                        disabled={submitting} // remove this
+                        // ================================
                         autoComplete="name"
                         placeholder="Enter your full name"
                       />
@@ -383,7 +438,11 @@ export default function SignUpPage() {
                         name="email"
                         type="email"
                         className={`${styles.input} ${fieldErrs.email ? styles.inputError : ""}`}
-                        disabled={submitting || verified}
+                        // ================================
+                        // NOTE: Approval-code flow: commented out for future
+                        // disabled={submitting || verified}
+                        disabled={submitting} // remove this
+                        // ================================
                         autoComplete="email"
                         placeholder="Enter your email address"
                       />
@@ -391,7 +450,9 @@ export default function SignUpPage() {
                     </label>
                   </div>
 
-                  <div className={styles.inputGroup}>
+                  {/* ================================ */}
+                  {/* NOTE: Approval-code flow: commented out for future */}
+                  {/* <div className={styles.inputGroup}>
                     {!verified && (
                       <label className={styles.label}>
                         Approval Code
@@ -407,7 +468,8 @@ export default function SignUpPage() {
                         {fieldErrs.code && <span className={styles.fieldError}>{fieldErrs.code}</span>}
                       </label>
                     )}
-                  </div>
+                  </div> */}
+                  {/* ================================ */}
 
                   {verified && (
                     <label className={styles.label}>
@@ -425,7 +487,9 @@ export default function SignUpPage() {
                       </label>
                     )}
 
-                    {!verified ? (
+                    {/* ================================ */}
+                    {/* NOTE: Approval-code flow: commented out for future */}
+                    {/* {!verified ? (
                       <button
                         type="button"
                         onClick={handleVerify}
@@ -438,11 +502,16 @@ export default function SignUpPage() {
                       <button type="submit" disabled={submitting} className={styles.button}>
                         {submitting ? "Creating Account…" : "Create Account"}
                       </button>
-                    )}
+                    )} */}
+                    {/* remove this */}
+                    <button type="submit" disabled={submitting} className={styles.button}>
+                        {submitting ? "Creating Account…" : "Create Account"}
+                    </button>
+                    {/* ================================ */}
 
-                  {verified && !formErr && !success && (
+                  {/* {verified && !formErr && !success && (
                     <p className={styles.success}>Email approved — set your password.</p>
-                  )}
+                  )} */}
                   {success && !formErr && <p className={styles.success}>Account created!</p>}
                   {formErr && <div className={styles.error}>{formErr}</div>}
                 </form>
