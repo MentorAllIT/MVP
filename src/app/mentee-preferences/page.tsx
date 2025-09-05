@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   DndContext,
@@ -992,6 +992,31 @@ export default function MenteePreferences() {
           }}
           className={styles.input}
           placeholder={`Enter ${factor.label}`}
+        />
+      );
+    }
+
+    if (factor.type === "textarea") {
+      const textareaRef = useRef<HTMLTextAreaElement>(null);
+      
+      const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        handleInputChange(factor.id, e.target.value);
+        
+        // Auto-resize textarea
+        if (textareaRef.current) {
+          textareaRef.current.style.height = 'auto';
+          textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+        }
+      };
+
+      return (
+        <textarea
+          ref={textareaRef}
+          value={typeof value === "string" ? value : ""}
+          onChange={handleTextareaChange}
+          className={`${styles.textarea} ${styles.textareaAutoResize}`}
+          placeholder={factor.placeholder}
+          rows={3}
         />
       );
     }
