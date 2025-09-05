@@ -82,20 +82,21 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Verify email
-    const approved = await base(APPROVED_TABLE)
-      .select({
-        filterByFormula: `AND({Email}='${safeEmail}', LOWER({Code})='${safeCodeL}')`,
-        maxRecords: 1,
-      })
-      .firstPage();
+    // NOTE: Approval-code flow: commented out for future
+    // // Verify email
+    // const approved = await base(APPROVED_TABLE)
+    //   .select({
+    //     filterByFormula: `AND({Email}='${safeEmail}', LOWER({Code})='${safeCodeL}')`,
+    //     maxRecords: 1,
+    //   })
+    //   .firstPage();
 
-    if (!approved.length) {
-      return NextResponse.json(
-        { error: "Invalid approval code" },
-        { status: 403 }
-      );
-    }
+    // if (!approved.length) {
+    //   return NextResponse.json(
+    //     { error: "Invalid approval code" },
+    //     { status: 403 }
+    //   );
+    // }
 
     // Hash password & create user record
     const hash   = await bcrypt.hash(String(password), SALT);
