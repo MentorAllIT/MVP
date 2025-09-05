@@ -322,8 +322,8 @@
 .textareaAutoResize {
   resize: vertical;
   overflow-y: auto;
-  min-height: 8rem;
-  max-height: 20rem;
+  min-height: 3.5rem;
+  max-height: 15rem;
   transition: height 0.2s ease;
 }
 
@@ -348,8 +348,8 @@
   background: white !important;
   color: #2d1b69 !important;
   -webkit-text-fill-color: #2d1b69 !important;
-  min-height: 8rem;
-  max-height: 20rem;
+  min-height: 3.5rem;
+  max-height: 15rem;
   resize: vertical;
   font-family: inherit;
   line-height: 1.6;

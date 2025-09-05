@@ -83,14 +83,14 @@ const preferenceFactors: PreferenceFactor[] = [
     id: "currentIndustry",
     label: "Mentor's Current Industry",
     placeholder: "e.g., Technology, Healthcare, Finance, Education",
-    type: "text",
+    type: "textarea",
     required: true,
   },
   {
     id: "currentRole",
     label: "Mentor's Current Role",
     placeholder: "e.g., Software Engineer, Product Manager, Data Analyst",
-    type: "text",
+    type: "textarea",
     required: true,
   },
   {
@@ -128,14 +128,14 @@ const preferenceFactors: PreferenceFactor[] = [
     id: "culturalBackground",
     label: "Culture / Language",
     placeholder: "e.g., International student from India, Native English speaker, Bilingual (Spanish/English)",
-    type: "text",
+    type: "textarea",
     required: false,
   },
   {
     id: "availability",
     label: "Your Preferred Meeting Frequency",
     placeholder: "e.g., Weekly on weekends, Bi-weekly on weekdays, Flexible",
-    type: "text",
+    type: "textarea",
     required: true,
   },
 ];
@@ -1035,7 +1035,7 @@ export default function MenteePreferences() {
           onChange={handleTextareaChange}
           className={`${styles.textarea} ${styles.textareaAutoResize}`}
           placeholder={factor.placeholder}
-          rows={3}
+          rows={1}
         />
       );
     }
