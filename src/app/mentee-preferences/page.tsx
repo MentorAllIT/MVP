@@ -290,6 +290,25 @@ export default function MenteePreferences() {
   const [isReady, setIsReady] = useState(false); // Track if component is ready for submission
   const [hasReachedStep2, setHasReachedStep2] = useState(false); // Track if user has manually reached step 2
 
+  // Refs for auto-resizing textareas
+  const textareaRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
+
+  // Helper function to auto-resize textarea
+  const autoResizeTextarea = (textareaId: string) => {
+    const textarea = textareaRefs.current[textareaId];
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    }
+  };
+
+  // Auto-resize all textareas when component mounts or preferences change
+  useEffect(() => {
+    Object.keys(textareaRefs.current).forEach((textareaId) => {
+      autoResizeTextarea(textareaId);
+    });
+  }, [preferences]);
+
   const uid = params.get("uid");
   const role = params.get("role");
 
@@ -997,21 +1016,21 @@ export default function MenteePreferences() {
     }
 
     if (factor.type === "textarea") {
-      const textareaRef = useRef<HTMLTextAreaElement>(null);
-      
       const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         handleInputChange(factor.id, e.target.value);
-        
-        // Auto-resize textarea
-        if (textareaRef.current) {
-          textareaRef.current.style.height = 'auto';
-          textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-        }
+        // Use setTimeout to ensure the DOM is updated before resizing
+        setTimeout(() => autoResizeTextarea(factor.id), 0);
       };
 
       return (
         <textarea
-          ref={textareaRef}
+          ref={(el) => {
+            textareaRefs.current[factor.id] = el;
+            // Auto-resize on mount
+            if (el) {
+              setTimeout(() => autoResizeTextarea(factor.id), 0);
+            }
+          }}
           value={typeof value === "string" ? value : ""}
           onChange={handleTextareaChange}
           className={`${styles.textarea} ${styles.textareaAutoResize}`}

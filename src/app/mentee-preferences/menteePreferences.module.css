@@ -320,10 +320,11 @@
 
 /* Auto-resize textarea */
 .textareaAutoResize {
-  resize: none;
-  overflow: hidden;
+  resize: vertical;
+  overflow-y: auto;
   min-height: 8rem;
   max-height: 20rem;
+  transition: height 0.2s ease;
 }
 
 /* Focus improvements for better accessibility */
