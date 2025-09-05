@@ -105,7 +105,21 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Debug: Log environment variables status
+    console.log("Environment check:", {
+      AIRTABLE_API_KEY: !!AIRTABLE_API_KEY,
+      AIRTABLE_BASE_ID: !!AIRTABLE_BASE_ID,
+      AIRTABLE_MENTEE_PREFERENCES_TABLE: !!AIRTABLE_MENTEE_PREFERENCES_TABLE,
+      JWT_SECRET: !!JWT_SECRET,
+      ready: ready
+    });
+
     if (!ready) {
+      console.error("Missing environment variables:", {
+        AIRTABLE_API_KEY: !!AIRTABLE_API_KEY,
+        AIRTABLE_BASE_ID: !!AIRTABLE_BASE_ID,
+        AIRTABLE_MENTEE_PREFERENCES_TABLE: !!AIRTABLE_MENTEE_PREFERENCES_TABLE
+      });
       return NextResponse.json(
         { error: "Backend not configured - missing Airtable credentials" },
         { status: 503 }
@@ -197,10 +211,12 @@ export async function POST(request: NextRequest) {
     };
 
     // Check if preferences already exist for this user
+    console.log("Checking existing records for UID:", uid);
     const existingRecords = await base(AIRTABLE_MENTEE_PREFERENCES_TABLE!).select({
       filterByFormula: `{UserID}='${esc(uid)}'`,
       maxRecords: 1,
     }).firstPage();
+    console.log("Existing records found:", existingRecords.length);
 
     // Process mentoring style for storage (Single select field - only one value allowed)
     
@@ -285,10 +301,14 @@ export async function POST(request: NextRequest) {
     if (existingRecords.length > 0) {
       // Update existing record
       const recordId = existingRecords[0].id;
+      console.log("Updating existing record:", recordId);
       result = await base(AIRTABLE_MENTEE_PREFERENCES_TABLE!).update(recordId, preferenceData);
+      console.log("Update result:", result);
     } else {
       // Create new record
+      console.log("Creating new record with data:", preferenceData);
       result = await base(AIRTABLE_MENTEE_PREFERENCES_TABLE!).create([{ fields: preferenceData }]);
+      console.log("Create result:", result);
     }
     
     // Debug: Show the normalization process
