@@ -25,14 +25,22 @@ export async function POST(req: NextRequest) {
     const safeEmail = String(email).trim().toLowerCase().replace(/'/g, "\\'");
     const safeCodeL = String(code).trim().toLowerCase().replace(/'/g, "\\'");
 
-    const matches = await base(APPROVED_TABLE)
-      .select({
-        filterByFormula: `AND({Email}='${safeEmail}', LOWER({Code})='${safeCodeL}')`,
-        maxRecords: 1,
-      })
-      .firstPage();
+    // const matches = await base(APPROVED_TABLE)
+    //   .select({
+    //     filterByFormula: `AND({Email}='${safeEmail}', LOWER({Code})='${safeCodeL}')`,
+    //     maxRecords: 1,
+    //   })
+    //   .firstPage();
 
-    if (!matches.length) {
+    // if (!matches.length) {
+    //   return NextResponse.json(
+    //     { error: "Email and code do not match" },
+    //     { status: 404 }
+    //   );
+    // }
+
+    // Temporary hardcoded check
+    if (safeCodeL !== "ment4u") {
       return NextResponse.json(
         { error: "Email and code do not match" },
         { status: 404 }
