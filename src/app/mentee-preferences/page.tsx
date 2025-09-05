@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   DndContext,
@@ -83,14 +83,14 @@ const preferenceFactors: PreferenceFactor[] = [
     id: "currentIndustry",
     label: "Mentor's Current Industry",
     placeholder: "e.g., Technology, Healthcare, Finance, Education",
-    type: "text",
+    type: "textarea",
     required: true,
   },
   {
     id: "currentRole",
     label: "Mentor's Current Role",
     placeholder: "e.g., Software Engineer, Product Manager, Data Analyst",
-    type: "text",
+    type: "textarea",
     required: true,
   },
   {
@@ -128,14 +128,14 @@ const preferenceFactors: PreferenceFactor[] = [
     id: "culturalBackground",
     label: "Culture / Language",
     placeholder: "e.g., International student from India, Native English speaker, Bilingual (Spanish/English)",
-    type: "text",
+    type: "textarea",
     required: false,
   },
   {
     id: "availability",
     label: "Your Preferred Meeting Frequency",
     placeholder: "e.g., Weekly on weekends, Bi-weekly on weekdays, Flexible",
-    type: "text",
+    type: "textarea",
     required: true,
   },
 ];
@@ -289,6 +289,25 @@ export default function MenteePreferences() {
   const [currentStep, setCurrentStep] = useState(1); // Track current step
   const [isReady, setIsReady] = useState(false); // Track if component is ready for submission
   const [hasReachedStep2, setHasReachedStep2] = useState(false); // Track if user has manually reached step 2
+
+  // Refs for auto-resizing textareas
+  const textareaRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
+
+  // Helper function to auto-resize textarea
+  const autoResizeTextarea = (textareaId: string) => {
+    const textarea = textareaRefs.current[textareaId];
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    }
+  };
+
+  // Auto-resize all textareas when component mounts or preferences change
+  useEffect(() => {
+    Object.keys(textareaRefs.current).forEach((textareaId) => {
+      autoResizeTextarea(textareaId);
+    });
+  }, [preferences]);
 
   const uid = params.get("uid");
   const role = params.get("role");
@@ -992,6 +1011,31 @@ export default function MenteePreferences() {
           }}
           className={styles.input}
           placeholder={`Enter ${factor.label}`}
+        />
+      );
+    }
+
+    if (factor.type === "textarea") {
+      const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        handleInputChange(factor.id, e.target.value);
+        // Use setTimeout to ensure the DOM is updated before resizing
+        setTimeout(() => autoResizeTextarea(factor.id), 0);
+      };
+
+      return (
+        <textarea
+          ref={(el) => {
+            textareaRefs.current[factor.id] = el;
+            // Auto-resize on mount
+            if (el) {
+              setTimeout(() => autoResizeTextarea(factor.id), 0);
+            }
+          }}
+          value={typeof value === "string" ? value : ""}
+          onChange={handleTextareaChange}
+          className={`${styles.textarea} ${styles.textareaAutoResize}`}
+          placeholder={factor.placeholder}
+          rows={1}
         />
       );
     }

@@ -251,6 +251,92 @@
 
 .factorInput {
   margin-left: 4rem;
+  width: 100%;
+  max-width: calc(100% - 4rem);
+  box-sizing: border-box;
+}
+
+/* Responsive input containers */
+.inputContainer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+
+/* Responsive grid for form fields */
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .formGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .formGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .factorInput {
+    margin-left: 0;
+    max-width: 100%;
+  }
+  
+  .input, .textarea, .select {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 1rem 1.25rem;
+  }
+  
+  .textarea {
+    min-height: 6rem;
+    max-height: 15rem;
+  }
+  
+  .card {
+    padding: 2rem 1.5rem;
+    margin: 1rem;
+  }
+  
+  .wrapper {
+    padding: 0 1rem;
+  }
+}
+
+/* Auto-resize textarea */
+.textareaAutoResize {
+  resize: vertical;
+  overflow-y: auto;
+  min-height: 3.5rem;
+  max-height: 15rem;
+  transition: height 0.2s ease;
+}
+
+/* Focus improvements for better accessibility */
+.input:focus, .textarea:focus, .select:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  border-color: #664da2;
+  background: white !important;
+  color: #2d1b69 !important;
+  -webkit-text-fill-color: #2d1b69 !important;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1), 0 4px 16px rgba(102, 126, 234, 0.1);
+  transform: translateY(-2px);
 }
 
 .textarea {
@@ -262,22 +348,17 @@
   background: white !important;
   color: #2d1b69 !important;
   -webkit-text-fill-color: #2d1b69 !important;
-  min-height: 8rem;
+  min-height: 3.5rem;
+  max-height: 15rem;
   resize: vertical;
   font-family: inherit;
   line-height: 1.6;
   box-shadow: 0 2px 8px rgba(102, 77, 162, 0.05);
+  width: 100%;
+  box-sizing: border-box;
+  overflow-y: auto;
 }
 
-.textarea:focus {
-  outline: none;
-  border-color: #664da2;
-  background: white !important;
-  color: #2d1b69 !important;
-  -webkit-text-fill-color: #2d1b69 !important;
-  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1), 0 4px 16px rgba(102, 126, 234, 0.1);
-  transform: translateY(-2px);
-}
 
 .textarea::placeholder {
   color: #9ca3af;
@@ -294,17 +375,11 @@
   color: #2d1b69 !important;
   -webkit-text-fill-color: #2d1b69 !important;
   box-shadow: 0 2px 8px rgba(102, 77, 162, 0.05);
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 3.5rem;
 }
 
-.input:focus {
-  outline: none;
-  border-color: #664da2;
-  background: white !important;
-  color: #2d1b69 !important;
-  -webkit-text-fill-color: #2d1b69 !important;
-  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1), 0 4px 16px rgba(102, 126, 234, 0.1);
-  transform: translateY(-2px);
-}
 
 .input::placeholder {
   color: #9ca3af;
@@ -329,17 +404,10 @@
   background-position: right 1rem center;
   background-size: 1.5rem;
   padding-right: 3rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.select:focus {
-  outline: none;
-  border-color: #664da2;
-  background: white !important;
-  color: #2d1b69 !important;
-  -webkit-text-fill-color: #2d1b69 !important;
-  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1), 0 4px 16px rgba(102, 126, 234, 0.1);
-  transform: translateY(-2px);
-}
 
 .select option {
   padding: 0.75rem 1rem;

@@ -105,21 +105,40 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("=== MENTEE PREFERENCES POST REQUEST ===");
+    
+    // Debug: Log environment variables status
+    console.log("Environment check:", {
+      AIRTABLE_API_KEY: !!AIRTABLE_API_KEY,
+      AIRTABLE_BASE_ID: !!AIRTABLE_BASE_ID,
+      AIRTABLE_MENTEE_PREFERENCES_TABLE: !!AIRTABLE_MENTEE_PREFERENCES_TABLE,
+      JWT_SECRET: !!JWT_SECRET,
+      ready: ready
+    });
+
     if (!ready) {
+      console.error("Missing environment variables:", {
+        AIRTABLE_API_KEY: !!AIRTABLE_API_KEY,
+        AIRTABLE_BASE_ID: !!AIRTABLE_BASE_ID,
+        AIRTABLE_MENTEE_PREFERENCES_TABLE: !!AIRTABLE_MENTEE_PREFERENCES_TABLE
+      });
       return NextResponse.json(
         { error: "Backend not configured - missing Airtable credentials" },
         { status: 503 }
       );
     }
 
+    console.log("Step 1: Parsing FormData...");
     const formData = await request.formData();
+    console.log("FormData parsed successfully");
+    
     const uid = formData.get('uid') as string;
     const role = formData.get('role') as string;
 
-    
-    // Debug: Show specific mentoring style fields
+    console.log("Step 2: Extracted basic fields:", { uid: !!uid, role: !!role });
 
     if (!uid) {
+      console.error("Missing UID");
       return NextResponse.json(
         { error: "User ID is required" },
         { status: 400 }
@@ -127,6 +146,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract preferences from FormData
+    console.log("Step 3: Extracting form preferences...");
     const preferences: { [key: string]: string } = {
       currentIndustry: formData.get('currentIndustry') as string || "",
       currentRole: formData.get('currentRole') as string || "",
@@ -140,8 +160,18 @@ export async function POST(request: NextRequest) {
       availability: formData.get('availability') as string || "",
       factorOrder: formData.get('factorOrder') as string || ""
     };
+    
+    console.log("Step 4: Extracted preferences:", {
+      currentIndustry: preferences.currentIndustry,
+      currentRole: preferences.currentRole,
+      seniorityLevel: preferences.seniorityLevel,
+      mentoringStyle: preferences.mentoringStyle,
+      yearsExperience: preferences.yearsExperience,
+      availability: preferences.availability
+    });
 
     // Validate required fields
+    console.log("Step 5: Validating required fields...");
     const requiredFields = [
       "currentIndustry",
       "currentRole", 
@@ -152,9 +182,12 @@ export async function POST(request: NextRequest) {
     ];
 
     for (const field of requiredFields) {
+      console.log(`Validating field: ${field}, value: "${preferences[field]}"`);
+      
       if (field === "yearsExperience") {
         // yearsExperience is a number field
         if (!preferences[field] || preferences[field] === "" || preferences[field] === "0") {
+          console.error(`Validation failed: ${field} is required and must be greater than 0`);
           return NextResponse.json(
             { error: `${field} is required and must be greater than 0` },
             { status: 400 }
@@ -163,21 +196,27 @@ export async function POST(request: NextRequest) {
         // Additional validation for years experience
         const yearsValue = parseInt(preferences[field]);
         if (isNaN(yearsValue) || yearsValue <= 0) {
+          console.error(`Validation failed: ${field} must be a valid number greater than 0`);
           return NextResponse.json(
             { error: `${field} must be a valid number greater than 0` },
             { status: 400 }
           );
         }
+        console.log(`Validation passed: ${field} = ${yearsValue}`);
       } else {
         // Other fields are text fields
         if (!preferences[field]?.trim()) {
+          console.error(`Validation failed: ${field} is required`);
           return NextResponse.json(
             { error: `${field} is required` },
             { status: 400 }
           );
         }
+        console.log(`Validation passed: ${field} = "${preferences[field]}"`);
       }
     }
+    
+    console.log("Step 6: All validations passed!");
 
     // Normalize mentoring style labels to match Airtable Multiple select options
     const normalizeMentoringStyle = (style: string) => {
@@ -197,10 +236,18 @@ export async function POST(request: NextRequest) {
     };
 
     // Check if preferences already exist for this user
-    const existingRecords = await base(AIRTABLE_MENTEE_PREFERENCES_TABLE!).select({
-      filterByFormula: `{UserID}='${esc(uid)}'`,
-      maxRecords: 1,
-    }).firstPage();
+    console.log("Step 7: Checking existing records for UID:", uid);
+    let existingRecords;
+    try {
+      existingRecords = await base(AIRTABLE_MENTEE_PREFERENCES_TABLE!).select({
+        filterByFormula: `{UserID}='${esc(uid)}'`,
+        maxRecords: 1,
+      }).firstPage();
+      console.log("Step 8: Existing records found:", existingRecords.length);
+    } catch (airtableError) {
+      console.error("Step 8: Airtable query failed:", airtableError);
+      throw airtableError;
+    }
 
     // Process mentoring style for storage (Single select field - only one value allowed)
     
@@ -281,14 +328,26 @@ export async function POST(request: NextRequest) {
     }
     
 
+    console.log("Step 9: Preparing Airtable operation...");
+    console.log("Preference data to save:", preferenceData);
+    
     let result;
-    if (existingRecords.length > 0) {
-      // Update existing record
-      const recordId = existingRecords[0].id;
-      result = await base(AIRTABLE_MENTEE_PREFERENCES_TABLE!).update(recordId, preferenceData);
-    } else {
-      // Create new record
-      result = await base(AIRTABLE_MENTEE_PREFERENCES_TABLE!).create([{ fields: preferenceData }]);
+    try {
+      if (existingRecords.length > 0) {
+        // Update existing record
+        const recordId = existingRecords[0].id;
+        console.log("Step 10: Updating existing record:", recordId);
+        result = await base(AIRTABLE_MENTEE_PREFERENCES_TABLE!).update(recordId, preferenceData);
+        console.log("Step 11: Update successful:", result);
+      } else {
+        // Create new record
+        console.log("Step 10: Creating new record");
+        result = await base(AIRTABLE_MENTEE_PREFERENCES_TABLE!).create([{ fields: preferenceData }]);
+        console.log("Step 11: Create successful:", result);
+      }
+    } catch (airtableWriteError) {
+      console.error("Step 10-11: Airtable write operation failed:", airtableWriteError);
+      throw airtableWriteError;
     }
     
     // Debug: Show the normalization process
