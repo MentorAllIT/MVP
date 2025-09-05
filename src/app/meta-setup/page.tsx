@@ -257,6 +257,9 @@ export default function MetaSetup() {
   const [minNotice, setMinNotice] = useState<number>(0);
   const [overrides, setOverrides] = useState<Record<string, Interval[]>>({}); // "YYYY-MM-DD" -> intervals
 
+  const [startLater, setStartLater] = useState(false);
+  const [hasEndDate, setHasEndDate] = useState(false);
+
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [existingResume, setExistingResume] = useState<{
     filename: string;
@@ -346,7 +349,18 @@ export default function MetaSetup() {
                 if (availabilityData.overrides) {
                   setOverrides(availabilityData.overrides);
                 }
-                
+
+                if (availabilityData.dateRange) {
+                  const { start, end } = availabilityData.dateRange;
+                  if (start) {
+                    setDateStart(start);
+                    setStartLater(true);
+                  }
+                  if (end) {
+                    setDateEnd(end);
+                    setHasEndDate(true);
+                  }
+                }
               } catch (parseError) {
                 console.log("Error parsing existing availability data:", parseError);
               }
@@ -985,7 +999,11 @@ export default function MetaSetup() {
                     <input
                         type="date"
                         value={dateStart}
-                        onChange={(e) => setDateStart(e.target.value)}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setDateStart(v);
+                          setStartLater(!!v); 
+                        }}
                         className={`${styles.input} ${fieldErrs.dateStart ? styles.inputError : ""}`}
                     />
                   </label>
@@ -995,12 +1013,34 @@ export default function MetaSetup() {
                     <input
                         type="date"
                         value={dateEnd}
-                        onChange={(e) => setDateEnd(e.target.value)}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setDateEnd(v);
+                          setHasEndDate(!!v);
+                        }}
                         className={`${styles.input} ${fieldErrs.dateEnd ? styles.inputError : ""}`}
                     />
                     <span className={styles.hint}>Leave empty for “No end date”.</span>
                     {fieldErrs.dateEnd && <span className={styles.fieldError}>{fieldErrs.dateEnd}</span>}
                   </label>
+                </div>
+                
+                {/* Quick summary chips */}
+                <div className={styles.summaryBox} role="status" aria-live="polite">
+                  <p className={styles.summaryLine}>
+                    You’ll start receiving mentoring requests{" "}
+                    <strong className={styles.summaryStrong}>
+                      {startLater ? (dateStart || "from your selected date") : "immediately"}
+                    </strong>{" "}
+                    {hasEndDate ? (
+                      <>
+                        and will stop{" "}
+                        <strong className={styles.summaryStrong}>{dateEnd || "on your selected end date"}</strong>
+                      </>
+                    ) : (
+                      <>with <strong className={styles.summaryStrong}>no end date</strong></>
+                    )}
+                  </p>
                 </div>
 
                 {/* Minimum notice */}
@@ -1027,7 +1067,6 @@ export default function MetaSetup() {
                     <option value={24}>24 hours</option>
                   </select>
                 </label>
-
                 {/* Date-specific overrides */}
                 <div className={styles.label}>
                   <span className={styles.labelText}>Date-specific overrides</span>
@@ -1053,93 +1092,135 @@ export default function MetaSetup() {
 
                   {/* Render each override date with interval rows */}
                   <div className={styles.overridesWrap}>
-                    {Object.entries(overrides).map(([d, list]) => (
+                    {Object.entries(overrides).map(([d, list]) => {
+                      const mode = list.length > 0 ? "allow" : "block"; // empty list = blocked
+                      return (
                         <div key={d} className={styles.overrideDay}>
                           <div className={styles.overrideHead}>
                             <strong>{d}</strong>
-                            <div className={styles.overrideButtons}>
-                              <button
+
+                            <div className={styles.overrideControls}>
+                              <select
+                                className={`${styles.input} ${styles.select} ${styles.compactSelect}`}
+                                aria-label="Booking mode for this date"
+                                value={mode}
+                                onChange={(e) => {
+                                  const next = e.target.value;
+                                  setOverrides((o) => {
+                                    const copy = { ...o };
+                                    if (next === "allow") {
+                                      // start with one blank interval to prompt times
+                                      copy[d] = copy[d].length ? copy[d] : [{ start: "", end: "" }];
+                                    } else {
+                                      // block all day
+                                      copy[d] = [];
+                                    }
+                                    return copy;
+                                  });
+                                }}
+                              >
+                                <option value="block">Block all day</option>
+                                <option value="allow">Allow specific hours</option>
+                              </select>
+
+                              {mode === "allow" && (
+                                <button
                                   type="button"
                                   className={styles.smallButton}
                                   onClick={() =>
-                                      setOverrides((o) => ({
-                                        ...o,
-                                        [d]: [...(o[d] || []), {start: "", end: ""}],
-                                      }))
+                                    setOverrides((o) => ({
+                                      ...o,
+                                      [d]: [...(o[d] || []), { start: "", end: "" }],
+                                    }))
                                   }
-                              >
-                                + Hours
-                              </button>
+                                >
+                                  + Hours
+                                </button>
+                              )}
+
                               <button
-                                  type="button"
-                                  className={styles.iconButton}
-                                  title="Remove date"
-                                  onClick={() =>
-                                      setOverrides((o) => {
-                                        const copy = {...o};
-                                        delete copy[d];
-                                        return copy;
-                                      })
-                                  }
+                                type="button"
+                                className={styles.iconButton}
+                                title="Remove date"
+                                onClick={() =>
+                                  setOverrides((o) => {
+                                    const copy = { ...o };
+                                    delete copy[d];
+                                    return copy;
+                                  })
+                                }
                               >
                                 ×
                               </button>
                             </div>
                           </div>
 
-                          {list.length === 0 && <span className={styles.unavailable}>Unavailable</span>}
+                          {/* Status + content */}
+                          {mode === "block" ? (
+                            <p className={styles.blockStatus} role="status" aria-live="polite">
+                              <strong>Blocked:</strong> no one can book you on this date. Change the dropdown to
+                              <em> Allow specific hours</em> to open time slots.
+                            </p>
+                          ) : (
+                            <>
+                              {list.length === 0 && (
+                                <span className={styles.unavailable}>Unavailable</span>
+                              )}
 
-                          {list.map((iv, idx) => (
-                              <div key={idx} className={styles.interval}>
-                                <TimeSelect
+                              {list.map((iv, idx) => (
+                                <div key={idx} className={styles.interval}>
+                                  <TimeSelect
                                     value={iv.start}
                                     onChange={(v) =>
-                                        setOverrides((o) => {
-                                          const copy = {...o};
-                                          copy[d] = copy[d].slice();
-                                          copy[d][idx] = {...copy[d][idx], start: v};
-                                          return copy;
-                                        })
+                                      setOverrides((o) => {
+                                        const copy = { ...o };
+                                        copy[d] = copy[d].slice();
+                                        copy[d][idx] = { ...copy[d][idx], start: v };
+                                        return copy;
+                                      })
                                     }
                                     invalid={!!fieldErrs[`ov-${d}-start-${idx}`]}
-                                />
-                                <span className={styles.toSep}>to</span>
-                                <TimeSelect
+                                  />
+                                  <span className={styles.toSep}>to</span>
+                                  <TimeSelect
                                     value={iv.end}
                                     onChange={(v) =>
-                                        setOverrides((o) => {
-                                          const copy = {...o};
-                                          copy[d] = copy[d].slice();
-                                          copy[d][idx] = {...copy[d][idx], end: v};
-                                          return copy;
-                                        })
+                                      setOverrides((o) => {
+                                        const copy = { ...o };
+                                        copy[d] = copy[d].slice();
+                                        copy[d][idx] = { ...copy[d][idx], end: v };
+                                        return copy;
+                                      })
                                     }
                                     invalid={!!fieldErrs[`ov-${d}-end-${idx}`]}
-                                />
-                                <button
+                                  />
+                                  <button
                                     type="button"
                                     className={styles.iconButton}
                                     onClick={() =>
-                                        setOverrides((o) => {
-                                          const copy = {...o};
-                                          copy[d] = copy[d].slice();
-                                          copy[d].splice(idx, 1);
-                                          return copy;
-                                        })
+                                      setOverrides((o) => {
+                                        const copy = { ...o };
+                                        copy[d] = copy[d].slice();
+                                        copy[d].splice(idx, 1);
+                                        return copy;
+                                      })
                                     }
                                     title="Remove range"
-                                >
-                                  ×
-                                </button>
-                                {fieldErrs[`ov-${d}-overlap-${idx}`] && (
-                                    <span className={styles.fieldError} style={{marginLeft: 8}}>
-                            {fieldErrs[`ov-${d}-overlap-${idx}`]}
-                          </span>
-                                )}
-                              </div>
-                          ))}
+                                  >
+                                    ×
+                                  </button>
+                                  {fieldErrs[`ov-${d}-overlap-${idx}`] && (
+                                    <span className={styles.fieldError} style={{ marginLeft: 8 }}>
+                                      {fieldErrs[`ov-${d}-overlap-${idx}`]}
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
+                            </>
+                          )}
                         </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>

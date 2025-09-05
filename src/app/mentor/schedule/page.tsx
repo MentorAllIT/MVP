@@ -509,9 +509,7 @@ export default function MentorSchedulePage() {
       <div className={styles.page}>
         <header className={styles.header}>
           <div className={styles.headerContent}>
-            <Link href="/dashboard" className={styles.logoContainer}>
-              <img src="/MentorAll transparent Full logo.png" alt="MentorAll" className={styles.logo} />
-            </Link>
+            <h1 className={styles.title}>Manage Schedule</h1>
             <HamburgerMenu />
           </div>
         </header>
@@ -533,9 +531,7 @@ export default function MentorSchedulePage() {
       <div className={styles.page}>
         <header className={styles.header}>
           <div className={styles.headerContent}>
-            <Link href="/dashboard" className={styles.logoContainer}>
-              <img src="/MentorAll transparent Full logo.png" alt="MentorAll" className={styles.logo} />
-            </Link>
+            <h1 className={styles.title}>Manage Schedule</h1>
             <HamburgerMenu />
           </div>
         </header>
@@ -563,9 +559,7 @@ export default function MentorSchedulePage() {
     <div className={styles.page}>
       <header className={styles.header}>
         <div className={styles.headerContent}>
-          <Link href="/dashboard" className={styles.logoContainer}>
-            <img src="/MentorAll transparent Full logo.png" alt="MentorAll" className={styles.logo} />
-          </Link>
+          <h1 className={styles.title}>Manage Schedule</h1>
           <HamburgerMenu />
         </div>
       </header>

@@ -2,25 +2,41 @@
 .page {
   min-height: 100vh;
   font-family: var(--font-geist-sans);
-  background: 
-    linear-gradient(135deg, #f8f7fc 0%, #f0edf8 100%),
-    radial-gradient(circle at 20% 80%, rgba(102, 77, 162, 0.03) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(139, 107, 177, 0.03) 0%, transparent 50%);
+  background: linear-gradient(135deg, #f8f7fc 0%, #f0edf8 100%),
+    radial-gradient(
+      circle at 20% 80%,
+      rgba(102, 77, 162, 0.03) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 80% 20%,
+      rgba(139, 107, 177, 0.03) 0%,
+      transparent 50%
+    );
   color: #2d1b69;
   position: relative;
   overflow-x: hidden;
 }
 
 .page::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: 
-    linear-gradient(45deg, transparent 48%, rgba(102, 77, 162, 0.02) 50%, transparent 52%),
-    linear-gradient(-45deg, transparent 48%, rgba(139, 107, 177, 0.02) 50%, transparent 52%);
+  background-image: linear-gradient(
+      45deg,
+      transparent 48%,
+      rgba(102, 77, 162, 0.02) 50%,
+      transparent 52%
+    ),
+    linear-gradient(
+      -45deg,
+      transparent 48%,
+      rgba(139, 107, 177, 0.02) 50%,
+      transparent 52%
+    );
   background-size: 60px 60px;
   pointer-events: none;
   z-index: 1;
@@ -44,8 +60,7 @@
   border-radius: 24px;
   padding: 2.5rem;
   width: 100%;
-  box-shadow: 
-    0 20px 40px rgba(102, 77, 162, 0.1),
+  box-shadow: 0 20px 40px rgba(102, 77, 162, 0.1),
     0 0 0 1px rgba(102, 77, 162, 0.05);
   position: relative;
   overflow: hidden;
@@ -53,7 +68,7 @@
 }
 
 .card::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -155,13 +170,18 @@
 }
 
 .button::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
   transition: left 0.5s ease;
 }
 
@@ -291,10 +311,15 @@
 }
 
 .progressFill::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
   animation: shimmer 2s infinite;
 }
 
@@ -315,28 +340,28 @@
     padding: 1rem;
     max-width: 100%;
   }
-  
+
   .card {
     padding: 2rem;
     margin: 0;
   }
-  
+
   .header .title {
     font-size: 2rem;
   }
-  
+
   .header .subtitle {
     font-size: 1rem;
   }
-  
+
   .form {
     gap: 1.5rem;
   }
-  
+
   .textarea {
     min-height: 5rem;
   }
-  
+
   .progressWrap {
     padding: 1rem;
   }
@@ -485,7 +510,7 @@
   color: #6b7280;
   margin: 0 0.4rem;
   font-weight: 700;
-  letter-spacing: .02em;
+  letter-spacing: 0.02em;
   user-select: none;
 }
 
@@ -502,7 +527,7 @@
   font-size: 1.1rem;
   line-height: 1;
   color: #6b21a8;
-  transition: transform .15s ease, box-shadow .2s ease, border-color .2s ease;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .iconButton:hover {
@@ -525,7 +550,7 @@
   border-radius: 10px;
   font-weight: 700;
   cursor: pointer;
-  transition: background .2s ease, transform .15s ease, box-shadow .2s ease;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
 
 .smallButton:hover {
@@ -626,7 +651,7 @@
 }
 
 .keepExistingText strong {
-  color:#664da2;
+  color: #664da2;
 }
 
 /* Add mentoring style styles */
@@ -806,7 +831,7 @@
 .tooltip {
   position: absolute;
   bottom: 100%;
-  left: calc(100% + 8px); 
+  left: calc(100% + 8px);
   transform: translateX(-50%);
   background: #2d1b69;
   color: white;
@@ -821,7 +846,7 @@
   white-space: normal;
   opacity: 0;
   visibility: hidden;
-  transition: opacity .2s ease, visibility .2s ease;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
   word-break: break-word;
   overflow-wrap: anywhere;
   box-sizing: border-box;
@@ -829,7 +854,7 @@
 }
 
 .tooltip::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 100%;
   left: 50%;
@@ -843,7 +868,6 @@
   margin-bottom: 0.25rem;
   color: #f3f4f6;
 }
-
 
 .tooltipDescription {
   margin-bottom: 0.5rem;
@@ -861,14 +885,16 @@
   visibility: visible;
 }
 
-.hasTooltips { overflow: visible; }
+.hasTooltips {
+  overflow: visible;
+}
 
 .orDivider {
   display: flex;
   align-items: center;
   gap: 12px;
   margin: 12px 0;
-  color: #6b7280;            /* muted */
+  color: #6b7280; /* muted */
   text-transform: uppercase;
   font-size: 12px;
   letter-spacing: 0.08em;
@@ -879,6 +905,73 @@
   height: 1px;
   background: var(--border, #e5e7eb);
   flex: 1;
+}
+.summaryBox {
+  margin-top: 0.5rem;
+  padding: 1rem;
+  border: 1px solid rgba(102, 77, 162, 0.12);
+  background: rgba(102, 77, 162, 0.04);
+  border-radius: 16px;
+}
+
+.summaryLine {
+  margin: 0;
+  color: #374151;
+  line-height: 1.5;
+}
+
+.summaryStrong {
+  color: #2d1b69;
+}
+
+.summaryMuted {
+  color: #6b7280;
+}
+
+.overrideControls {
+  display: inline-flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+.overridesWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+.overrideControls {
+  display: inline-flex;
+  gap: 0.6rem;
+}
+
+.overrideHead {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.6rem;
+}
+.overrideDay > .interval,
+.overrideDay > .unavailable,
+.blockStatus {
+  margin-top: 0.5rem;
+}
+
+.compactSelect {
+  min-width: 180px;
+  padding: 0.6rem 0.9rem;
+}
+
+.blockStatus {
+  margin: 0.25rem 0 0;
+  color: #6b7280;
+}
+.blockStatus strong {
+  color: #2d1b69;
+}
+.blockStatus em {
+  font-style: normal;
+  color: #5b21b6;
 }
 
 /* Mobile layout hardening */
@@ -912,18 +1005,29 @@
     line-height: 1.2;
     height: 44px;
   }
-  .timeGroup .select { flex-basis: 33%; }
-  .timeGroup .selectAmPm { flex-basis: 34%; }
+  .timeGroup .select {
+    flex-basis: 33%;
+  }
+  .timeGroup .selectAmPm {
+    flex-basis: 34%;
+  }
 
-  .colon { display: none; }
+  .colon {
+    display: none;
+  }
 
-  .interval { gap: 0.35rem; }
+  .interval {
+    gap: 0.35rem;
+  }
   .iconButton {
-    width: 36px; height: 44px;
+    width: 36px;
+    height: 44px;
     border-radius: 8px;
   }
 
-  .card { padding: 1.25rem; }
+  .card {
+    padding: 1.25rem;
+  }
 
   .tooltip {
     bottom: 100%;
@@ -940,7 +1044,6 @@
     border-bottom-color: #2d1b69;
   }
 }
-
 
 .input:focus-visible,
 .select:focus-visible,

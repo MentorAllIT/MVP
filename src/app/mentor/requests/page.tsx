@@ -114,9 +114,7 @@ export default function MentorRequestsPage() {
       <div className={styles.page}>
         <header className={styles.header}>
           <div className={styles.headerContent}>
-            <Link href="/" className={styles.logoContainer}>
-              <img src="/MentorAll transparent Full logo.png" alt="MentorAll" className={styles.logo} />
-            </Link>
+            <h1 className={styles.title}>Booking Requests</h1>
             <HamburgerMenu />
           </div>
         </header>
@@ -138,9 +136,7 @@ export default function MentorRequestsPage() {
       <div className={styles.page}>
         <header className={styles.header}>
           <div className={styles.headerContent}>
-            <Link href="/" className={styles.logoContainer}>
-              <img src="/MentorAll transparent Full logo.png" alt="MentorAll" className={styles.logo} />
-            </Link>
+            <h1 className={styles.title}>Booking Requests</h1>
             <HamburgerMenu />
           </div>
         </header>
@@ -168,9 +164,7 @@ export default function MentorRequestsPage() {
     <div className={styles.page}>
       <header className={styles.header}>
         <div className={styles.headerContent}>
-          <Link href="/dashboard" className={styles.logoContainer}>
-            <img src="/MentorAll transparent Full logo.png" alt="MentorAll" className={styles.logo} />
-          </Link>
+          <h1 className={styles.title}>Booking Requests</h1>
           <HamburgerMenu />
         </div>
       </header>
@@ -178,7 +172,6 @@ export default function MentorRequestsPage() {
       <main className={styles.main}>
         <div className={styles.container}>
           <section className={styles.hero}>
-            <h1 className={styles.title}>📬 Booking Requests</h1>
             <p className={styles.subtitle}>
               Pending booking requests from mentees
             </p>
