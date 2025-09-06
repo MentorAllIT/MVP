@@ -183,6 +183,8 @@
   cursor: grab;
   transition: all 0.2s ease;
   user-select: none;
+  touch-action: none;
+  -ms-touch-action: none;
 }
 
 .dragHandle:hover {
