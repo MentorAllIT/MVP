@@ -1195,3 +1195,10 @@
   color: #ef4444;
   font-weight: 500;
 }
+
+@media (max-width: 640px) {
+  .styleGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
