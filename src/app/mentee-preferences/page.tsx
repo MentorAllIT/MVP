@@ -289,6 +289,7 @@ export default function MenteePreferences() {
   const [currentStep, setCurrentStep] = useState(1); // Track current step
   const [isReady, setIsReady] = useState(false); // Track if component is ready for submission
   const [hasReachedStep2, setHasReachedStep2] = useState(false); // Track if user has manually reached step 2
+  const [hasPrefs, setHasPrefs] = useState(false);
 
   // Refs for auto-resizing textareas
   const textareaRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
@@ -342,6 +343,18 @@ export default function MenteePreferences() {
           
           if (data.success && data.preferences) {
             const prefs = data.preferences;
+
+            const exists = Boolean(
+            prefs.currentIndustry?.trim() ||
+            prefs.currentRole?.trim() ||
+            prefs.seniorityLevel?.trim() ||
+            (prefs.yearsExperience !== undefined && String(prefs.yearsExperience).trim() !== "") ||
+            prefs.availability?.trim() ||
+            prefs.mentoringStyle === "dont_mind" ||
+            prefs.requiredMentoringStyles?.trim() ||
+            prefs.niceToHaveStyles?.trim()
+          );
+          setHasPrefs(exists);
             
             // Handle mentoring style conversion from stored format
             let mentoringStyleData: MentoringStylePreferences = {
@@ -407,6 +420,7 @@ export default function MenteePreferences() {
         } else {
         }
       } catch (error) {
+        setHasPrefs(false);
         console.error('❌ Error fetching preferences:', error);
       } finally {
         // Always set loading to false after the request completes, but only if mounted
@@ -1055,16 +1069,17 @@ export default function MenteePreferences() {
   return (
     <div className={styles.page}>
       <div className={styles.wrapper}>
-        {/* Navigation Buttons - Only Back to Dashboard */}
-        <div className={styles.topBackSection}>
-          <button
-            type="button"
-            onClick={() => router.push("/dashboard")}
-            className={styles.topBackButton}
-          >
-            Back to Dashboard
-          </button>
-        </div>
+        {hasPrefs && (
+          <div className={styles.topBackSection}>
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard")}
+              className={styles.topBackButton}
+            >
+              Back to Dashboard
+            </button>
+          </div>
+        )}
 
         {/* Step Indicators */}
         <div className={styles.stepIndicators}>

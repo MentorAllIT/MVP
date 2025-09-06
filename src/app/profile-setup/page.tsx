@@ -71,7 +71,8 @@ export default function ProfileSetup() {
   const [fieldErrs, setFieldErrs] = useState<FieldErrors>({});
   const [formErr,   setFormErr]   = useState<string | null>(null);
   const [submitting,setSubmitting]= useState(false);
-  const [loading,   setLoading]   = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [hasProfile, setHasProfile] = useState(false);
 
   // Load existing profile data when component mounts
   useEffect(() => {
@@ -85,8 +86,10 @@ export default function ProfileSetup() {
           const profileData = await res.json();
           if (profileData.bio) setBio(profileData.bio);
           if (profileData.linkedin) setLinkedin(profileData.linkedin);
+          setHasProfile(Boolean(profileData?.bio || profileData?.linkedin || profileData?.id));
         }
       } catch (error) {
+        setHasProfile(false);
         console.log("No existing profile found or error loading profile");
       } finally {
         setLoading(false);
@@ -157,8 +160,8 @@ export default function ProfileSetup() {
   return (
     <div className={styles.page}>
       <div className={styles.wrapper}>
-        {/* Back to Dashboard Button - Always Visible */}
-        <div className={styles.topBackSection}>
+        {hasProfile && (
+          <div className={styles.topBackSection}>
           <button
             type="button"
             onClick={() => router.push("/dashboard")}
@@ -167,6 +170,7 @@ export default function ProfileSetup() {
             ← Back to Dashboard
           </button>
         </div>
+        )}
 
         <div className={styles.header}>
           <h1 className={styles.title}>Tell us about you</h1>

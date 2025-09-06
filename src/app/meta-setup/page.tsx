@@ -271,6 +271,7 @@ export default function MetaSetup() {
   const [fieldErrs, setFieldErrs]   = useState<FieldErrors>({});
   const [formErr, setFormErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasMeta, setHasMeta] = useState(false);
   
   // Load existing meta data when component mounts
   useEffect(() => {
@@ -282,6 +283,30 @@ export default function MetaSetup() {
         const res = await fetch(`/api/meta?uid=${uid}&role=${role}`);
         if (res.ok) {
           const metaData = await res.json();
+
+          const exists =
+            role === "mentee"
+              ? Boolean(
+                  metaData?.goal?.trim() ||
+                  metaData?.challenges?.trim() ||
+                  metaData?.help?.trim() ||
+                  metaData?.resumeInfo
+                )
+              : Boolean(
+                  metaData?.industry?.trim() ||
+                  (metaData?.years !== "" && metaData?.years != null) || // handles 0
+                  metaData?.currentRole?.trim() ||
+                  metaData?.seniorityLevel?.trim() ||
+                  metaData?.previousRoles?.trim() ||
+                  metaData?.requiredMentoringStyles?.trim() ||
+                  metaData?.mentoringStyle?.trim() ||
+                  metaData?.culturalBackground?.trim() ||
+                  metaData?.availability?.trim() ||
+                  (metaData?.availabilityJson && String(metaData.availabilityJson).trim())
+                );
+
+          setHasMeta(exists); 
+
           if (role === "mentee") {
             setState(prev => ({
               ...prev,
@@ -368,6 +393,7 @@ export default function MetaSetup() {
           }
         }
       } catch (error) {
+        setHasMeta(false);
         console.log("No existing meta data found or error loading meta");
       } finally {
         setLoading(false);
@@ -1232,17 +1258,17 @@ export default function MetaSetup() {
   return (
       <div className={styles.page}>
         <div className={styles.wrapper}>
-          {/* Navigation Buttons - Only Back to Dashboard */}
-          <div className={styles.topBackSection}>
-            <button
-                type="button"
-                onClick={() => router.push("/dashboard")}
-                className={styles.topBackButton}
-            >
-              Back to Dashboard
-            </button>
-          </div>
-
+          {hasMeta && (
+            <div className={styles.topBackSection}>
+              <button
+                  type="button"
+                  onClick={() => router.push("/dashboard")}
+                  className={styles.topBackButton}
+              >
+                Back to Dashboard
+              </button>
+            </div>
+          )}
           <div className={styles.header}>
             <h1 className={styles.title}>
               {role === "mentee"
