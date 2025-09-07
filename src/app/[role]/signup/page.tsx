@@ -396,7 +396,7 @@ export default function SignUpPage() {
                   <div className={styles.inputGroup}>
                     {!verified && (
                       <label className={styles.label}>
-                        Approval Code
+                        <span className={styles.labelText}>Approval Code</span>
                         <input
                           name="code"
                           pattern="[A-Za-z0-9]{6}"
