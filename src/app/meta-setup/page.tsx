@@ -222,6 +222,7 @@ export default function MetaSetup() {
     industry: string;
     years: string;
     currentRole: string;
+    currentCompany: string;
     seniorityLevel: string;
     previousRoles: string;
     mentoringStyle: MentoringStyleState;
@@ -235,6 +236,7 @@ export default function MetaSetup() {
     industry:   "",
     years:      "",
     currentRole: "",
+    currentCompany: "",
     seniorityLevel: "",
     previousRoles: "",
     mentoringStyle: role === "mentor" ? {
@@ -296,6 +298,7 @@ export default function MetaSetup() {
                   metaData?.industry?.trim() ||
                   (metaData?.years !== "" && metaData?.years != null) || // handles 0
                   metaData?.currentRole?.trim() ||
+                  metaData?.currentCompany?.trim() ||
                   metaData?.seniorityLevel?.trim() ||
                   metaData?.previousRoles?.trim() ||
                   metaData?.requiredMentoringStyles?.trim() ||
@@ -324,12 +327,13 @@ export default function MetaSetup() {
               industry: metaData.industry || "",
               years: metaData.years?.toString() || "",
               currentRole: metaData.currentRole || "",
+              currentCompany: metaData.currentCompany || "",
               seniorityLevel: metaData.seniorityLevel || "",
               previousRoles: metaData.previousRoles || "",
               mentoringStyle: role === "mentor" ? {
                 required: metaData.requiredMentoringStyles ? metaData.requiredMentoringStyles.split(',').map((s: string) => s.trim()).filter((s: string) => s) : [],
                 niceToHave: [], // Not used for mentors
-                dontMind: metaData.mentoringStyle === 'dont_mind'
+                dontMind: metaData.mentoringStyle === 'dont_mind' || metaData.requiredMentoringStyles === 'dont_mind'
               } : metaData.mentoringStyle || "",
               culturalBackground: metaData.culturalBackground || "",
               availability: metaData.availability || ""
@@ -432,6 +436,8 @@ export default function MetaSetup() {
         // Add to required if under max limit (2 for mentors)
         if (newMentoringStyle.required.length < 2) {
           newMentoringStyle.required = [...(newMentoringStyle.required || []), styleId];
+          // Uncheck "dontMind" when selecting specific styles
+          newMentoringStyle.dontMind = false;
         }
       } else {
         // Remove from required if above min limit (1 for mentors)
@@ -478,6 +484,7 @@ export default function MetaSetup() {
       else if (!Number.isFinite(yrs) || yrs < 0)
                                            errs.years     = "Years must be ≥ 0";
       if (!state.currentRole.trim())       errs.currentRole = "Current role is required";
+      if (!state.currentCompany.trim())    errs.currentCompany = "Current company is required";
       if (!state.seniorityLevel.trim())    errs.seniorityLevel = "Seniority level is required";
       
       // Validate mentoring styles for mentors
@@ -578,19 +585,19 @@ export default function MetaSetup() {
       fd.append("industry",  state.industry.trim());
       fd.append("years",     state.years.trim());
       fd.append("currentRole", state.currentRole.trim());
+      fd.append("currentCompany", state.currentCompany.trim());
       fd.append("seniorityLevel", state.seniorityLevel.trim());
       fd.append("previousRoles", state.previousRoles.trim());
       // Handle mentoring style for mentors vs mentees
       if (role === "mentor") {
         const mentoringStyle = state.mentoringStyle as MentoringStylePreferences;
         if (mentoringStyle.dontMind) {
-          fd.append("mentoringStyle", "dont_mind");
+          // Send "dont_mind" for the requiredMentoringStyles field
+          fd.append("requiredMentoringStyles", "dont_mind");
         } else {
-          // Send the first required style as the main mentoring style
-          fd.append("mentoringStyle", mentoringStyle.required[0] || "");
+          // Send the structured data (only required styles for mentors)
+          fd.append("requiredMentoringStyles", mentoringStyle.required.join(', '));
         }
-        // Send the structured data (only required styles for mentors)
-        fd.append("requiredMentoringStyles", mentoringStyle.required.join(', '));
       } else {
         fd.append("mentoringStyle", (state.mentoringStyle as string).trim());
       }
@@ -761,6 +768,20 @@ export default function MetaSetup() {
         </label>
 
         <label className={styles.label}>
+          <span className={styles.labelText}>Current Company</span>
+          <input
+              name="currentCompany"
+              value={state.currentCompany}
+              onChange={onChange}
+              className={`${styles.input} ${fieldErrs.currentCompany ? styles.inputError : ""}`}
+              placeholder="e.g. Google, Microsoft, Startup Inc."
+          />
+          {fieldErrs.currentCompany && (
+              <span className={styles.fieldError}>{fieldErrs.currentCompany}</span>
+          )}
+        </label>
+
+        <label className={styles.label}>
           <span className={styles.labelText}>Seniority Level</span>
           <select
               name="seniorityLevel"
@@ -797,43 +818,15 @@ export default function MetaSetup() {
         </label>
 
         <label className={styles.label}>
-          <span className={styles.labelText}>Mentoring Styles You're Comfortable With</span>
-          <span className={styles.hint}>(Select your top 2 most comfortable mentoring styles)</span>
+          <span className={styles.labelText}>Your Mentoring Style(s)</span>
+          <span className={styles.hint}>(Select your mentoring style(s), up to 2)</span>
           
           {role === "mentor" ? (
             // Simplified multi-select for mentors - just top 2 styles
             <div className={styles.mentoringStyleContainer}>
-              {/* "I don't mind" option */}
-              <div className={styles.mentoringStyleSection}>
-                <label className={styles.styleCheckbox}>
-                  <input
-                    type="checkbox"
-                    checked={(state.mentoringStyle as MentoringStylePreferences).dontMind}
-                    onChange={(e) => {
-                      setState(prev => ({
-                        ...prev,
-                        mentoringStyle: {
-                          required: [],
-                          niceToHave: [],
-                          dontMind: e.target.checked
-                        }
-                      }));
-                    }}
-                  />
-                  <div className={styles.styleInfo}>
-                    <span className={styles.styleLabel}>I don't mind any mentoring style</span>
-                    <span className={styles.styleDescription}>I'm comfortable with any mentoring approach</span>
-                  </div>
-                </label>
-              </div>
-              
-              <div className={styles.orDivider} role="separator" aria-label="or">
-                <span>or</span>
-              </div>
-
               {/* Top 2 styles section */}
               <div className={styles.mentoringStyleSection}>
-                <h4 className={styles.sectionTitle}>
+                {/* <h4 className={styles.sectionTitle}>
                   Your Top 2 Most Comfortable Styles
                   {(state.mentoringStyle as MentoringStylePreferences).required.length < 2 && (
                     <span className={styles.selectionCount}>
@@ -845,10 +838,10 @@ export default function MetaSetup() {
                       - Maximum reached
                     </span>
                   )}
-                </h4>
-                <p className={styles.sectionDescription}>
+                </h4> */}
+                {/* <p className={styles.sectionDescription}>
                   Select up to 2 mentoring styles that you're most comfortable providing. At least one must be selected.
-                </p>
+                </p> */}
                 <div className={styles.styleGrid}>
                   {mentoringStyles.map((style) => (
                     <label key={style.id} className={styles.styleLabel}>
@@ -871,6 +864,33 @@ export default function MetaSetup() {
                     </label>
                   ))}
                 </div>
+              </div>
+              
+              <div className={styles.orDivider} role="separator" aria-label="or">
+                <span>or</span>
+              </div>
+
+              {/* "I don't mind" option */}
+              <div className={styles.mentoringStyleSection}>
+                <label className={styles.styleCheckbox}>
+                  <input
+                    type="checkbox"
+                    checked={(state.mentoringStyle as MentoringStylePreferences).dontMind}
+                    onChange={(e) => {
+                      setState(prev => ({
+                        ...prev,
+                        mentoringStyle: {
+                          required: [],
+                          niceToHave: [],
+                          dontMind: e.target.checked
+                        }
+                      }));
+                    }}
+                  />
+                  <div className={styles.styleInfo}>
+                    <span className={styles.styleLabel}>I dont have any particular mentoring style</span>
+                  </div>
+                </label>
               </div>
             </div>
           ) : (

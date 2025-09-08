@@ -182,6 +182,12 @@ function calculatePreferenceScore(
         factorScores['availability'] = availabilityMatch;
       }
 
+      // Company match - NEW: compare with CurrentCompany field
+      if (menteePrefs.CurrentCompany && mentorMeta.CurrentCompany) {
+        const companyMatch = calculateCompanyMatch(menteePrefs.CurrentCompany, mentorMeta.CurrentCompany);
+        factorScores['dreamCompanies'] = companyMatch;
+      }
+
 
       // Apply priority-based weighting
       if (factorOrder.length > 0) {
@@ -548,6 +554,30 @@ function calculateAvailabilityMatch(menteeAvailability: string, mentorAvailabili
   return 0.0; // No match - mentor's availability doesn't fit mentee's requirements
 }
 
+// Company matching function - SIMPLIFIED: Binary match (1 or 0)
+function calculateCompanyMatch(menteeCompanies: string, mentorCompany: string): number {
+  if (!menteeCompanies || !mentorCompany) return 0;
+  
+  // Split mentee's companies (comma-separated or newline-separated)
+  const menteeCompanyList = menteeCompanies
+    .split(/[,\n]/)
+    .map(company => company.trim().toLowerCase())
+    .filter(company => company.length > 0);
+  
+  if (menteeCompanyList.length === 0) return 0;
+  
+  const mentorCompanyLower = mentorCompany.trim().toLowerCase();
+  
+  // Simple binary check: if mentor's company is found in mentee's list, return 1, otherwise 0
+  for (const company of menteeCompanyList) {
+    if (company === mentorCompanyLower) {
+      return 1.0; // Perfect match - mentor's company is in mentee's preferred list
+    }
+  }
+  
+  return 0.0; // No match - mentor's company is not in mentee's preferred list
+}
+
 // Tag overlap scoring function
 function calculateTagOverlap(menteeTags: string[], mentorTags: string[]): number {
   if (menteeTags.length === 0 || mentorTags.length === 0) return 0;
@@ -584,7 +614,7 @@ export async function GET(req: NextRequest) {
     // 1. Fetch mentee preferences (real-time)
     const prefRows = await firstPage(AIRTABLE_MENTEE_PREFERENCES_TABLE!, {
       filterByFormula: `{UserID}='${esc(uid)}'`,
-      fields: ["UserID", "CurrentIndustry", "CurrentRole", "SeniorityLevel", "PreviousRoles", "MentoringStyle", "RequiredMentoringStyles", "YearsExperience", "CultureBackground", "Availability", "FactorOrder"],
+      fields: ["UserID", "CurrentIndustry", "CurrentRole", "SeniorityLevel", "PreviousRoles", "MentoringStyle", "RequiredMentoringStyles", "YearsExperience", "CultureBackground", "Availability", "CurrentCompany", "FactorOrder"],
       maxRecords: 1
     });
 
@@ -611,7 +641,7 @@ export async function GET(req: NextRequest) {
 
     // 2. Fetch all mentors (real-time)
     const mentorRows = await firstPage(AIRTABLE_MENTOR_META_TABLE!, {
-      fields: ["UserID", "Industry", "YearExp", "Skill", "Location", "Role", "Company", "SchoolName", "FieldOfStudy", "Tags", "UpdatedAt", "CurrentRole", "SeniorityLevel", "PreviousRoles", "MentoringStyle", "CulturalBackground", "Availability"]
+      fields: ["UserID", "Industry", "YearExp", "Skill", "Location", "Role", "Company", "SchoolName", "FieldOfStudy", "Tags", "UpdatedAt", "CurrentRole", "CurrentCompany", "SeniorityLevel", "PreviousRoles", "MentoringStyle", "CulturalBackground", "Availability"]
     });
 
     // 2.5. Fetch mentor names from Users table
@@ -653,6 +683,7 @@ export async function GET(req: NextRequest) {
         UpdatedAt: mentorRow.fields?.UpdatedAt,
         // New fields for proper preference matching
         CurrentRole: mentorRow.fields?.CurrentRole,
+        CurrentCompany: mentorRow.fields?.CurrentCompany,
         SeniorityLevel: mentorRow.fields?.SeniorityLevel,
         PreviousRoles: mentorRow.fields?.PreviousRoles,
         MentoringStyle: mentorRow.fields?.MentoringStyle,

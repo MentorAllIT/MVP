@@ -87,9 +87,23 @@ const preferenceFactors: PreferenceFactor[] = [
     required: true,
   },
   {
+    id: "yearsExperience",
+    label: "Mentor's Years of Experience",
+    placeholder: "e.g., 2",
+    type: "number",
+    required: true,
+  },
+  {
     id: "currentRole",
     label: "Mentor's Current Role",
     placeholder: "e.g., Software Engineer, Product Manager, Data Analyst",
+    type: "textarea",
+    required: true,
+  },
+  {
+    id: "dreamCompanies",
+    label: "Mentor's current company (UP to 3)",
+    placeholder: "e.g., Google, Microsoft, Apple, Tesla, Amazon, Netflix",
     type: "textarea",
     required: true,
   },
@@ -110,7 +124,7 @@ const preferenceFactors: PreferenceFactor[] = [
   },
   {
     id: "mentoringStyle",
-    label: "Preferred Mentoring Style",
+    label: "Preferred Mentoring Style(s)",
     placeholder: "How would you like your mentor to guide you?",
     helperText: "How would you like your mentor to guide you?",
     type: "multiselect",
@@ -118,15 +132,8 @@ const preferenceFactors: PreferenceFactor[] = [
     required: true,
   },
   {
-    id: "yearsExperience",
-    label: "Years of Experience",
-    placeholder: "e.g., 2",
-    type: "number",
-    required: true,
-  },
-  {
     id: "culturalBackground",
-    label: "Culture / Language",
+    label: "Mentor's Culture / Language Background",
     placeholder: "e.g., International student from India, Native English speaker, Bilingual (Spanish/English)",
     type: "textarea",
     required: false,
@@ -254,6 +261,7 @@ interface Preferences {
   yearsExperience: string;
   culturalBackground: string;
   availability: string;
+  dreamCompanies: string;
   factorOrder: string[];
   [key: string]: string | number | string[] | MentoringStylePreferences;
 }
@@ -276,6 +284,7 @@ export default function MenteePreferences() {
     yearsExperience: '',
     culturalBackground: '',
     availability: '',
+    dreamCompanies: '',
     factorOrder: []
   });
 
@@ -350,6 +359,7 @@ export default function MenteePreferences() {
             prefs.seniorityLevel?.trim() ||
             (prefs.yearsExperience !== undefined && String(prefs.yearsExperience).trim() !== "") ||
             prefs.availability?.trim() ||
+            prefs.dreamCompanies?.trim() ||
             prefs.mentoringStyle === "dont_mind" ||
             prefs.requiredMentoringStyles?.trim() ||
             prefs.niceToHaveStyles?.trim()
@@ -407,6 +417,7 @@ export default function MenteePreferences() {
               yearsExperience: prefs.yearsExperience?.toString() || '',
               culturalBackground: prefs.culturalBackground || '',
               availability: prefs.availability || '',
+              dreamCompanies: prefs.dreamCompanies || '',
               factorOrder: data.order || []
             };
             
@@ -725,7 +736,7 @@ export default function MenteePreferences() {
     if (!validateForm()) {
       return;
     }
-
+    
     const formData = new FormData();
     formData.append('uid', uid);
     formData.append('role', role);
@@ -810,7 +821,7 @@ export default function MenteePreferences() {
   // Update the renderInput function to handle multiselect
   const renderInput = (factor: PreferenceFactor, step: number = currentStep) => {
     const value = preferences[factor.id];
-    
+
     // In Step 2, show read-only values instead of input fields
     if (step === 2) {
       if (factor.id === "mentoringStyle") {
@@ -818,13 +829,13 @@ export default function MenteePreferences() {
         
         // Special rendering for mentoring style to show better structure
         if (mentoringStyle.dontMind) {
-          return (
-            <div className={styles.readOnlyValue}>
+      return (
+        <div className={styles.readOnlyValue}>
               <div className={styles.mentoringStyleReview}>
                 <div className={styles.mentoringStyleSection}>
                   <span className={styles.sectionLabel}>Mentoring Style Preference:</span>
                   <span className={styles.dontMindDisplay}>I don't mind any mentoring style</span>
-                  <span className={styles.styleNote}>(Full score for all mentors)</span>
+                  <span className={styles.styleNote}>(Full score for all mentoring styles)</span>
                 </div>
               </div>
             </div>
@@ -874,8 +885,8 @@ export default function MenteePreferences() {
                   </div>
                 )}
               </div>
-            </div>
-          );
+        </div>
+      );
         }
       }
       
@@ -906,7 +917,7 @@ export default function MenteePreferences() {
         <div className={styles.mentoringStyleContainer}>
           <div className={styles.mentoringStyleSection}>
             <h4 className={styles.sectionTitle}>
-              Required Mentoring Styles (Max 2 - Affect Matching) 
+              Required Mentoring Style(s) (Max 2 - Affect Matching) 
               {preferences.mentoringStyle.required.length < 2 && (
                 <span className={styles.selectionCount}>
                   - {2 - preferences.mentoringStyle.required.length} more can be selected
@@ -918,9 +929,7 @@ export default function MenteePreferences() {
                 </span>
               )}
             </h4>
-            <p className={styles.sectionDescription}>
-              Select 1-2 mentoring styles that are essential for your match. At least one must be selected.
-            </p>
+            
             <div className={styles.styleGrid}>
               {mentoringStyles.map((style) => (
                 <label key={style.id} className={styles.styleLabel}>
@@ -947,11 +956,9 @@ export default function MenteePreferences() {
 
           <div className={styles.mentoringStyleSection}>
             <h4 className={styles.sectionTitle}>
-              Nice-to-Have Styles (Completely Optional - No Scoring Impact)
+              Nice-to-Have Style(s) (Optional)
             </h4>
-            <p className={styles.sectionDescription}>
-              Select any additional styles you'd like to explore, or choose "None". These won't affect your matching result and are not required.
-            </p>
+           
             <div className={styles.styleGrid}>
               {niceToHaveOptions.map((style) => (
                 <label key={style.id} className={styles.styleLabel}>
@@ -976,7 +983,7 @@ export default function MenteePreferences() {
                 onChange={(e) => handleDontMindChange(e.target.checked)}
               />
               <span className={styles.dontMindText}>
-                I don't mind any mentoring style (Full score for all mentors)
+                I don't mind any mentoring style (Full score for all mentoring styles)
               </span>
             </label>
           </div>
@@ -1036,7 +1043,7 @@ export default function MenteePreferences() {
         setTimeout(() => autoResizeTextarea(factor.id), 0);
       };
 
-      return (
+        return (
         <textarea
           ref={(el) => {
             textareaRefs.current[factor.id] = el;
@@ -1048,10 +1055,10 @@ export default function MenteePreferences() {
           value={typeof value === "string" ? value : ""}
           onChange={handleTextareaChange}
           className={`${styles.textarea} ${styles.textareaAutoResize}`}
-          placeholder={factor.placeholder}
+            placeholder={factor.placeholder}
           rows={1}
-        />
-      );
+          />
+        );
     }
 
     // Default text input
@@ -1070,15 +1077,15 @@ export default function MenteePreferences() {
     <div className={styles.page}>
       <div className={styles.wrapper}>
         {hasPrefs && (
-          <div className={styles.topBackSection}>
-            <button
-              type="button"
-              onClick={() => router.push("/dashboard")}
-              className={styles.topBackButton}
-            >
+        <div className={styles.topBackSection}>
+          <button
+            type="button"
+            onClick={() => router.push("/dashboard")}
+            className={styles.topBackButton}
+          >
               Back to Dashboard
-            </button>
-          </div>
+          </button>
+        </div>
         )}
 
         {/* Step Indicators */}
@@ -1113,7 +1120,7 @@ export default function MenteePreferences() {
           </p>
         </div>
 
-        <div className={styles.card}>
+                <div className={styles.card}>
           <div className={styles.form}>
             {currentStep === 1 ? (
               // Step 1: Fill in the details
@@ -1148,29 +1155,29 @@ export default function MenteePreferences() {
               <div className={styles.rankPrioritiesStep}>
             
 
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext
-                items={orderedFactors.map(f => f.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <div className={styles.factorsList}>
-                  {orderedFactors.map((factor, index) => (
-                    <SortableFactorItem
-                      key={factor.id}
-                      factor={factor}
-                      index={index}
-                      renderInput={renderInput}
-                      fieldErrs={fieldErrs}
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={orderedFactors.map(f => f.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className={styles.factorsList}>
+                      {orderedFactors.map((factor, index) => (
+                        <SortableFactorItem
+                          key={factor.id}
+                          factor={factor}
+                          index={index}
+                          renderInput={renderInput}
+                          fieldErrs={fieldErrs}
                           currentStep={currentStep}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
               </div>
             )}
 
@@ -1178,14 +1185,14 @@ export default function MenteePreferences() {
               {currentStep === 1 ? (
                 // Step 1 buttons
                 <>
-              <button
-                type="button"
-                onClick={() => router.push(`/meta-setup?uid=${uid}&role=${role}`)}
-                className={styles.secondaryButton}
-              >
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/meta-setup?uid=${uid}&role=${role}`)}
+                    className={styles.secondaryButton}
+                  >
                     Previous Page
-              </button>
-              <button
+                  </button>
+                  <button
                     type="button"
                     onClick={handleManualSubmit}
                     className={styles.button}
@@ -1202,17 +1209,17 @@ export default function MenteePreferences() {
                     className={styles.secondaryButton}
                   >
                     Back to Edit
-              </button>
-              <button
+                  </button>
+                  <button
                     type="button"
                     onClick={() => {
                       handleStep2Finish();
                     }}
-                disabled={submitting}
-                className={styles.button}
-              >
+                    disabled={submitting}
+                    className={styles.button}
+                  >
                     {submitting ? "Saving Preferences..." : "Save & Finish"}
-              </button>
+                  </button>
                 </>
               )}
             </div>

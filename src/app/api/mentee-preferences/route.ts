@@ -75,7 +75,8 @@ export async function GET(request: NextRequest) {
           (fields.NicetohaveStyles || "")),
         yearsExperience: fields.YearsExperience?.toString() || "",
         culturalBackground: fields.CultureBackground || "",
-        availability: fields.Availability || ""
+        availability: fields.Availability || "",
+        dreamCompanies: fields.CurrentCompany || ""
       };
 
       const order = fields.FactorOrder ? fields.FactorOrder.split(',').map((s: string) => s.trim()) : [];
@@ -158,6 +159,7 @@ export async function POST(request: NextRequest) {
       yearsExperience: formData.get('yearsExperience') as string || "",
       culturalBackground: formData.get('culturalBackground') as string || "",
       availability: formData.get('availability') as string || "",
+      dreamCompanies: formData.get('dreamCompanies') as string || "",
       factorOrder: formData.get('factorOrder') as string || ""
     };
     
@@ -291,6 +293,7 @@ export async function POST(request: NextRequest) {
       YearsExperience: parseInt(preferences.yearsExperience) || 0,
       CultureBackground: preferences.culturalBackground?.trim() || "",
       Availability: preferences.availability.trim(),
+      CurrentCompany: preferences.dreamCompanies?.trim() || "",
       // Factor order (array of factor IDs in priority order)
       FactorOrder: preferences.factorOrder || "",
       UpdatedAt: nowISO(),
