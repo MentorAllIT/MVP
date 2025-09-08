@@ -87,6 +87,13 @@ const preferenceFactors: PreferenceFactor[] = [
     required: true,
   },
   {
+    id: "yearsExperience",
+    label: "Mentor's Years of Experience",
+    placeholder: "e.g., 2",
+    type: "number",
+    required: true,
+  },
+  {
     id: "currentRole",
     label: "Mentor's Current Role",
     placeholder: "e.g., Software Engineer, Product Manager, Data Analyst",
@@ -117,7 +124,7 @@ const preferenceFactors: PreferenceFactor[] = [
   },
   {
     id: "mentoringStyle",
-    label: "Preferred Mentoring Style",
+    label: "Preferred Mentoring Style(s)",
     placeholder: "How would you like your mentor to guide you?",
     helperText: "How would you like your mentor to guide you?",
     type: "multiselect",
@@ -125,15 +132,8 @@ const preferenceFactors: PreferenceFactor[] = [
     required: true,
   },
   {
-    id: "yearsExperience",
-    label: "Years of Experience",
-    placeholder: "e.g., 2",
-    type: "number",
-    required: true,
-  },
-  {
     id: "culturalBackground",
-    label: "Culture / Language",
+    label: "Mentor's Culture / Language Background",
     placeholder: "e.g., International student from India, Native English speaker, Bilingual (Spanish/English)",
     type: "textarea",
     required: false,
@@ -835,7 +835,7 @@ export default function MenteePreferences() {
                 <div className={styles.mentoringStyleSection}>
                   <span className={styles.sectionLabel}>Mentoring Style Preference:</span>
                   <span className={styles.dontMindDisplay}>I don't mind any mentoring style</span>
-                  <span className={styles.styleNote}>(Full score for all mentors)</span>
+                  <span className={styles.styleNote}>(Full score for all mentoring styles)</span>
                 </div>
               </div>
             </div>
@@ -917,7 +917,7 @@ export default function MenteePreferences() {
         <div className={styles.mentoringStyleContainer}>
           <div className={styles.mentoringStyleSection}>
             <h4 className={styles.sectionTitle}>
-              Required Mentoring Styles (Max 2 - Affect Matching) 
+              Required Mentoring Style(s) (Max 2 - Affect Matching) 
               {preferences.mentoringStyle.required.length < 2 && (
                 <span className={styles.selectionCount}>
                   - {2 - preferences.mentoringStyle.required.length} more can be selected
@@ -929,9 +929,7 @@ export default function MenteePreferences() {
                 </span>
               )}
             </h4>
-            <p className={styles.sectionDescription}>
-              Select 1-2 mentoring styles that are essential for your match. At least one must be selected.
-            </p>
+            
             <div className={styles.styleGrid}>
               {mentoringStyles.map((style) => (
                 <label key={style.id} className={styles.styleLabel}>
@@ -958,11 +956,9 @@ export default function MenteePreferences() {
 
           <div className={styles.mentoringStyleSection}>
             <h4 className={styles.sectionTitle}>
-              Nice-to-Have Styles (Completely Optional - No Scoring Impact)
+              Nice-to-Have Style(s) (Optional)
             </h4>
-            <p className={styles.sectionDescription}>
-              Select any additional styles you'd like to explore, or choose "None". These won't affect your matching result and are not required.
-            </p>
+           
             <div className={styles.styleGrid}>
               {niceToHaveOptions.map((style) => (
                 <label key={style.id} className={styles.styleLabel}>
@@ -987,7 +983,7 @@ export default function MenteePreferences() {
                 onChange={(e) => handleDontMindChange(e.target.checked)}
               />
               <span className={styles.dontMindText}>
-                I don't mind any mentoring style (Full score for all mentors)
+                I don't mind any mentoring style (Full score for all mentoring styles)
               </span>
             </label>
           </div>

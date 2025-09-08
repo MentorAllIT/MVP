@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
 
     // Select different fields based on role
     const menteeFields = ['UserID', 'Goal', 'Challenges', 'HelpNeeded', 'Resume Info'];
-    const mentorFields = ['UserID', 'Industry', 'YearExp', 'CurrentRole', 'CurrentCompany', 'SeniorityLevel', 'PreviousRoles', 'MentoringStyle', 'RequiredMentoringStyles', 'CulturalBackground', 'Availability', 'AvailabilityJSON'];
+    const mentorFields = ['UserID', 'Industry', 'YearExp', 'CurrentRole', 'CurrentCompany', 'SeniorityLevel', 'PreviousRoles', 'RequiredMentoringStyles', 'CulturalBackground', 'Availability', 'AvailabilityJSON'];
     
     const fieldsToSelect = role === "mentee" ? menteeFields : mentorFields;
     
@@ -50,7 +50,6 @@ export async function GET(req: NextRequest) {
               previousRoles: "",
               mentoringStyle: "",
               requiredMentoringStyles: "",
-              niceToHaveStyles: "",
               culturalBackground: "",
               availability: "",
               availabilityJson: "",
@@ -71,20 +70,18 @@ export async function GET(req: NextRequest) {
         resumeInfo: existing.fields['Resume Info'] ? JSON.parse(String(existing.fields['Resume Info'])) : null,
       });
     } else {
-      // Handle mentoring style fields for mentors
+      // Handle mentoring style fields for mentors - only use RequiredMentoringStyles
       let mentoringStyle = "";
       let requiredMentoringStyles = "";
 
-      // Note: MentoringStyle field is not used for mentors - we use RequiredMentoringStyles instead
-
       // Handle RequiredMentoringStyles field (Multiple select)
       if (Array.isArray(existing.fields.RequiredMentoringStyles)) {
-        // Check if it's the "I don't mind" option
-        if (existing.fields.RequiredMentoringStyles.includes("I don't mind any mentoring style")) {
+        // Check if it's the "I dont have any particular" option
+        if (existing.fields.RequiredMentoringStyles.includes("I dont have any particular mentoring style")) {
           mentoringStyle = "dont_mind";
-          requiredMentoringStyles = "";
+          requiredMentoringStyles = "dont_mind";
         } else {
-          // Map the first style to mentoringStyle and all styles to requiredMentoringStyles
+          // Map styles back to IDs for frontend
           const reverseStyleMap: Record<string, string> = {
             'Coaching': 'coaching',
             'Role Modelling': 'roleModelling',
@@ -95,14 +92,11 @@ export async function GET(req: NextRequest) {
           const mappedStyles = existing.fields.RequiredMentoringStyles
             .map(style => reverseStyleMap[style] || style);
           
-          // Set the first style as the main mentoring style
+          // Set the first style as the main mentoring style and all styles as required
           mentoringStyle = mappedStyles[0] || "";
           requiredMentoringStyles = mappedStyles.join(', ');
         }
       }
-
-      console.log("  - mentoringStyle:", mentoringStyle);
-      console.log("  - requiredMentoringStyles:", requiredMentoringStyles);
 
       return NextResponse.json({
         uid: existing.fields.UserID || uid,
@@ -112,7 +106,7 @@ export async function GET(req: NextRequest) {
         currentCompany: existing.fields.CurrentCompany || "",
         seniorityLevel: existing.fields.SeniorityLevel || "",
         previousRoles: existing.fields.PreviousRoles || "",
-        mentoringStyle: mentoringStyle,
+        mentoringStyle: mentoringStyle, // Keep for backward compatibility with frontend
         requiredMentoringStyles: requiredMentoringStyles,
         culturalBackground: existing.fields.CulturalBackground || "",
         availability: existing.fields.Availability || "",
@@ -156,15 +150,15 @@ export async function POST(req: NextRequest) {
       fields.CurrentCompany     = fd.get("currentCompany") as string;
       fields.SeniorityLevel     = fd.get("seniorityLevel") as string;
       fields.PreviousRoles      = fd.get("previousRoles") as string;
-      const mentoringStyleValue = fd.get("mentoringStyle") as string;
+      const requiredMentoringStylesValue = fd.get("requiredMentoringStyles") as string;
       
       // Handle mentoring style for mentors - use RequiredMentoringStyles field
-      if (mentoringStyleValue && mentoringStyleValue.trim()) {
-        if (mentoringStyleValue === 'dont_mind') {
+      if (requiredMentoringStylesValue && requiredMentoringStylesValue.trim()) {
+        if (requiredMentoringStylesValue === 'dont_mind') {
           // Use the actual Airtable option in RequiredMentoringStyles field
-          fields.RequiredMentoringStyles = ["I don't mind any mentoring style"];
+          fields.RequiredMentoringStyles = ["I dont have any particular mentoring style"];
         } else {
-          // Convert single style to array for RequiredMentoringStyles field
+          // Convert comma-separated styles to array for RequiredMentoringStyles field
           const styleMap: Record<string, string> = {
             'coaching': 'Coaching',
             'roleModelling': 'Role Modelling', 
@@ -172,10 +166,11 @@ export async function POST(req: NextRequest) {
             'technical': 'Technical',
             'holistic': 'Holistic'
           };
-          const normalizedStyle = styleMap[mentoringStyleValue] || mentoringStyleValue;
-          fields.RequiredMentoringStyles = [normalizedStyle]; // Send as array for Multiple select
+          
+          const styles = requiredMentoringStylesValue.split(',').map(s => s.trim()).filter(s => s);
+          const normalizedStyles = styles.map(style => styleMap[style] || style);
+          fields.RequiredMentoringStyles = normalizedStyles; // Send as array for Multiple select
         }
-      } else {
       }
       // Note: Mentoring style is already handled above using RequiredMentoringStyles field
       
