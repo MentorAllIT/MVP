@@ -222,6 +222,7 @@ export default function MetaSetup() {
     industry: string;
     years: string;
     currentRole: string;
+    currentCompany: string;
     seniorityLevel: string;
     previousRoles: string;
     mentoringStyle: MentoringStyleState;
@@ -235,6 +236,7 @@ export default function MetaSetup() {
     industry:   "",
     years:      "",
     currentRole: "",
+    currentCompany: "",
     seniorityLevel: "",
     previousRoles: "",
     mentoringStyle: role === "mentor" ? {
@@ -296,6 +298,7 @@ export default function MetaSetup() {
                   metaData?.industry?.trim() ||
                   (metaData?.years !== "" && metaData?.years != null) || // handles 0
                   metaData?.currentRole?.trim() ||
+                  metaData?.currentCompany?.trim() ||
                   metaData?.seniorityLevel?.trim() ||
                   metaData?.previousRoles?.trim() ||
                   metaData?.requiredMentoringStyles?.trim() ||
@@ -324,6 +327,7 @@ export default function MetaSetup() {
               industry: metaData.industry || "",
               years: metaData.years?.toString() || "",
               currentRole: metaData.currentRole || "",
+              currentCompany: metaData.currentCompany || "",
               seniorityLevel: metaData.seniorityLevel || "",
               previousRoles: metaData.previousRoles || "",
               mentoringStyle: role === "mentor" ? {
@@ -478,6 +482,7 @@ export default function MetaSetup() {
       else if (!Number.isFinite(yrs) || yrs < 0)
                                            errs.years     = "Years must be ≥ 0";
       if (!state.currentRole.trim())       errs.currentRole = "Current role is required";
+      if (!state.currentCompany.trim())    errs.currentCompany = "Current company is required";
       if (!state.seniorityLevel.trim())    errs.seniorityLevel = "Seniority level is required";
       
       // Validate mentoring styles for mentors
@@ -578,6 +583,7 @@ export default function MetaSetup() {
       fd.append("industry",  state.industry.trim());
       fd.append("years",     state.years.trim());
       fd.append("currentRole", state.currentRole.trim());
+      fd.append("currentCompany", state.currentCompany.trim());
       fd.append("seniorityLevel", state.seniorityLevel.trim());
       fd.append("previousRoles", state.previousRoles.trim());
       // Handle mentoring style for mentors vs mentees
@@ -757,6 +763,20 @@ export default function MetaSetup() {
           />
           {fieldErrs.currentRole && (
               <span className={styles.fieldError}>{fieldErrs.currentRole}</span>
+          )}
+        </label>
+
+        <label className={styles.label}>
+          <span className={styles.labelText}>Current Company</span>
+          <input
+              name="currentCompany"
+              value={state.currentCompany}
+              onChange={onChange}
+              className={`${styles.input} ${fieldErrs.currentCompany ? styles.inputError : ""}`}
+              placeholder="e.g. Google, Microsoft, Startup Inc."
+          />
+          {fieldErrs.currentCompany && (
+              <span className={styles.fieldError}>{fieldErrs.currentCompany}</span>
           )}
         </label>
 

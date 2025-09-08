@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
 
     // Select different fields based on role
     const menteeFields = ['UserID', 'Goal', 'Challenges', 'HelpNeeded', 'Resume Info'];
-    const mentorFields = ['UserID', 'Industry', 'YearExp', 'CurrentRole', 'SeniorityLevel', 'PreviousRoles', 'MentoringStyle', 'RequiredMentoringStyles', 'CulturalBackground', 'Availability', 'AvailabilityJSON'];
+    const mentorFields = ['UserID', 'Industry', 'YearExp', 'CurrentRole', 'CurrentCompany', 'SeniorityLevel', 'PreviousRoles', 'MentoringStyle', 'RequiredMentoringStyles', 'CulturalBackground', 'Availability', 'AvailabilityJSON'];
     
     const fieldsToSelect = role === "mentee" ? menteeFields : mentorFields;
     
@@ -45,6 +45,7 @@ export async function GET(req: NextRequest) {
               industry: "",
               years: "",
               currentRole: "",
+              currentCompany: "",
               seniorityLevel: "",
               previousRoles: "",
               mentoringStyle: "",
@@ -108,6 +109,7 @@ export async function GET(req: NextRequest) {
         industry: existing.fields.Industry || "",
         years: existing.fields.YearExp ?? "",
         currentRole: existing.fields.CurrentRole || "",
+        currentCompany: existing.fields.CurrentCompany || "",
         seniorityLevel: existing.fields.SeniorityLevel || "",
         previousRoles: existing.fields.PreviousRoles || "",
         mentoringStyle: mentoringStyle,
@@ -151,6 +153,7 @@ export async function POST(req: NextRequest) {
       fields.YearExp  = Number(fd.get("years") as string);
 
       fields.CurrentRole        = fd.get("currentRole") as string;
+      fields.CurrentCompany     = fd.get("currentCompany") as string;
       fields.SeniorityLevel     = fd.get("seniorityLevel") as string;
       fields.PreviousRoles      = fd.get("previousRoles") as string;
       const mentoringStyleValue = fd.get("mentoringStyle") as string;
