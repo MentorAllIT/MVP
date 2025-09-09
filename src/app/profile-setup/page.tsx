@@ -13,10 +13,24 @@ const formSchema = z.object({
     .trim()
     .url({ message: "Enter a valid URL" })
     .refine(
-      (v) => /^https?:\/\/(www\.)?linkedin\.com\//i.test(v),
-      { message: "URL must start with linkedin.com" }
+      (v) => /^https?:\/\/([a-z0-9-]+\.)*linkedin\.(com|cn)\//i.test(v),
+      { message: "URL must be on linkedin.com or linkedin.cn" }
     ),
 });
+
+function extractLinkedInHandle(url: string) {
+  try {
+    const u = new URL(url);
+    const parts = u.pathname.split("/").filter(Boolean);
+    const i = parts.findIndex((p) => ["in", "company", "school"].includes(p));
+    if (i !== -1 && parts[i + 1]) return parts[i + 1].replace(/\/+$/, "");
+  } catch {}
+  return "";
+}
+
+function sanitizeHandle(v: string) {
+  return v.trim().replace(/^@/, "").replace(/^in\//, "").replace(/^\//, "");
+}
 
 type FieldErrors = Partial<Record<keyof z.infer<typeof formSchema>, string>>;
 
@@ -67,6 +81,9 @@ export default function ProfileSetup() {
 
   const [bio,       setBio]       = useState("");
   const [linkedin,  setLinkedin]  = useState("");
+  const [linkedinMode, setLinkedinMode] = useState<"url" | "handle">("url");
+  const [linkedinHandle, setLinkedinHandle] = useState("");
+  const clearLinkedinError = () => setFieldErrs((p) => ({ ...p, linkedin: undefined }));
   const [showHelp,  setShowHelp]  = useState(false);
   const [fieldErrs, setFieldErrs] = useState<FieldErrors>({});
   const [formErr,   setFormErr]   = useState<string | null>(null);
@@ -87,7 +104,11 @@ export default function ProfileSetup() {
         if (res.ok) {
           const profileData = await res.json();
           if (profileData.bio) setBio(profileData.bio);
-          if (profileData.linkedin) setLinkedin(profileData.linkedin);
+          if (profileData.linkedin) {
+            setLinkedin(profileData.linkedin);
+            setLinkedinHandle(extractLinkedInHandle(profileData.linkedin));
+            setLinkedinMode("url");
+          }
           setHasProfile(Boolean(profileData?.bio || profileData?.linkedin || profileData?.id));
         }
       } catch (error) {
@@ -165,7 +186,20 @@ export default function ProfileSetup() {
     setFieldErrs({});
     setFormErr(null);
 
-    const parsed = formSchema.safeParse({ bio, linkedin });
+    const normalizedLinkedin =
+    linkedinMode === "url"
+      ? linkedin.trim()
+      : `https://www.linkedin.com/in/${sanitizeHandle(linkedinHandle)}`;
+    
+    if (linkedinMode === "handle" && !/^[a-zA-Z0-9._-]{1,100}$/.test(sanitizeHandle(linkedinHandle))) {
+      setFieldErrs((prev) => ({
+        ...prev,
+        linkedin: "Enter a valid handle (letters, numbers, ., -, _)",
+      }));
+      return;
+    }
+
+    const parsed = formSchema.safeParse({ bio, linkedin: normalizedLinkedin });
     if (!parsed.success) {
       const errs: FieldErrors = {};
       parsed.error.issues.forEach((i) => {
@@ -185,7 +219,7 @@ export default function ProfileSetup() {
     const fd = new FormData();
     fd.append("uid", uid);
     fd.append("bio", bio.trim());
-    fd.append("linkedin", linkedin.trim());
+    fd.append("linkedin", normalizedLinkedin);
 
     const res = await fetch("/api/profile", { method: "POST", body: fd });
     setSubmitting(false);
@@ -277,17 +311,57 @@ export default function ProfileSetup() {
           </label>
 
           <label className={styles.label}>
-            <span className={styles.labelText}>LinkedIn URL</span>
-            <input
-              name="linkedin"
-              type="url"
-              value={linkedin}
-              onChange={(e) => setLinkedin(e.target.value)}
-              className={`${styles.input} ${
-                fieldErrs.linkedin ? styles.inputError : ""
-              }`}
-              placeholder="https://www.linkedin.com/…"
-            />
+            <span className={styles.labelText}>LinkedIn</span>
+            <div className={styles.segmented} role="tablist" aria-label="LinkedIn input">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={linkedinMode === "url"}
+              className={`${styles.segment} ${linkedinMode === "url" ? styles.segmentActive : ""}`}
+              onClick={() => { setLinkedinMode("url"); clearLinkedinError(); }}
+            >
+              Paste link
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={linkedinMode === "handle"}
+              className={`${styles.segment} ${linkedinMode === "handle" ? styles.segmentActive : ""}`}
+              onClick={() => { setLinkedinMode("handle"); clearLinkedinError(); }}
+            >
+              Type handle
+            </button>
+          </div>
+
+          {linkedinMode === "url" ? (
+            <>
+              <input
+                name="linkedin"
+                type="url"
+                value={linkedin}
+                onChange={(e) => { setLinkedin(e.target.value); clearLinkedinError(); }}
+                className={`${styles.input} ${fieldErrs.linkedin ? styles.inputError : ""}`}
+                placeholder="https://www.linkedin.com/in/your-handle"
+                inputMode="url"
+              />
+            </>
+          ) : (
+            <div className={styles.inputGroup}>
+              <span className={styles.inputPrefix}>linkedin.com/in/</span>
+              <input
+                name="linkedinHandle"
+                type="text"
+                value={linkedinHandle}
+                onChange={(e) => { setLinkedinHandle(sanitizeHandle(e.target.value)); clearLinkedinError(); }}
+                className={`${styles.input} ${styles.inputInset} ${fieldErrs.linkedin ? styles.inputError : ""}`}
+                placeholder="your-handle"
+                inputMode="text"
+                autoCapitalize="none"
+                autoCorrect="off"
+              />
+            </div>
+          )}
+
             {fieldErrs.linkedin && (
               <span className={styles.fieldError}>{fieldErrs.linkedin}</span>
             )}
