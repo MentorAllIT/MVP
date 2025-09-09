@@ -682,6 +682,7 @@ export default function MenteePreferences() {
 
   // Validation function
   const validateForm = () => {
+    console.log('🔍 DEBUG: Validating form with preferences:', preferences);
     
     const errors: { [key: string]: string } = {};
     
@@ -691,12 +692,16 @@ export default function MenteePreferences() {
       if (factor.required) {
         if (factor.id === "mentoringStyle") {
           const mentoringStyle = value as MentoringStylePreferences;
+          console.log('🔍 DEBUG: Validating mentoring style:', mentoringStyle);
           
           if (mentoringStyle.dontMind) {
+            console.log('🔍 DEBUG: "I don\'t mind" is selected');
           } else if (mentoringStyle.required.length === 0) {
             const errorMsg = `${factor.label} is required - please select at least one required style or choose "I don't mind"`;
             errors[factor.id] = errorMsg;
+            console.log('🔍 DEBUG: Validation error - no required styles selected');
           } else {
+            console.log('🔍 DEBUG: Required styles selected:', mentoringStyle.required);
           }
           // Note: nice-to-have can be empty - that's perfectly fine
           // Users can have just required styles, or required + nice-to-have, or "I don't mind"
@@ -732,10 +737,14 @@ export default function MenteePreferences() {
 
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('🔍 DEBUG: handleManualSubmit called');
     
     if (!validateForm()) {
+      console.log('🔍 DEBUG: Form validation failed');
       return;
     }
+    
+    console.log('🔍 DEBUG: Form validation passed, proceeding with submission');
     
     const formData = new FormData();
     formData.append('uid', uid);
@@ -785,12 +794,15 @@ export default function MenteePreferences() {
     });
 
     try {
+      console.log('🔍 DEBUG: Submitting form with data:', Object.fromEntries(formData.entries()));
       
       const response = await fetch('/api/mentee-preferences', {
         method: 'POST',
         body: formData,
       });
 
+      console.log('🔍 DEBUG: Response status:', response.status);
+      console.log('🔍 DEBUG: Response ok:', response.ok);
 
       if (response.ok) {
         // Move to Step 2 (Save & Review) after saving preferences
@@ -809,7 +821,9 @@ export default function MenteePreferences() {
           }, 1000);
         }, 100);
       } else {
+        console.log('🔍 DEBUG: Response not ok, status:', response.status);
         const errorData = await response.json();
+        console.log('🔍 DEBUG: Error data:', errorData);
         alert(`Error: ${errorData.error || 'Failed to save preferences'}`);
       }
     } catch (error) {

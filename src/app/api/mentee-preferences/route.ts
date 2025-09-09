@@ -180,7 +180,8 @@ export async function POST(request: NextRequest) {
       "seniorityLevel",
       "mentoringStyle",
       "yearsExperience",
-      "availability"
+      "availability",
+      "dreamCompanies"
     ];
 
     for (const field of requiredFields) {
@@ -234,7 +235,12 @@ export async function POST(request: NextRequest) {
       
       // Clean the input (remove quotes and extra spaces)
       const cleanStyle = style.replace(/"/g, '').trim();
-      return labelMap[cleanStyle.toLowerCase()] || cleanStyle;
+      const normalized = labelMap[cleanStyle.toLowerCase()] || cleanStyle;
+      
+      // Debug: Log the normalization
+      console.log(`Normalizing mentoring style: "${style}" -> "${normalized}"`);
+      
+      return normalized;
     };
 
     // Check if preferences already exist for this user
@@ -251,23 +257,20 @@ export async function POST(request: NextRequest) {
       throw airtableError;
     }
 
-    // Process mentoring style for storage (Single select field - only one value allowed)
+    // Process mentoring style for storage (Only using RequiredMentoringStyles and NicetohaveStyles)
     
-    let mentoringStyleForStorage: string | null = null;
     let requiredMentoringStylesForStorage: string[] | null = null;
     let niceToHaveStylesForStorage: string[] | null = null;
     
     if (preferences.mentoringStyle === 'dont_mind') {
       // When "I don't mind" is selected, set both fields to the "I don't mind" option
-      mentoringStyleForStorage = null; // Skip MentoringStyle field entirely
-      requiredMentoringStylesForStorage = ["I don't mind any mentoring style"]; // Set RequiredMentoringStyles
-      niceToHaveStylesForStorage = ["I don't mind any mentoring style"]; // Set NicetohaveStyles
+      requiredMentoringStylesForStorage = ["I dont have any particular mentoring style"]; // Set RequiredMentoringStyles
+      niceToHaveStylesForStorage = ["I dont have any particular mentoring style"]; // Set NicetohaveStyles
     } else if (preferences.requiredMentoringStyles && preferences.requiredMentoringStyles.trim()) {
-      // Store only the first required style for the MentoringStyle Single select field
+      // Store all required styles in RequiredMentoringStyles field
       const normalizedRequiredStyles = preferences.requiredMentoringStyles
         .split(',')
         .map(s => normalizeMentoringStyle(s.trim()));
-      mentoringStyleForStorage = normalizedRequiredStyles[0] || 'Coaching'; // Take first one only
       requiredMentoringStylesForStorage = normalizedRequiredStyles; // Store all required styles
     } else {
     }
@@ -299,19 +302,23 @@ export async function POST(request: NextRequest) {
       UpdatedAt: nowISO(),
     };
 
-    // Only include MentoringStyle if it's not null
-    if (mentoringStyleForStorage !== null) {
-      preferenceData.MentoringStyle = mentoringStyleForStorage;
-    }
+    // Note: MentoringStyle field removed - only using RequiredMentoringStyles for mentees
+    // if (mentoringStyleForStorage !== null) {
+    //   preferenceData.MentoringStyle = mentoringStyleForStorage;
+    // }
 
     // Handle mentoring style arrays - include empty arrays to clear fields
     if (requiredMentoringStylesForStorage !== null) {
       preferenceData.RequiredMentoringStyles = requiredMentoringStylesForStorage;
+      console.log("Using pre-processed requiredMentoringStylesForStorage:", requiredMentoringStylesForStorage);
     } else if (preferences.requiredMentoringStyles && preferences.requiredMentoringStyles.trim()) {
-      preferenceData.RequiredMentoringStyles = preferences.requiredMentoringStyles
+      const normalizedStyles = preferences.requiredMentoringStyles
         .split(',')
         .map(s => normalizeMentoringStyle(s.trim()))
         .filter(s => s); // Remove empty strings
+      
+      preferenceData.RequiredMentoringStyles = normalizedStyles;
+      console.log("Normalized requiredMentoringStyles:", normalizedStyles);
     }
 
     if (niceToHaveStylesForStorage !== null) {
@@ -350,6 +357,12 @@ export async function POST(request: NextRequest) {
       }
     } catch (airtableWriteError) {
       console.error("Step 10-11: Airtable write operation failed:", airtableWriteError);
+      console.error("Error details:", {
+        message: airtableWriteError instanceof Error ? airtableWriteError.message : 'Unknown error',
+        stack: airtableWriteError instanceof Error ? airtableWriteError.stack : undefined,
+        name: airtableWriteError instanceof Error ? airtableWriteError.name : undefined
+      });
+      console.error("Data that failed to save:", preferenceData);
       throw airtableWriteError;
     }
     
@@ -411,9 +424,28 @@ export async function POST(request: NextRequest) {
     
     // Check if it's an Airtable field error
     if (error instanceof Error && error.message.includes('Unknown field name')) {
+      console.error("Airtable field error:", error.message);
       return NextResponse.json(
-        { error: "Database schema mismatch. Please check Airtable configuration." },
+        { error: `Database schema mismatch: ${error.message}. Please check Airtable configuration.` },
         { status: 422 }
+      );
+    }
+    
+    // Check if it's an Airtable validation error
+    if (error instanceof Error && error.message.includes('INVALID_MULTIPLE_CHOICE_OPTIONS')) {
+      console.error("Airtable validation error:", error.message);
+      return NextResponse.json(
+        { error: `Invalid field values: ${error.message}. Please check your selections.` },
+        { status: 422 }
+      );
+    }
+    
+    // Check if it's a JSON parsing error
+    if (error instanceof Error && error.message.includes('Unexpected end of JSON input')) {
+      console.error("JSON parsing error:", error.message);
+      return NextResponse.json(
+        { error: `Data processing error: ${error.message}. Please try again.` },
+        { status: 400 }
       );
     }
     
