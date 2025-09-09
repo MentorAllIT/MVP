@@ -27,12 +27,12 @@ function getBioContent(role: string | null) {
       placeholder:
         'E.g. “Senior backend engineer @ Google with 8 yrs experience.\ Expert in distributed systems & Golang. Love helping juniors level-up.”',
       tips: [
-        "Current job title and company",
-        "Years of industry experience",
         "Key technologies / domains you excel in",
         "Specific areas you can mentor on (e.g. interviews, system design)",
         "Any past mentoring or leadership experience",
         "Approach or philosophy (hands-on code reviews, pair programming, etc.)",
+        "What mentees leave with (action plan, rubric, resources, feedback)",
+        "Recent wins/promotions/offers, shipped projects, measurable outcomes."
       ],
     };
   }
