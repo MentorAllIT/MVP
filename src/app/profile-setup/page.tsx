@@ -71,6 +71,8 @@ export default function ProfileSetup() {
   const [fieldErrs, setFieldErrs] = useState<FieldErrors>({});
   const [formErr,   setFormErr]   = useState<string | null>(null);
   const [submitting,setSubmitting]= useState(false);
+  const [enhancing, setEnhancing] = useState(false);
+  const [preEnhanceBio, setPreEnhanceBio] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasProfile, setHasProfile] = useState(false);
 
@@ -115,6 +117,45 @@ export default function ProfileSetup() {
         </div>
       </div>
     );
+  }
+
+  async function enhanceBio() {
+    const min = 10;
+    if (!bio || bio.trim().length < min) {
+      setFieldErrs((prev) => ({ ...prev, bio: `Tell us a bit more (≥ ${min} chars)` }));
+      return;
+    }
+
+    setFormErr(null);
+    setEnhancing(true);
+    setPreEnhanceBio(bio);
+
+    try {
+      const res = await fetch("/api/enhance-bio", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: role === "mentor" ? "mentor" : "mentee", bio }),
+      });
+      
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.enhanced) setBio(data.enhanced);
+      else {
+        setFormErr(data?.error ?? "Unable to enhance bio");
+        setPreEnhanceBio(null);
+      };
+    } catch {
+      setFormErr("Unable to enhance bio");
+      setPreEnhanceBio(null);
+    } finally {
+      setEnhancing(false);
+    }
+  }
+
+  function resetBio() {
+    if (preEnhanceBio !== null) {
+      setBio(preEnhanceBio);
+      setPreEnhanceBio(null);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -183,15 +224,39 @@ export default function ProfileSetup() {
           <form className={styles.form} onSubmit={handleSubmit} noValidate>
           <label className={styles.label}>
             <span className={styles.labelText}>Short Bio</span>
-            <textarea
-              name="bio"
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              className={`${styles.textarea} ${
-                fieldErrs.bio ? styles.inputError : ""
-              }`}
-              placeholder={placeholder}
-            />
+              <textarea
+                name="bio"
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                className={`${styles.textarea} ${
+                  fieldErrs.bio ? styles.inputError : ""
+                }`}
+                placeholder={placeholder}
+              />
+              <div className={styles.actionRow}>
+                <button
+                  type="button"
+                  onClick={preEnhanceBio ? resetBio : enhanceBio}
+                  disabled={enhancing || (!preEnhanceBio && bio.trim().length < 10)}
+                  className={styles.inlineActionBtn}
+                  aria-busy={enhancing}
+                  aria-label={preEnhanceBio ? "Reset" : "Enhance bio with AI"}
+                  title={preEnhanceBio ? "Reset" : "Enhance with AI"}
+                  >
+                  {enhancing ? (
+                    <>
+                      <span className={styles.spinner} />
+                      <span className={styles.inlineActionText}>Enhancing…</span>
+                    </>
+                  ) : preEnhanceBio ? (
+                    <>
+                      <span className={styles.inlineActionText}>Reset</span>
+                    </>
+                  ) : (
+                    "Enhance with AI"
+                  )}
+                </button>
+              </div>  
             {fieldErrs.bio && (
               <span className={styles.fieldError}>{fieldErrs.bio}</span>
             )}
