@@ -158,9 +158,8 @@ function calculatePreferenceScore(
       }
 
       // Mentoring style match - UPDATED: use RequiredMentoringStyles for scoring
-      if (menteePrefs.RequiredMentoringStyles && (mentorMeta.MentoringStyle || mentorMeta.RequiredMentoringStyles)) {
-        const mentorStyles = mentorMeta.RequiredMentoringStyles || mentorMeta.MentoringStyle;
-        const styleMatch = calculateMentoringStyleMatch(menteePrefs.RequiredMentoringStyles, mentorStyles);
+      if (menteePrefs.RequiredMentoringStyles && mentorMeta.RequiredMentoringStyles) {
+        const styleMatch = calculateMentoringStyleMatch(menteePrefs.RequiredMentoringStyles, mentorMeta.RequiredMentoringStyles);
         factorScores['mentoringStyle'] = styleMatch;
       }
 
@@ -641,7 +640,7 @@ export async function GET(req: NextRequest) {
 
     // 2. Fetch all mentors (real-time)
     const mentorRows = await firstPage(AIRTABLE_MENTOR_META_TABLE!, {
-      fields: ["UserID", "Industry", "YearExp", "Skill", "Location", "Role", "Company", "SchoolName", "FieldOfStudy", "Tags", "UpdatedAt", "CurrentRole", "CurrentCompany", "SeniorityLevel", "PreviousRoles", "MentoringStyle", "CulturalBackground", "Availability"]
+      fields: ["UserID", "Industry", "YearExp", "Skill", "Location", "Role", "Company", "SchoolName", "FieldOfStudy", "Tags", "UpdatedAt", "CurrentRole", "CurrentCompany", "SeniorityLevel", "PreviousRoles", "RequiredMentoringStyles", "CulturalBackground", "Availability"]
     });
 
     // 2.5. Fetch mentor names from Users table
@@ -686,7 +685,7 @@ export async function GET(req: NextRequest) {
         CurrentCompany: mentorRow.fields?.CurrentCompany,
         SeniorityLevel: mentorRow.fields?.SeniorityLevel,
         PreviousRoles: mentorRow.fields?.PreviousRoles,
-        MentoringStyle: mentorRow.fields?.MentoringStyle,
+        RequiredMentoringStyles: mentorRow.fields?.RequiredMentoringStyles,
         CulturalBackground: mentorRow.fields?.CulturalBackground,
         Availability: mentorRow.fields?.Availability
       };

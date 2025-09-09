@@ -134,8 +134,13 @@ export async function POST(req: NextRequest) {
 
   } catch (err) {
     console.error("Signup error:", err);
+    console.error("Error details:", {
+      message: err instanceof Error ? err.message : 'Unknown error',
+      stack: err instanceof Error ? err.stack : undefined,
+      name: err instanceof Error ? err.name : undefined
+    });
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error", details: err instanceof Error ? err.message : 'Unknown error' },
       { status: 500 }
     );
   }
