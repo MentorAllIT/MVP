@@ -263,7 +263,8 @@ interface Preferences {
   availability: string;
   dreamCompanies: string;
   factorOrder: string[];
-  [key: string]: string | number | string[] | MentoringStylePreferences;
+  factorRanks: { id: string; rank: number }[];
+  [key: string]: string | number | string[] | MentoringStylePreferences | { id: string; rank: number }[];
 }
 
 export default function MenteePreferences() {
@@ -285,7 +286,8 @@ export default function MenteePreferences() {
     culturalBackground: '',
     availability: '',
     dreamCompanies: '',
-    factorOrder: []
+    factorOrder: [],
+    factorRanks: []
   });
 
   // Initialize ordered factors (this will be the drag and drop order)
@@ -318,6 +320,22 @@ export default function MenteePreferences() {
       autoResizeTextarea(textareaId);
     });
   }, [preferences]);
+
+  // Initialize factor order when component mounts
+  useEffect(() => {
+    if (preferences.factorOrder.length === 0) {
+      const factorOrderWithRanks = orderedFactors.map((factor, index) => ({
+        id: factor.id,
+        rank: index + 1
+      }));
+      
+      setPreferences(prev => ({
+        ...prev,
+        factorOrder: orderedFactors.map(factor => factor.id),
+        factorRanks: factorOrderWithRanks
+      }));
+    }
+  }, [orderedFactors, preferences.factorOrder.length]);
 
   const uid = params.get("uid");
   const role = params.get("role");
@@ -418,13 +436,28 @@ export default function MenteePreferences() {
               culturalBackground: prefs.culturalBackground || '',
               availability: prefs.availability || '',
               dreamCompanies: prefs.dreamCompanies || '',
-              factorOrder: data.order || []
+              factorOrder: data.order || [],
+              factorRanks: data.ranks || []
             };
             
             
             // Check if component is still mounted before setting state
             if (isMounted) {
               setPreferences(newPreferences);
+              
+              // Update orderedFactors to match the loaded factor order
+              if (data.order && data.order.length > 0) {
+                const orderedFactorsFromData = data.order.map((factorId: string) => 
+                  preferenceFactors.find(factor => factor.id === factorId)
+                ).filter(Boolean) as PreferenceFactor[];
+                
+                // Add any missing factors that weren't in the saved order
+                const missingFactors = preferenceFactors.filter(factor => 
+                  !data.order.includes(factor.id)
+                );
+                
+                setOrderedFactors([...orderedFactorsFromData, ...missingFactors]);
+              }
             }
           } else {
           }
@@ -663,8 +696,22 @@ export default function MenteePreferences() {
       setOrderedFactors((items) => {
         const oldIndex = items.findIndex(item => item.id === active.id);
         const newIndex = items.findIndex(item => item.id === over?.id);
-
-        return arrayMove(items, oldIndex, newIndex);
+        const newOrderedFactors = arrayMove(items, oldIndex, newIndex);
+        
+        // Create factor order with ranks (1-based indexing)
+        const factorOrderWithRanks = newOrderedFactors.map((factor, index) => ({
+          id: factor.id,
+          rank: index + 1
+        }));
+        
+        // Update the factor order in preferences
+        setPreferences(prev => ({
+          ...prev,
+          factorOrder: newOrderedFactors.map(factor => factor.id),
+          factorRanks: factorOrderWithRanks
+        }));
+        
+        return newOrderedFactors;
       });
     }
   };
@@ -682,6 +729,11 @@ export default function MenteePreferences() {
 
   // Validation function
   const validateForm = () => {
+    // Skip validation in step 2 (ranking step)
+    if (currentStep === 2) {
+      return true;
+    }
+    
     const errors: { [key: string]: string } = {};
     
     preferenceFactors.forEach((factor) => {
@@ -725,8 +777,36 @@ export default function MenteePreferences() {
     return Object.keys(errors).length === 0;
   };
 
-  const handleStep2Finish = () => {
-    window.location.href = '/dashboard';
+  const handleStep2Finish = async () => {
+    setSubmitting(true);
+    setFormErr(''); // Clear any previous errors
+    
+    try {
+      const formData = new FormData();
+      formData.append('uid', uid);
+      formData.append('role', role);
+      
+      // Send factor order and ranks for step 2
+      formData.append('factorOrder', preferences.factorOrder.join(','));
+      formData.append('factorRanks', JSON.stringify(preferences.factorRanks));
+      
+      const response = await fetch('/api/mentee-preferences', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        window.location.href = '/dashboard';
+      } else {
+        const errorData = await response.json();
+        setFormErr(errorData.error || 'Failed to save preferences');
+      }
+    } catch (error) {
+      console.error('Error saving factor ranks:', error);
+      setFormErr('Failed to save preferences');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleManualSubmit = async (e: React.FormEvent) => {
@@ -735,7 +815,7 @@ export default function MenteePreferences() {
     if (!validateForm()) {
       return;
     }
-    
+
     const formData = new FormData();
     formData.append('uid', uid);
     formData.append('role', role);
@@ -779,7 +859,10 @@ export default function MenteePreferences() {
       } else if (typeof value === "number") {
         formData.append(key, value.toString());
       } else if (Array.isArray(value)) {
-        formData.append(key, value.join(', '));
+        // Skip factorRanks in edit preferences step - only send in ranking step
+        if (key !== 'factorRanks') {
+          formData.append(key, value.join(', '));
+        }
       }
     });
 
