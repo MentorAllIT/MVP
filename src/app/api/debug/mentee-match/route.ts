@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     const [prefRec] = await base(AIRTABLE_MENTEE_PREFERENCES_TABLE!).select({
       filterByFormula: `{UserID}='${esc(menteeId)}'`,
       maxRecords: 1,
-      fields: ["CurrentIndustry", "CurrentRole", "SeniorityLevel", "PreviousRoles", "MentoringStyle", "YearsExperience", "CultureBackground", "Availability", "FactorOrder"]
+      fields: ["CurrentIndustry", "CurrentRole", "SeniorityLevel", "PreviousRoles", "RequiredMentoringStyles", "NicetohaveStyles", "YearsExperience", "CultureBackground", "Availability", "FactorOrder"]
     }).firstPage();
 
     if (!prefRec) {

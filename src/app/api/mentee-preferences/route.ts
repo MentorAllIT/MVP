@@ -42,6 +42,14 @@ export async function GET(request: NextRequest) {
     const existingRecords = await base(AIRTABLE_MENTEE_PREFERENCES_TABLE!).select({
       filterByFormula: `{UserID}='${esc(uid)}'`,
       maxRecords: 1,
+      fields: [
+        "CurrentIndustry", "CurrentRole", "SeniorityLevel", "PreviousRoles", 
+        "RequiredMentoringStyles", "NicetohaveStyles", "YearsExperience", 
+        "CultureBackground", "Availability", "CurrentCompany", "FactorOrder",
+        "IndustryRank", "RoleRank", "SeniorityRank", "PreviousRolesRank", 
+        "MentoringStyleRank", "YearsExperienceRank", "CultureBackgroundRank", 
+        "AvailabilityRank", "CompanyRank"
+      ]
     }).firstPage();
 
     if (existingRecords.length > 0) {
@@ -79,20 +87,35 @@ export async function GET(request: NextRequest) {
         dreamCompanies: fields.CurrentCompany || ""
       };
 
+      // Extract factor order and individual ranks
       const order = fields.FactorOrder ? fields.FactorOrder.split(',').map((s: string) => s.trim()) : [];
-
+      
+      // Extract individual rank fields
+      const ranks = [
+        { id: "currentIndustry", rank: fields.IndustryRank || 0 },
+        { id: "currentRole", rank: fields.RoleRank || 0 },
+        { id: "seniorityLevel", rank: fields.SeniorityRank || 0 },
+        { id: "previousRoles", rank: fields.PreviousRolesRank || 0 },
+        { id: "mentoringStyle", rank: fields.MentoringStyleRank || 0 },
+        { id: "yearsExperience", rank: fields.YearsExperienceRank || 0 },
+        { id: "culturalBackground", rank: fields.CultureBackgroundRank || 0 },
+        { id: "availability", rank: fields.AvailabilityRank || 0 },
+        { id: "dreamCompanies", rank: fields.CompanyRank || 0 }
+      ].filter(item => item.rank > 0); // Only include factors that have been ranked
 
       return NextResponse.json({
         success: true,
         preferences,
-        order
+        order,
+        ranks
       });
     } else {
       // No preferences found, return empty data
       return NextResponse.json({
         success: true,
         preferences: {},
-        order: []
+        order: [],
+        ranks: []
       });
     }
   } catch (err: any) {
@@ -129,17 +152,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("Step 1: Parsing FormData...");
     const formData = await request.formData();
-    console.log("FormData parsed successfully");
     
     const uid = formData.get('uid') as string;
     const role = formData.get('role') as string;
 
-    console.log("Step 2: Extracted basic fields:", { uid: !!uid, role: !!role });
-
     if (!uid) {
-      console.error("Missing UID");
       return NextResponse.json(
         { error: "User ID is required" },
         { status: 400 }
@@ -147,7 +165,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract preferences from FormData
-    console.log("Step 3: Extracting form preferences...");
     const preferences: { [key: string]: string } = {
       currentIndustry: formData.get('currentIndustry') as string || "",
       currentRole: formData.get('currentRole') as string || "",
@@ -160,65 +177,54 @@ export async function POST(request: NextRequest) {
       culturalBackground: formData.get('culturalBackground') as string || "",
       availability: formData.get('availability') as string || "",
       dreamCompanies: formData.get('dreamCompanies') as string || "",
-      factorOrder: formData.get('factorOrder') as string || ""
+      factorOrder: formData.get('factorOrder') as string || "",
+      factorRanks: formData.get('factorRanks') as string || ""
     };
-    
-    console.log("Step 4: Extracted preferences:", {
-      currentIndustry: preferences.currentIndustry,
-      currentRole: preferences.currentRole,
-      seniorityLevel: preferences.seniorityLevel,
-      mentoringStyle: preferences.mentoringStyle,
-      yearsExperience: preferences.yearsExperience,
-      availability: preferences.availability
-    });
 
-    // Validate required fields
-    console.log("Step 5: Validating required fields...");
-    const requiredFields = [
-      "currentIndustry",
-      "currentRole", 
-      "seniorityLevel",
-      "mentoringStyle",
-      "yearsExperience",
-      "availability"
-    ];
+    // Check if this is a step 2 request (only factor order and ranks)
+    const isStep2Request = preferences.factorOrder && preferences.factorRanks && 
+                          !preferences.currentIndustry && !preferences.currentRole;
 
-    for (const field of requiredFields) {
-      console.log(`Validating field: ${field}, value: "${preferences[field]}"`);
-      
-      if (field === "yearsExperience") {
-        // yearsExperience is a number field
-        if (!preferences[field] || preferences[field] === "" || preferences[field] === "0") {
-          console.error(`Validation failed: ${field} is required and must be greater than 0`);
-          return NextResponse.json(
-            { error: `${field} is required and must be greater than 0` },
-            { status: 400 }
-          );
+    // Only validate required fields if this is not a step 2 request
+    if (!isStep2Request) {
+      const requiredFields = [
+        "currentIndustry",
+        "currentRole", 
+        "seniorityLevel",
+        "mentoringStyle",
+        "yearsExperience",
+        "availability",
+        "dreamCompanies"
+      ];
+
+      for (const field of requiredFields) {
+        if (field === "yearsExperience") {
+          // yearsExperience is a number field
+          if (!preferences[field] || preferences[field] === "" || preferences[field] === "0") {
+            return NextResponse.json(
+              { error: `${field} is required and must be greater than 0` },
+              { status: 400 }
+            );
+          }
+          // Additional validation for years experience
+          const yearsValue = parseInt(preferences[field]);
+          if (isNaN(yearsValue) || yearsValue <= 0) {
+            return NextResponse.json(
+              { error: `${field} must be a valid number greater than 0` },
+              { status: 400 }
+            );
+          }
+        } else {
+          // Other fields are text fields
+          if (!preferences[field]?.trim()) {
+            return NextResponse.json(
+              { error: `${field} is required` },
+              { status: 400 }
+            );
+          }
         }
-        // Additional validation for years experience
-        const yearsValue = parseInt(preferences[field]);
-        if (isNaN(yearsValue) || yearsValue <= 0) {
-          console.error(`Validation failed: ${field} must be a valid number greater than 0`);
-          return NextResponse.json(
-            { error: `${field} must be a valid number greater than 0` },
-            { status: 400 }
-          );
-        }
-        console.log(`Validation passed: ${field} = ${yearsValue}`);
-      } else {
-        // Other fields are text fields
-        if (!preferences[field]?.trim()) {
-          console.error(`Validation failed: ${field} is required`);
-          return NextResponse.json(
-            { error: `${field} is required` },
-            { status: 400 }
-          );
-        }
-        console.log(`Validation passed: ${field} = "${preferences[field]}"`);
       }
     }
-    
-    console.log("Step 6: All validations passed!");
 
     // Normalize mentoring style labels to match Airtable Multiple select options
     const normalizeMentoringStyle = (style: string) => {
@@ -234,130 +240,154 @@ export async function POST(request: NextRequest) {
       
       // Clean the input (remove quotes and extra spaces)
       const cleanStyle = style.replace(/"/g, '').trim();
-      return labelMap[cleanStyle.toLowerCase()] || cleanStyle;
+      const normalized = labelMap[cleanStyle.toLowerCase()] || cleanStyle;
+      
+      return normalized;
     };
 
     // Check if preferences already exist for this user
-    console.log("Step 7: Checking existing records for UID:", uid);
     let existingRecords;
     try {
       existingRecords = await base(AIRTABLE_MENTEE_PREFERENCES_TABLE!).select({
         filterByFormula: `{UserID}='${esc(uid)}'`,
         maxRecords: 1,
       }).firstPage();
-      console.log("Step 8: Existing records found:", existingRecords.length);
     } catch (airtableError) {
-      console.error("Step 8: Airtable query failed:", airtableError);
       throw airtableError;
     }
 
-    // Process mentoring style for storage (Single select field - only one value allowed)
+    // Process mentoring style for storage (Only using RequiredMentoringStyles and NicetohaveStyles)
     
-    let mentoringStyleForStorage: string | null = null;
     let requiredMentoringStylesForStorage: string[] | null = null;
     let niceToHaveStylesForStorage: string[] | null = null;
     
     if (preferences.mentoringStyle === 'dont_mind') {
       // When "I don't mind" is selected, set both fields to the "I don't mind" option
-      mentoringStyleForStorage = null; // Skip MentoringStyle field entirely
       requiredMentoringStylesForStorage = ["I don't mind any mentoring style"]; // Set RequiredMentoringStyles
       niceToHaveStylesForStorage = ["I don't mind any mentoring style"]; // Set NicetohaveStyles
     } else if (preferences.requiredMentoringStyles && preferences.requiredMentoringStyles.trim()) {
-      // Store only the first required style for the MentoringStyle Single select field
+      // Store all required styles in RequiredMentoringStyles field
       const normalizedRequiredStyles = preferences.requiredMentoringStyles
         .split(',')
         .map(s => normalizeMentoringStyle(s.trim()));
-      mentoringStyleForStorage = normalizedRequiredStyles[0] || 'Coaching'; // Take first one only
       requiredMentoringStylesForStorage = normalizedRequiredStyles; // Store all required styles
     } else {
     }
     
 
-    // Debug: Show the normalization process
-    if (preferences.requiredMentoringStyles) {
-      const styles = preferences.requiredMentoringStyles.split(',').map(s => s.trim());
-      const normalized = styles.map(s => normalizeMentoringStyle(s));
-    }
-    
-    if (preferences.niceToHaveStyles) {
-      const styles = preferences.niceToHaveStyles.split(',').map(s => s.trim());
-      const normalized = styles.map(s => normalizeMentoringStyle(s));
-    }
 
-    const preferenceData: any = {
-      UserID: uid,
-      CurrentIndustry: preferences.currentIndustry.trim(),
-      CurrentRole: preferences.currentRole.trim(),
-      SeniorityLevel: preferences.seniorityLevel.trim(),
-      PreviousRoles: preferences.previousRoles?.trim() || "",
-      YearsExperience: parseInt(preferences.yearsExperience) || 0,
-      CultureBackground: preferences.culturalBackground?.trim() || "",
-      Availability: preferences.availability.trim(),
-      CurrentCompany: preferences.dreamCompanies?.trim() || "",
-      // Factor order (array of factor IDs in priority order)
-      FactorOrder: preferences.factorOrder || "",
-      UpdatedAt: nowISO(),
-    };
+    let preferenceData: any;
 
-    // Only include MentoringStyle if it's not null
-    if (mentoringStyleForStorage !== null) {
-      preferenceData.MentoringStyle = mentoringStyleForStorage;
-    }
-
-    // Handle mentoring style arrays - include empty arrays to clear fields
-    if (requiredMentoringStylesForStorage !== null) {
-      preferenceData.RequiredMentoringStyles = requiredMentoringStylesForStorage;
-    } else if (preferences.requiredMentoringStyles && preferences.requiredMentoringStyles.trim()) {
-      preferenceData.RequiredMentoringStyles = preferences.requiredMentoringStyles
-        .split(',')
-        .map(s => normalizeMentoringStyle(s.trim()))
-        .filter(s => s); // Remove empty strings
-    }
-
-    if (niceToHaveStylesForStorage !== null) {
-      preferenceData.NicetohaveStyles = niceToHaveStylesForStorage;
-    } else if (preferences.niceToHaveStyles && preferences.niceToHaveStyles.trim()) {
-      const normalizedNiceToHave = preferences.niceToHaveStyles
-        .split(',')
-        .map(s => normalizeMentoringStyle(s.trim()))
-        .filter(s => s); // Remove empty strings
+    if (isStep2Request) {
+      // Step 2: Only update factor order and individual rank fields
+      const factorRanks = preferences.factorRanks ? JSON.parse(preferences.factorRanks) : [];
       
-      // If "None" is selected, save it as "None" in Airtable
-      if (normalizedNiceToHave.includes('None')) {
-        preferenceData.NicetohaveStyles = ['None'];
-      } else {
-        preferenceData.NicetohaveStyles = normalizedNiceToHave;
+      preferenceData = {
+        FactorOrder: preferences.factorOrder || "",
+        UpdatedAt: nowISO(),
+      };
+      
+      // Map factor ranks to individual Airtable fields
+      factorRanks.forEach((item: { id: string; rank: number }) => {
+        switch (item.id) {
+          case "currentIndustry":
+            preferenceData.IndustryRank = item.rank;
+            break;
+          case "currentRole":
+            preferenceData.RoleRank = item.rank;
+            break;
+          case "seniorityLevel":
+            preferenceData.SeniorityRank = item.rank;
+            break;
+          case "previousRoles":
+            preferenceData.PreviousRolesRank = item.rank;
+            break;
+          case "mentoringStyle":
+            preferenceData.MentoringStyleRank = item.rank;
+            break;
+          case "yearsExperience":
+            preferenceData.YearsExperienceRank = item.rank;
+            break;
+          case "culturalBackground":
+            preferenceData.CultureBackgroundRank = item.rank;
+            break;
+          case "availability":
+            preferenceData.AvailabilityRank = item.rank;
+            break;
+          case "dreamCompanies":
+            preferenceData.CompanyRank = item.rank;
+            break;
+        }
+      });
+    } else {
+      // Step 1: Update all preference fields
+      preferenceData = {
+        UserID: uid,
+        CurrentIndustry: preferences.currentIndustry.trim(),
+        CurrentRole: preferences.currentRole.trim(),
+        SeniorityLevel: preferences.seniorityLevel.trim(),
+        PreviousRoles: preferences.previousRoles?.trim() || "",
+        YearsExperience: parseInt(preferences.yearsExperience) || 0,
+        CultureBackground: preferences.culturalBackground?.trim() || "",
+        Availability: preferences.availability.trim(),
+        CurrentCompany: preferences.dreamCompanies?.trim() || "",
+        // Factor order (array of factor IDs in priority order)
+        FactorOrder: preferences.factorOrder || "",
+        UpdatedAt: nowISO(),
+      };
+    }
+
+
+    // Note: MentoringStyle field removed - only using RequiredMentoringStyles for mentees
+    // if (mentoringStyleForStorage !== null) {
+    //   preferenceData.MentoringStyle = mentoringStyleForStorage;
+    // }
+
+    // Handle mentoring style arrays - only for step 1
+    if (!isStep2Request) {
+      if (requiredMentoringStylesForStorage !== null) {
+        preferenceData.RequiredMentoringStyles = requiredMentoringStylesForStorage;
+      } else if (preferences.requiredMentoringStyles && preferences.requiredMentoringStyles.trim()) {
+        const normalizedStyles = preferences.requiredMentoringStyles
+          .split(',')
+          .map(s => normalizeMentoringStyle(s.trim()))
+          .filter(s => s); // Remove empty strings
+        
+        preferenceData.RequiredMentoringStyles = normalizedStyles;
+      }
+
+      if (niceToHaveStylesForStorage !== null) {
+        preferenceData.NicetohaveStyles = niceToHaveStylesForStorage;
+      } else if (preferences.niceToHaveStyles && preferences.niceToHaveStyles.trim()) {
+        const normalizedNiceToHave = preferences.niceToHaveStyles
+          .split(',')
+          .map(s => normalizeMentoringStyle(s.trim()))
+          .filter(s => s); // Remove empty strings
+        
+        // If "None" is selected, save it as "None" in Airtable
+        if (normalizedNiceToHave.includes('None')) {
+          preferenceData.NicetohaveStyles = ['None'];
+        } else {
+          preferenceData.NicetohaveStyles = normalizedNiceToHave;
+        }
       }
     }
     
 
-    console.log("Step 9: Preparing Airtable operation...");
-    console.log("Preference data to save:", preferenceData);
-    
     let result;
     try {
       if (existingRecords.length > 0) {
         // Update existing record
         const recordId = existingRecords[0].id;
-        console.log("Step 10: Updating existing record:", recordId);
         result = await base(AIRTABLE_MENTEE_PREFERENCES_TABLE!).update(recordId, preferenceData);
-        console.log("Step 11: Update successful:", result);
       } else {
         // Create new record
-        console.log("Step 10: Creating new record");
         result = await base(AIRTABLE_MENTEE_PREFERENCES_TABLE!).create([{ fields: preferenceData }]);
-        console.log("Step 11: Create successful:", result);
       }
     } catch (airtableWriteError) {
-      console.error("Step 10-11: Airtable write operation failed:", airtableWriteError);
       throw airtableWriteError;
     }
     
-    // Debug: Show the normalization process
-    if (preferences.requiredMentoringStyles) {
-      const styles = preferences.requiredMentoringStyles.split(',').map(s => s.trim());
-      const normalized = styles.map(s => normalizeMentoringStyle(s));
-    }
 
     // Get user info to create JWT token
     let userEmail = "";
@@ -371,7 +401,7 @@ export async function POST(request: NextRequest) {
         userRole = userData.role || "mentee";
       }
     } catch (error) {
-      console.warn("Could not fetch user info for JWT:", error);
+      // Could not fetch user info for JWT
     }
 
     // Create JWT token and set cookie
@@ -411,9 +441,28 @@ export async function POST(request: NextRequest) {
     
     // Check if it's an Airtable field error
     if (error instanceof Error && error.message.includes('Unknown field name')) {
+      console.error("Airtable field error:", error.message);
       return NextResponse.json(
-        { error: "Database schema mismatch. Please check Airtable configuration." },
+        { error: `Database schema mismatch: ${error.message}. Please check Airtable configuration.` },
         { status: 422 }
+      );
+    }
+    
+    // Check if it's an Airtable validation error
+    if (error instanceof Error && error.message.includes('INVALID_MULTIPLE_CHOICE_OPTIONS')) {
+      console.error("Airtable validation error:", error.message);
+      return NextResponse.json(
+        { error: `Invalid field values: ${error.message}. Please check your selections.` },
+        { status: 422 }
+      );
+    }
+    
+    // Check if it's a JSON parsing error
+    if (error instanceof Error && error.message.includes('Unexpected end of JSON input')) {
+      console.error("JSON parsing error:", error.message);
+      return NextResponse.json(
+        { error: `Data processing error: ${error.message}. Please try again.` },
+        { status: 400 }
       );
     }
     
