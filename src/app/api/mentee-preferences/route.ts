@@ -129,17 +129,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("Step 1: Parsing FormData...");
     const formData = await request.formData();
-    console.log("FormData parsed successfully");
     
     const uid = formData.get('uid') as string;
     const role = formData.get('role') as string;
 
-    console.log("Step 2: Extracted basic fields:", { uid: !!uid, role: !!role });
-
     if (!uid) {
-      console.error("Missing UID");
       return NextResponse.json(
         { error: "User ID is required" },
         { status: 400 }
@@ -147,7 +142,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract preferences from FormData
-    console.log("Step 3: Extracting form preferences...");
     const preferences: { [key: string]: string } = {
       currentIndustry: formData.get('currentIndustry') as string || "",
       currentRole: formData.get('currentRole') as string || "",
@@ -162,34 +156,22 @@ export async function POST(request: NextRequest) {
       dreamCompanies: formData.get('dreamCompanies') as string || "",
       factorOrder: formData.get('factorOrder') as string || ""
     };
-    
-    console.log("Step 4: Extracted preferences:", {
-      currentIndustry: preferences.currentIndustry,
-      currentRole: preferences.currentRole,
-      seniorityLevel: preferences.seniorityLevel,
-      mentoringStyle: preferences.mentoringStyle,
-      yearsExperience: preferences.yearsExperience,
-      availability: preferences.availability
-    });
 
     // Validate required fields
-    console.log("Step 5: Validating required fields...");
     const requiredFields = [
       "currentIndustry",
       "currentRole", 
       "seniorityLevel",
       "mentoringStyle",
       "yearsExperience",
-      "availability"
+      "availability",
+      "dreamCompanies"
     ];
 
     for (const field of requiredFields) {
-      console.log(`Validating field: ${field}, value: "${preferences[field]}"`);
-      
       if (field === "yearsExperience") {
         // yearsExperience is a number field
         if (!preferences[field] || preferences[field] === "" || preferences[field] === "0") {
-          console.error(`Validation failed: ${field} is required and must be greater than 0`);
           return NextResponse.json(
             { error: `${field} is required and must be greater than 0` },
             { status: 400 }
@@ -198,27 +180,21 @@ export async function POST(request: NextRequest) {
         // Additional validation for years experience
         const yearsValue = parseInt(preferences[field]);
         if (isNaN(yearsValue) || yearsValue <= 0) {
-          console.error(`Validation failed: ${field} must be a valid number greater than 0`);
           return NextResponse.json(
             { error: `${field} must be a valid number greater than 0` },
             { status: 400 }
           );
         }
-        console.log(`Validation passed: ${field} = ${yearsValue}`);
       } else {
         // Other fields are text fields
         if (!preferences[field]?.trim()) {
-          console.error(`Validation failed: ${field} is required`);
           return NextResponse.json(
             { error: `${field} is required` },
             { status: 400 }
           );
         }
-        console.log(`Validation passed: ${field} = "${preferences[field]}"`);
       }
     }
-    
-    console.log("Step 6: All validations passed!");
 
     // Normalize mentoring style labels to match Airtable Multiple select options
     const normalizeMentoringStyle = (style: string) => {
@@ -234,55 +210,41 @@ export async function POST(request: NextRequest) {
       
       // Clean the input (remove quotes and extra spaces)
       const cleanStyle = style.replace(/"/g, '').trim();
-      return labelMap[cleanStyle.toLowerCase()] || cleanStyle;
+      const normalized = labelMap[cleanStyle.toLowerCase()] || cleanStyle;
+      
+      return normalized;
     };
 
     // Check if preferences already exist for this user
-    console.log("Step 7: Checking existing records for UID:", uid);
     let existingRecords;
     try {
       existingRecords = await base(AIRTABLE_MENTEE_PREFERENCES_TABLE!).select({
         filterByFormula: `{UserID}='${esc(uid)}'`,
         maxRecords: 1,
       }).firstPage();
-      console.log("Step 8: Existing records found:", existingRecords.length);
     } catch (airtableError) {
-      console.error("Step 8: Airtable query failed:", airtableError);
       throw airtableError;
     }
 
-    // Process mentoring style for storage (Single select field - only one value allowed)
+    // Process mentoring style for storage (Only using RequiredMentoringStyles and NicetohaveStyles)
     
-    let mentoringStyleForStorage: string | null = null;
     let requiredMentoringStylesForStorage: string[] | null = null;
     let niceToHaveStylesForStorage: string[] | null = null;
     
     if (preferences.mentoringStyle === 'dont_mind') {
       // When "I don't mind" is selected, set both fields to the "I don't mind" option
-      mentoringStyleForStorage = null; // Skip MentoringStyle field entirely
-      requiredMentoringStylesForStorage = ["I don't mind any mentoring style"]; // Set RequiredMentoringStyles
-      niceToHaveStylesForStorage = ["I don't mind any mentoring style"]; // Set NicetohaveStyles
+      requiredMentoringStylesForStorage = ["I dont have any particular mentoring style"]; // Set RequiredMentoringStyles
+      niceToHaveStylesForStorage = ["I dont have any particular mentoring style"]; // Set NicetohaveStyles
     } else if (preferences.requiredMentoringStyles && preferences.requiredMentoringStyles.trim()) {
-      // Store only the first required style for the MentoringStyle Single select field
+      // Store all required styles in RequiredMentoringStyles field
       const normalizedRequiredStyles = preferences.requiredMentoringStyles
         .split(',')
         .map(s => normalizeMentoringStyle(s.trim()));
-      mentoringStyleForStorage = normalizedRequiredStyles[0] || 'Coaching'; // Take first one only
       requiredMentoringStylesForStorage = normalizedRequiredStyles; // Store all required styles
     } else {
     }
     
 
-    // Debug: Show the normalization process
-    if (preferences.requiredMentoringStyles) {
-      const styles = preferences.requiredMentoringStyles.split(',').map(s => s.trim());
-      const normalized = styles.map(s => normalizeMentoringStyle(s));
-    }
-    
-    if (preferences.niceToHaveStyles) {
-      const styles = preferences.niceToHaveStyles.split(',').map(s => s.trim());
-      const normalized = styles.map(s => normalizeMentoringStyle(s));
-    }
 
     const preferenceData: any = {
       UserID: uid,
@@ -299,19 +261,21 @@ export async function POST(request: NextRequest) {
       UpdatedAt: nowISO(),
     };
 
-    // Only include MentoringStyle if it's not null
-    if (mentoringStyleForStorage !== null) {
-      preferenceData.MentoringStyle = mentoringStyleForStorage;
-    }
+    // Note: MentoringStyle field removed - only using RequiredMentoringStyles for mentees
+    // if (mentoringStyleForStorage !== null) {
+    //   preferenceData.MentoringStyle = mentoringStyleForStorage;
+    // }
 
     // Handle mentoring style arrays - include empty arrays to clear fields
     if (requiredMentoringStylesForStorage !== null) {
       preferenceData.RequiredMentoringStyles = requiredMentoringStylesForStorage;
     } else if (preferences.requiredMentoringStyles && preferences.requiredMentoringStyles.trim()) {
-      preferenceData.RequiredMentoringStyles = preferences.requiredMentoringStyles
+      const normalizedStyles = preferences.requiredMentoringStyles
         .split(',')
         .map(s => normalizeMentoringStyle(s.trim()))
         .filter(s => s); // Remove empty strings
+      
+      preferenceData.RequiredMentoringStyles = normalizedStyles;
     }
 
     if (niceToHaveStylesForStorage !== null) {
@@ -331,33 +295,20 @@ export async function POST(request: NextRequest) {
     }
     
 
-    console.log("Step 9: Preparing Airtable operation...");
-    console.log("Preference data to save:", preferenceData);
-    
     let result;
     try {
       if (existingRecords.length > 0) {
         // Update existing record
         const recordId = existingRecords[0].id;
-        console.log("Step 10: Updating existing record:", recordId);
         result = await base(AIRTABLE_MENTEE_PREFERENCES_TABLE!).update(recordId, preferenceData);
-        console.log("Step 11: Update successful:", result);
       } else {
         // Create new record
-        console.log("Step 10: Creating new record");
         result = await base(AIRTABLE_MENTEE_PREFERENCES_TABLE!).create([{ fields: preferenceData }]);
-        console.log("Step 11: Create successful:", result);
       }
     } catch (airtableWriteError) {
-      console.error("Step 10-11: Airtable write operation failed:", airtableWriteError);
       throw airtableWriteError;
     }
     
-    // Debug: Show the normalization process
-    if (preferences.requiredMentoringStyles) {
-      const styles = preferences.requiredMentoringStyles.split(',').map(s => s.trim());
-      const normalized = styles.map(s => normalizeMentoringStyle(s));
-    }
 
     // Get user info to create JWT token
     let userEmail = "";
@@ -371,7 +322,7 @@ export async function POST(request: NextRequest) {
         userRole = userData.role || "mentee";
       }
     } catch (error) {
-      console.warn("Could not fetch user info for JWT:", error);
+      // Could not fetch user info for JWT
     }
 
     // Create JWT token and set cookie
@@ -411,9 +362,28 @@ export async function POST(request: NextRequest) {
     
     // Check if it's an Airtable field error
     if (error instanceof Error && error.message.includes('Unknown field name')) {
+      console.error("Airtable field error:", error.message);
       return NextResponse.json(
-        { error: "Database schema mismatch. Please check Airtable configuration." },
+        { error: `Database schema mismatch: ${error.message}. Please check Airtable configuration.` },
         { status: 422 }
+      );
+    }
+    
+    // Check if it's an Airtable validation error
+    if (error instanceof Error && error.message.includes('INVALID_MULTIPLE_CHOICE_OPTIONS')) {
+      console.error("Airtable validation error:", error.message);
+      return NextResponse.json(
+        { error: `Invalid field values: ${error.message}. Please check your selections.` },
+        { status: 422 }
+      );
+    }
+    
+    // Check if it's a JSON parsing error
+    if (error instanceof Error && error.message.includes('Unexpected end of JSON input')) {
+      console.error("JSON parsing error:", error.message);
+      return NextResponse.json(
+        { error: `Data processing error: ${error.message}. Please try again.` },
+        { status: 400 }
       );
     }
     

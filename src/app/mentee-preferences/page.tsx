@@ -682,7 +682,6 @@ export default function MenteePreferences() {
 
   // Validation function
   const validateForm = () => {
-    
     const errors: { [key: string]: string } = {};
     
     preferenceFactors.forEach((factor) => {
@@ -693,10 +692,10 @@ export default function MenteePreferences() {
           const mentoringStyle = value as MentoringStylePreferences;
           
           if (mentoringStyle.dontMind) {
+            // "I don't mind" is valid
           } else if (mentoringStyle.required.length === 0) {
             const errorMsg = `${factor.label} is required - please select at least one required style or choose "I don't mind"`;
             errors[factor.id] = errorMsg;
-          } else {
           }
           // Note: nice-to-have can be empty - that's perfectly fine
           // Users can have just required styles, or required + nice-to-have, or "I don't mind"
@@ -785,12 +784,10 @@ export default function MenteePreferences() {
     });
 
     try {
-      
       const response = await fetch('/api/mentee-preferences', {
         method: 'POST',
         body: formData,
       });
-
 
       if (response.ok) {
         // Move to Step 2 (Save & Review) after saving preferences
@@ -813,7 +810,6 @@ export default function MenteePreferences() {
         alert(`Error: ${errorData.error || 'Failed to save preferences'}`);
       }
     } catch (error) {
-      console.error('🔍 DEBUG: Error in try-catch:', error);
       alert('Error saving preferences. Please try again.');
     }
   };
