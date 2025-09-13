@@ -441,13 +441,29 @@ function calculateExperienceMatch(menteeExp: number, mentorExp: number): number 
 function calculateMentoringStyleMatch(menteeStyles: string | string[], mentorStyle: string | string[]): number {
   if (!menteeStyles || !mentorStyle) return 0;
 
-  // Handle "I don't mind" case for mentees
-  if (menteeStyles === 'dont_mind' || (Array.isArray(menteeStyles) && menteeStyles.includes('dont_mind'))) {
+  // Handle "I don't mind" case for mentees (uses "I don't mind any mentoring style")
+  const menteeDontMind = menteeStyles === 'dont_mind' || 
+                        menteeStyles === "I don't mind any mentoring style" ||
+                        (Array.isArray(menteeStyles) && (
+                          menteeStyles.includes('dont_mind') || 
+                          menteeStyles.includes("I don't mind any mentoring style")
+                        ));
+  
+  if (menteeDontMind) {
     return 1.0; // Full score for all mentors
   }
 
-  // Handle "I don't mind" case for mentors
-  if (mentorStyle === 'dont_mind' || (Array.isArray(mentorStyle) && mentorStyle.includes('dont_mind'))) {
+  // Handle "I don't mind" case for mentors (uses "I don't have any particular mentoring style")
+  const mentorDontMind = mentorStyle === 'dont_mind' || 
+                        mentorStyle === "I don't have any particular mentoring style" ||
+                        mentorStyle === "I dont have any particular mentoring style" ||
+                        (Array.isArray(mentorStyle) && (
+                          mentorStyle.includes('dont_mind') || 
+                          mentorStyle.includes("I don't have any particular mentoring style") ||
+                          mentorStyle.includes("I dont have any particular mentoring style")
+                        ));
+  
+  if (mentorDontMind) {
     return 1.0; // Full score for mentees
   }
 
@@ -613,7 +629,7 @@ export async function GET(req: NextRequest) {
     // 1. Fetch mentee preferences (real-time)
     const prefRows = await firstPage(AIRTABLE_MENTEE_PREFERENCES_TABLE!, {
       filterByFormula: `{UserID}='${esc(uid)}'`,
-      fields: ["UserID", "CurrentIndustry", "CurrentRole", "SeniorityLevel", "PreviousRoles", "MentoringStyle", "RequiredMentoringStyles", "YearsExperience", "CultureBackground", "Availability", "CurrentCompany", "FactorOrder"],
+      fields: ["UserID", "CurrentIndustry", "CurrentRole", "SeniorityLevel", "PreviousRoles", "RequiredMentoringStyles", "NicetohaveStyles", "YearsExperience", "CultureBackground", "Availability", "CurrentCompany", "FactorOrder"],
       maxRecords: 1
     });
 
@@ -759,7 +775,7 @@ export async function GET(req: NextRequest) {
         currentRole: clean(meta.CurrentRole) ?? null,
         seniorityLevel: clean(meta.SeniorityLevel) ?? null,
         previousRoles: clean(meta.PreviousRoles) ?? null,
-        mentoringStyle: clean(meta.MentoringStyle) ?? null,
+        mentoringStyle: clean(meta.RequiredMentoringStyles) ?? null,
         culturalBackground: clean(meta.CulturalBackground) ?? null,
         availability: clean(meta.Availability) ?? null,
         // Enhanced scoring data

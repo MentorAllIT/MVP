@@ -263,8 +263,8 @@ export async function POST(request: NextRequest) {
     
     if (preferences.mentoringStyle === 'dont_mind') {
       // When "I don't mind" is selected, set both fields to the "I don't mind" option
-      requiredMentoringStylesForStorage = ["I dont have any particular mentoring style"]; // Set RequiredMentoringStyles
-      niceToHaveStylesForStorage = ["I dont have any particular mentoring style"]; // Set NicetohaveStyles
+      requiredMentoringStylesForStorage = ["I don't mind any mentoring style"]; // Set RequiredMentoringStyles
+      niceToHaveStylesForStorage = ["I don't mind any mentoring style"]; // Set NicetohaveStyles
     } else if (preferences.requiredMentoringStyles && preferences.requiredMentoringStyles.trim()) {
       // Store all required styles in RequiredMentoringStyles field
       const normalizedRequiredStyles = preferences.requiredMentoringStyles

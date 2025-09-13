@@ -76,11 +76,11 @@ export async function GET(req: NextRequest) {
 
       // Handle RequiredMentoringStyles field (Multiple select)
       if (Array.isArray(existing.fields.RequiredMentoringStyles)) {
-        // Check if it's the "I dont have any particular" option
-        if (existing.fields.RequiredMentoringStyles.includes("I dont have any particular mentoring style")) {
+        // Check if it has the specific "I don't have any particular" option
+        if (existing.fields.RequiredMentoringStyles.includes("I don't have any particular mentoring style")) {
           mentoringStyle = "dont_mind";
           requiredMentoringStyles = "dont_mind";
-        } else {
+        } else if (existing.fields.RequiredMentoringStyles.length > 0) {
           // Map styles back to IDs for frontend
           const reverseStyleMap: Record<string, string> = {
             'Coaching': 'coaching',
@@ -155,8 +155,8 @@ export async function POST(req: NextRequest) {
       // Handle mentoring style for mentors - use RequiredMentoringStyles field
       if (requiredMentoringStylesValue && requiredMentoringStylesValue.trim()) {
         if (requiredMentoringStylesValue === 'dont_mind') {
-          // Use the actual Airtable option in RequiredMentoringStyles field
-          fields.RequiredMentoringStyles = ["I dont have any particular mentoring style"];
+          // When mentor selects "I don't mind", save the exact field name to RequiredMentoringStyles
+          fields.RequiredMentoringStyles = ["I don't have any particular mentoring style"];
         } else {
           // Convert comma-separated styles to array for RequiredMentoringStyles field
           const styleMap: Record<string, string> = {
